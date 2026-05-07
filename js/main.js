@@ -1439,8 +1439,6 @@ function initCanvasSection() {
         const { x, y } = s2w(canvasW()/2 + (Math.random()-0.5)*140, canvasH()/2 + (Math.random()-0.5)*80);
         addNode(type, x, y);
       });
-      btn.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-      btn.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
       el.appendChild(btn);
     });
   }

@@ -1359,17 +1359,16 @@ body.is-loading .cursor-trail {
 }
 
 /* ── Native cursor in game UI (sidebar + toolbar) ── */
-#csb,
-#csb *,
-.canvas-toolbar,
-.canvas-toolbar * {
-  cursor: auto;
-}
+#csb           { cursor: auto; }
 #csb button,
+#csb button *,
 #csb .csb-item,
-.canvas-toolbar button {
-  cursor: pointer;
-}
+#csb .csb-item * { cursor: pointer; }
+#csb .ndm-item,
+#csb .ndm-item * { cursor: pointer; }
+.canvas-toolbar         { cursor: auto; }
+.canvas-toolbar button,
+.canvas-toolbar button * { cursor: pointer; }
 
 /* ── Sidebar ── */
 #csb {
@@ -1458,7 +1457,7 @@ body.is-loading .cursor-trail {
   border: 1px solid var(--border);
   border-radius: 7px;
   text-align: left;
-  cursor: none;
+  cursor: pointer;
   opacity: 0.38;
   transition: opacity 0.15s, border-color 0.15s, background 0.15s;
   font-family: inherit;

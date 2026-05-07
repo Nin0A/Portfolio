@@ -272,12 +272,15 @@ body.cursor-hidden #cursor-ring {
   /* Always transparent — color set dynamically by JS luminance detection */
 }
 
-/* Nav text color: JS adds .over-dark or .over-light based on
-   the computed background luminance of elements behind the nav */
+/* Nav text color:
+   - Default = var(--text), always correct for current theme
+   - JS overrides with .over-dark / .over-light when scrolling
+     over sections whose background differs from the theme bg */
 .nav-logo,
 .nav-link,
 .nav-social {
-  transition: color 0.3s ease, opacity 0.2s;
+  color: var(--text);
+  transition: color 0.4s ease, opacity 0.2s;
 }
 
 #nav.over-dark .nav-logo,
@@ -449,6 +452,25 @@ body.cursor-hidden #cursor-ring {
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* Three.js canvas in hero */
+#hero-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Hero content sits above canvas */
+.hero-status,
+.hero-title-wrap,
+.hero-bottom,
+.hero-ticker {
+  position: relative;
+  z-index: 1;
 }
 
 .hero-title-wrap {
@@ -772,6 +794,8 @@ body.cursor-hidden #cursor-ring {
   opacity: 0;
   overflow: hidden;
   transition: background 0.3s;
+  transform-style: preserve-3d;
+  will-change: transform;
 }
 
 .project-item::before {

@@ -706,96 +706,154 @@ function initAnchorScroll(lenis) {
 }
 
 // ─────────────────────────────────────────────
-// Infinite canvas — pan/zoom node editor
+// Canvas — incremental node graph game
 // ─────────────────────────────────────────────
 function initCanvasSection() {
-  const wrapper   = document.getElementById('canvas-wrapper');
-  const canvas    = document.getElementById('infinite-canvas');
-  const nodesDiv  = document.getElementById('canvas-nodes');
-  const connHint  = document.getElementById('canvas-connect-hint');
+  const wrapper  = document.getElementById('canvas-wrapper');
+  const canvas   = document.getElementById('infinite-canvas');
+  const nodesDiv = document.getElementById('canvas-nodes');
   if (!wrapper || !canvas) return;
-
   const ctx = canvas.getContext('2d');
 
-  // ── Viewport state ───────────────────────────
-  const vp = { x: 0, y: 0, scale: 1 };
+  /* ── Block definitions ────────────────────── */
+  const DEFS = {
+    source:    { icon:'⚡', name:'Source',        col:[201,245,101], base:2,  bm:0.5,  cost:0,    desc:'Produit 2 énergie/sec. +50% par entrée.' },
+    collector: { icon:'📡', name:'Collecteur',    col:[96,165,250],  base:1,  bm:1.5,  cost:50,   desc:'1 énergie/sec. ×1.5 par connexion.' },
+    battery:   { icon:'🔋', name:'Batterie',      col:[52,211,153],  base:3,  bm:0.15, cost:200,  desc:'Réservoir stable, +3/sec.' },
+    solar:     { icon:'☀️', name:'Solaire',       col:[251,191,36],  base:5,  bm:0.25, cost:500,  desc:'Énergie solaire +5/sec.' },
+    amplifier: { icon:'🔊', name:'Amplificateur', col:[245,158,11],  base:1,  bm:3.0,  cost:1000, desc:'×3 bonus par connexion entrante.' },
+    server:    { icon:'🖥️', name:'Serveur',       col:[167,139,250], base:10, bm:0.5,  cost:5000, desc:'Centre haute perf. +10/sec.' },
+  };
 
-  // ── Data ─────────────────────────────────────
-  const nodes = []; // { id, x, y }
-  const edges = []; // { from, to }
-  let nodeSeq   = 0;
-  let dragging  = null; // { type:'pan'|'node', id?, ox, oy, vpx?, vpy?, nx?, ny? }
-  let connecting = null; // id of node being connected from
+  /* ── Challenges ───────────────────────────── */
+  const CHALS = [
+    { id:'c1', title:'Premier lien',    desc:'Créer une connexion',      done:false, reward:'collector', check:()=>edges.length>=1 },
+    { id:'c2', title:'Réseau naissant', desc:'Avoir 3 blocs sur le canvas',done:false, reward:'battery',   check:()=>nodes.length>=3 },
+    { id:'c3', title:'100 énergie',     desc:'Accumuler 100 énergie',    done:false, reward:'solar',     check:()=>totalEnergy>=100 },
+    { id:'c4', title:'Bien connecté',   desc:'Créer 5 connexions',       done:false, reward:'amplifier', check:()=>edges.length>=5 },
+    { id:'c5', title:'1 000 énergie',   desc:'Accumuler 1 000 énergie',  done:false, reward:'server',    check:()=>totalEnergy>=1000 },
+  ];
 
-  const GRID = 40; // world-space units per cell
+  /* ── State ────────────────────────────────── */
+  const vp    = { x: 0, y: 0, scale: 1 };
+  const nodes = []; // { id, type, x, y, eps }
+  const edges = []; // { id, from, to }
+  let nodeSeq = 0, edgeSeq = 0;
+  let totalEnergy = 0, energyPerSec = 0;
+  let animT = 0, lastTs = 0;
 
-  // ── Coord helpers ────────────────────────────
+  /* ── Interaction ──────────────────────────── */
+  let panDrag    = null; // { ox, oy, vpx, vpy }
+  let nodeDrag   = null; // { id, ox, oy, nx, ny }
+  let connFrom   = null; // nodeId being connected from
+  let connPos    = null; // { x, y } screen cursor during drag
+  let openMenuId = null;
+
+  /* ── Constants ────────────────────────────── */
+  const NW = 160, NH = 56, GRID = 40, CSB_W = 220;
+
+  /* ── Helpers ──────────────────────────────── */
   function w2s(wx, wy) { return { x: wx * vp.scale + vp.x, y: wy * vp.scale + vp.y }; }
   function s2w(sx, sy) { return { x: (sx - vp.x) / vp.scale, y: (sy - vp.y) / vp.scale }; }
+  function outP(node)  { const s = w2s(node.x, node.y); return { x: s.x + NW/2 * vp.scale, y: s.y }; }
+  function inP(node)   { const s = w2s(node.x, node.y); return { x: s.x - NW/2 * vp.scale, y: s.y }; }
+  function fmtN(n) {
+    n = Math.floor(n);
+    if (n < 1000) return String(n);
+    if (n < 1e6)  return (n/1000).toFixed(1).replace('.0','')+'K';
+    return (n/1e6).toFixed(1).replace('.0','')+'M';
+  }
+  function canvasW() { return canvas.width - CSB_W; }
 
-  // ── Resize ───────────────────────────────────
+  /* ── Resize ───────────────────────────────── */
   function resize() {
     canvas.width  = wrapper.clientWidth;
     canvas.height = wrapper.clientHeight;
-    draw();
   }
 
-  // ── Main draw (grid + edges + node positions) ─
-  function draw() {
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0, 0, W, H);
+  /* ── EPS recompute ────────────────────────── */
+  function reEPS() {
+    let total = 0;
+    nodes.forEach(n => {
+      const def = DEFS[n.type];
+      const inC = edges.filter(e => e.to === n.id).length;
+      n.eps = def.base * (1 + inC * def.bm);
+      total += n.eps;
+    });
+    energyPerSec = total;
+  }
 
-    // Grid lines
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  /* ── Draw ─────────────────────────────────── */
+  function draw() {
+    const W = canvasW(), H = canvas.height;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Clip to canvas area (left of sidebar)
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+
+    // Grid
+    const isL = document.documentElement.getAttribute('data-theme') === 'light';
     const step = GRID * vp.scale;
     const ox = ((vp.x % step) + step) % step;
     const oy = ((vp.y % step) + step) % step;
-    ctx.strokeStyle = isLight ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.07)';
+    ctx.strokeStyle = isL ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 1;
+    ctx.setLineDash([]);
     ctx.beginPath();
-    for (let gx = ox - step; gx < W + step; gx += step) { ctx.moveTo(gx, 0); ctx.lineTo(gx, H); }
-    for (let gy = oy - step; gy < H + step; gy += step) { ctx.moveTo(0, gy); ctx.lineTo(W, gy); }
+    for (let gx = ox-step; gx < W+step; gx += step) { ctx.moveTo(gx,0); ctx.lineTo(gx,H); }
+    for (let gy = oy-step; gy < H+step; gy += step) { ctx.moveTo(0,gy); ctx.lineTo(W,gy); }
     ctx.stroke();
 
-    // Subtle origin cross
-    const o = w2s(0, 0);
-    ctx.strokeStyle = isLight ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    if (o.x >= 0 && o.x <= W) { ctx.moveTo(o.x, 0); ctx.lineTo(o.x, H); }
-    if (o.y >= 0 && o.y <= H) { ctx.moveTo(0, o.y); ctx.lineTo(W, o.y); }
-    ctx.stroke();
-
-    // Edges (bezier curves)
-    const accentRaw = getComputedStyle(document.documentElement).getPropertyValue('--accent-rgb').trim() || '201,245,101';
-    edges.forEach(e => {
-      const fn = nodes.find(n => n.id === e.from);
-      const tn = nodes.find(n => n.id === e.to);
+    // Edges
+    edges.forEach(edge => {
+      const fn = nodes.find(n => n.id === edge.from);
+      const tn = nodes.find(n => n.id === edge.to);
       if (!fn || !tn) return;
-      const fs = w2s(fn.x, fn.y);
-      const ts = w2s(tn.x, tn.y);
-      const dx = (ts.x - fs.x) * 0.55;
-      ctx.beginPath();
-      ctx.moveTo(fs.x, fs.y);
-      ctx.bezierCurveTo(fs.x + dx, fs.y, ts.x - dx, ts.y, ts.x, ts.y);
-      ctx.strokeStyle = `rgba(${accentRaw},0.6)`;
-      ctx.lineWidth   = Math.max(1, 1.5 * vp.scale);
-      ctx.stroke();
+      const fp = outP(fn), tp = inP(tn);
+      const cx = Math.max(Math.abs(tp.x - fp.x) * 0.5, 40);
+      const [r,g,b] = DEFS[fn.type].col;
 
-      // Arrow head
-      const angle = Math.atan2(ts.y - (ts.y - (ts.y - ts.y + 0)), ts.x - (ts.x - dx));
-      const aw = 8 * Math.min(1, vp.scale);
-      const headAngle = Math.atan2(ts.y - (fs.y + (ts.y - fs.y) * 0.5), ts.x - (fs.x + (ts.x - fs.x) * 0.5));
+      ctx.save();
+      // Base line
       ctx.beginPath();
-      ctx.moveTo(ts.x, ts.y);
-      ctx.lineTo(ts.x - aw * Math.cos(headAngle - 0.4), ts.y - aw * Math.sin(headAngle - 0.4));
-      ctx.lineTo(ts.x - aw * Math.cos(headAngle + 0.4), ts.y - aw * Math.sin(headAngle + 0.4));
-      ctx.closePath();
-      ctx.fillStyle = `rgba(${accentRaw},0.7)`;
-      ctx.fill();
+      ctx.moveTo(fp.x, fp.y);
+      ctx.bezierCurveTo(fp.x+cx, fp.y, tp.x-cx, tp.y, tp.x, tp.y);
+      ctx.strokeStyle = `rgba(${r},${g},${b},0.22)`;
+      ctx.lineWidth = 2; ctx.setLineDash([]);
+      ctx.stroke();
+      // Flowing dashes
+      ctx.beginPath();
+      ctx.moveTo(fp.x, fp.y);
+      ctx.bezierCurveTo(fp.x+cx, fp.y, tp.x-cx, tp.y, tp.x, tp.y);
+      ctx.strokeStyle = `rgba(${r},${g},${b},0.85)`;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 13]);
+      ctx.lineDashOffset = -(animT * 38);
+      ctx.stroke();
+      ctx.restore();
     });
 
-    // Sync node element positions
+    // Connection-in-progress
+    if (connFrom !== null && connPos) {
+      const fn = nodes.find(n => n.id === connFrom);
+      if (fn) {
+        const fp = outP(fn);
+        const [r,g,b] = DEFS[fn.type].col;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(fp.x, fp.y);
+        ctx.lineTo(connPos.x, connPos.y);
+        ctx.strokeStyle = `rgba(${r},${g},${b},0.55)`;
+        ctx.lineWidth = 1.5; ctx.setLineDash([4, 8]);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    ctx.restore(); // end clip
+
+    // Sync node DOM positions
     nodes.forEach(n => {
       const el = document.getElementById(`cn-${n.id}`);
       if (!el) return;
@@ -803,186 +861,329 @@ function initCanvasSection() {
       el.style.left      = `${s.x}px`;
       el.style.top       = `${s.y}px`;
       el.style.transform = `translate(-50%,-50%) scale(${vp.scale})`;
+      const rEl = el.querySelector('.node-rate');
+      if (rEl) rEl.textContent = `+${n.eps.toFixed(1)}/s`;
     });
   }
 
-  // ── Create a node element ─────────────────────
-  function addNode(wx, wy, label) {
+  /* ── addNode ──────────────────────────────── */
+  function addNode(type, wx, wy) {
+    const def = DEFS[type];
+    if (!def || !def.unlocked) return null;
     nodeSeq++;
-    const id  = nodeSeq;
-    const lbl = label || `Bloc ${id}`;
-    nodes.push({ id, x: wx, y: wy });
+    const id = nodeSeq;
+    nodes.push({ id, type, x: wx, y: wy, eps: def.base });
 
+    const [r,g,b] = def.col;
     const el = document.createElement('div');
-    el.className = 'canvas-node';
-    el.id        = `cn-${id}`;
-    el.dataset.id = String(id);
-
-    const labelEl = document.createElement('span');
-    labelEl.className       = 'node-label';
-    labelEl.contentEditable = 'true';
-    labelEl.spellcheck      = false;
-    labelEl.textContent     = lbl;
-    labelEl.addEventListener('pointerdown', e => e.stopPropagation());
-    labelEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); labelEl.blur(); } });
-
-    const connBtn = document.createElement('button');
-    connBtn.className = 'node-connect';
-    connBtn.title     = 'Connecter à un autre bloc';
-    connBtn.setAttribute('aria-label', 'Connecter');
-    connBtn.textContent = '·';
-    connBtn.addEventListener('pointerdown', e => e.stopPropagation());
-    connBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      if (connecting === null) {
-        connecting = id;
-        el.classList.add('connecting');
-        if (connHint) { connHint.textContent = 'Cliquez sur un autre bloc · Échap pour annuler'; connHint.classList.add('visible'); }
-      } else if (connecting !== id) {
-        const dup = edges.some(e2 => (e2.from === connecting && e2.to === id) || (e2.from === id && e2.to === connecting));
-        if (!dup) edges.push({ from: connecting, to: id });
-        document.getElementById(`cn-${connecting}`)?.classList.remove('connecting');
-        connecting = null;
-        if (connHint) connHint.classList.remove('visible');
-        draw();
-      }
-    });
-
-    el.appendChild(labelEl);
-    el.appendChild(connBtn);
+    el.className = `canvas-node`;
+    el.id = `cn-${id}`;
+    el.style.setProperty('--node-color', `rgb(${r},${g},${b})`);
+    el.innerHTML = `
+      <div class="node-port node-port-in"  data-nid="${id}"></div>
+      <div class="node-body">
+        <span class="node-icon">${def.icon}</span>
+        <div class="node-info">
+          <span class="node-name">${def.name}</span>
+          <span class="node-rate">+${def.base}/s</span>
+        </div>
+      </div>
+      <div class="node-port node-port-out" data-nid="${id}"></div>
+      <button class="node-dots" aria-label="Options">⋯</button>
+      <div class="node-menu">
+        <button class="ndm-item" data-action="rename">✏️ Renommer</button>
+        <button class="ndm-item danger" data-action="delete">🗑️ Supprimer</button>
+      </div>`;
     nodesDiv.appendChild(el);
 
-    // Drag node
-    el.addEventListener('pointerdown', e => {
-      if (e.target === labelEl || e.target === connBtn) return;
+    const body    = el.querySelector('.node-body');
+    const portOut = el.querySelector('.node-port-out');
+    const portIn  = el.querySelector('.node-port-in');
+    const dotsBtn = el.querySelector('.node-dots');
+    const menuEl  = el.querySelector('.node-menu');
+
+    // Drag node via body
+    body.addEventListener('pointerdown', e => {
       e.stopPropagation();
-      el.setPointerCapture(e.pointerId);
+      body.setPointerCapture(e.pointerId);
       const node = nodes.find(n => n.id === id);
-      dragging = { type: 'node', id, ox: e.clientX, oy: e.clientY, nx: node.x, ny: node.y };
+      nodeDrag = { id, ox: e.clientX, oy: e.clientY, nx: node.x, ny: node.y };
+      closeMenu();
     });
-    el.addEventListener('pointermove', e => {
-      if (!dragging || dragging.type !== 'node' || dragging.id !== id) return;
+    body.addEventListener('pointermove', e => {
+      if (!nodeDrag || nodeDrag.id !== id) return;
       const node = nodes.find(n => n.id === id);
       if (!node) return;
-      node.x = dragging.nx + (e.clientX - dragging.ox) / vp.scale;
-      node.y = dragging.ny + (e.clientY - dragging.oy) / vp.scale;
-      draw();
+      node.x = nodeDrag.nx + (e.clientX - nodeDrag.ox) / vp.scale;
+      node.y = nodeDrag.ny + (e.clientY - nodeDrag.oy) / vp.scale;
     });
-    el.addEventListener('pointerup', () => { if (dragging?.type === 'node') dragging = null; });
+    body.addEventListener('pointerup', () => { if (nodeDrag?.id === id) nodeDrag = null; });
 
-    // Double-click to delete
-    el.addEventListener('dblclick', e => {
-      if (e.target === labelEl) return;
+    // Output port starts connection drag
+    portOut.addEventListener('pointerdown', e => {
       e.stopPropagation();
-      const idx = nodes.findIndex(n => n.id === id);
-      if (idx !== -1) nodes.splice(idx, 1);
-      for (let i = edges.length - 1; i >= 0; i--) {
-        if (edges[i].from === id || edges[i].to === id) edges.splice(i, 1);
-      }
-      if (connecting === id) { connecting = null; if (connHint) connHint.classList.remove('visible'); }
-      el.remove();
-      draw();
+      portOut.setPointerCapture(e.pointerId);
+      connFrom = id;
+      const wr = wrapper.getBoundingClientRect();
+      connPos = { x: e.clientX - wr.left, y: e.clientY - wr.top };
+      closeMenu();
+    });
+    portOut.addEventListener('pointermove', e => {
+      if (connFrom !== id) return;
+      const wr = wrapper.getBoundingClientRect();
+      connPos = { x: e.clientX - wr.left, y: e.clientY - wr.top };
+    });
+    portOut.addEventListener('pointerup', e => {
+      if (connFrom !== id) return;
+      const wr = wrapper.getBoundingClientRect();
+      const sx = e.clientX - wr.left, sy = e.clientY - wr.top;
+      finishConnect(id, sx, sy);
     });
 
-    // Cursor hover registration
-    [el, connBtn].forEach(b => {
+    // Input port receives drop
+    portIn.addEventListener('pointerup', e => {
+      if (connFrom === null || connFrom === id) return;
+      e.stopPropagation();
+      const dup = edges.some(e2 => e2.from === connFrom && e2.to === id);
+      if (!dup) { edgeSeq++; edges.push({ id: edgeSeq, from: connFrom, to: id }); reEPS(); checkChals(); }
+      connFrom = null; connPos = null;
+    });
+
+    // 3-dots menu
+    dotsBtn.addEventListener('pointerdown', e => e.stopPropagation());
+    dotsBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const was = openMenuId === id;
+      closeMenu();
+      if (!was) { openMenuId = id; menuEl.classList.add('open'); }
+    });
+    menuEl.querySelectorAll('.ndm-item').forEach(btn => {
+      btn.addEventListener('pointerdown', e => e.stopPropagation());
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const action = btn.dataset.action;
+        closeMenu();
+        if (action === 'rename') {
+          const nameEl = el.querySelector('.node-name');
+          const v = prompt('Nouveau nom :', nameEl.textContent);
+          if (v && v.trim()) nameEl.textContent = v.trim();
+        } else if (action === 'delete') {
+          removeNode(id);
+        }
+      });
+    });
+
+    // Cursor hover
+    [el, portOut, portIn, dotsBtn].forEach(b => {
       b.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
       b.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
     });
 
-    draw();
+    reEPS(); renderShop(); checkChals();
     return id;
   }
 
-  // ── Pan ──────────────────────────────────────
-  wrapper.addEventListener('pointerdown', e => {
-    if (e.target !== canvas && !e.target.classList.contains('canvas-hint')) return;
-    wrapper.setPointerCapture(e.pointerId);
-    dragging = { type: 'pan', ox: e.clientX, oy: e.clientY, vpx: vp.x, vpy: vp.y };
-    wrapper.style.cursor = 'grabbing';
+  function finishConnect(fromId, sx, sy) {
+    for (const node of nodes) {
+      if (node.id === fromId) continue;
+      const ip = inP(node);
+      if (Math.hypot(ip.x - sx, ip.y - sy) < 20) {
+        const dup = edges.some(e2 => e2.from === fromId && e2.to === node.id);
+        if (!dup) { edgeSeq++; edges.push({ id: edgeSeq, from: fromId, to: node.id }); reEPS(); checkChals(); }
+        break;
+      }
+    }
+    connFrom = null; connPos = null;
+  }
+
+  function removeNode(id) {
+    const idx = nodes.findIndex(n => n.id === id);
+    if (idx !== -1) nodes.splice(idx, 1);
+    for (let i = edges.length-1; i>=0; i--) {
+      if (edges[i].from === id || edges[i].to === id) edges.splice(i, 1);
+    }
+    document.getElementById(`cn-${id}`)?.remove();
+    if (connFrom === id) { connFrom = null; connPos = null; }
+    if (openMenuId === id) openMenuId = null;
+    reEPS(); renderShop();
+  }
+
+  function closeMenu() {
+    if (openMenuId !== null) {
+      document.querySelector(`#cn-${openMenuId} .node-menu`)?.classList.remove('open');
+      openMenuId = null;
+    }
+  }
+
+  /* ── Pan (canvas click-drag) ──────────────── */
+  canvas.addEventListener('pointerdown', e => {
+    if (connFrom !== null) return;
+    canvas.setPointerCapture(e.pointerId);
+    panDrag = { ox: e.clientX, oy: e.clientY, vpx: vp.x, vpy: vp.y };
+    canvas.style.cursor = 'grabbing';
+    closeMenu();
   });
+  canvas.addEventListener('pointermove', e => {
+    if (!panDrag) return;
+    vp.x = panDrag.vpx + (e.clientX - panDrag.ox);
+    vp.y = panDrag.vpy + (e.clientY - panDrag.oy);
+  });
+  canvas.addEventListener('pointerup', () => { panDrag = null; canvas.style.cursor = ''; });
+
+  /* ── Connection drag fallback on wrapper ─────*/
   wrapper.addEventListener('pointermove', e => {
-    if (!dragging || dragging.type !== 'pan') return;
-    vp.x = dragging.vpx + (e.clientX - dragging.ox);
-    vp.y = dragging.vpy + (e.clientY - dragging.oy);
-    draw();
+    if (connFrom === null) return;
+    const wr = wrapper.getBoundingClientRect();
+    connPos = { x: e.clientX - wr.left, y: e.clientY - wr.top };
   });
-  wrapper.addEventListener('pointerup', () => {
-    if (dragging?.type === 'pan') { dragging = null; wrapper.style.cursor = ''; }
+  wrapper.addEventListener('pointerup', e => {
+    if (connFrom === null) return;
+    const wr = wrapper.getBoundingClientRect();
+    finishConnect(connFrom, e.clientX - wr.left, e.clientY - wr.top);
   });
 
-  // ── Zoom ─────────────────────────────────────
+  /* ── Zoom buttons (always) ────────────────── */
+  function doZoom(factor) {
+    const cx = canvasW() / 2, cy = canvas.height / 2;
+    const ns = Math.max(0.2, Math.min(3, vp.scale * factor));
+    vp.x = cx - (cx - vp.x) * (ns / vp.scale);
+    vp.y = cy - (cy - vp.y) * (ns / vp.scale);
+    vp.scale = ns;
+  }
+  document.getElementById('cv-zi')?.addEventListener('click', () => doZoom(1.25));
+  document.getElementById('cv-zo')?.addEventListener('click', () => doZoom(1/1.25));
+  document.getElementById('cv-rst')?.addEventListener('click', () => { vp.x = canvasW()/2; vp.y = canvas.height/2; vp.scale = 1; });
+  document.getElementById('cv-fs')?.addEventListener('click', () => {
+    if (!document.fullscreenElement) wrapper.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen();
+  });
+
+  /* ── Scroll zoom — fullscreen only ───────── */
   wrapper.addEventListener('wheel', e => {
+    if (!document.fullscreenElement) return;
     e.preventDefault();
-    const rect   = wrapper.getBoundingClientRect();
-    const mx     = e.clientX - rect.left;
-    const my     = e.clientY - rect.top;
-    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-    const ns     = Math.max(0.12, Math.min(4, vp.scale * factor));
+    const wr = wrapper.getBoundingClientRect();
+    const mx = e.clientX - wr.left, my = e.clientY - wr.top;
+    const f  = e.deltaY < 0 ? 1.1 : 1/1.1;
+    const ns = Math.max(0.2, Math.min(3, vp.scale * f));
     vp.x = mx - (mx - vp.x) * (ns / vp.scale);
     vp.y = my - (my - vp.y) * (ns / vp.scale);
     vp.scale = ns;
-    draw();
   }, { passive: false });
 
-  // ── Double-click to add node ──────────────────
-  wrapper.addEventListener('dblclick', e => {
-    if (e.target !== canvas) return;
-    const rect   = wrapper.getBoundingClientRect();
-    const { x, y } = s2w(e.clientX - rect.left, e.clientY - rect.top);
-    addNode(x, y);
-  });
-
-  // ── Keyboard: Escape cancels connection ───────
+  /* ── Escape exits fullscreen ──────────────── */
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && connecting !== null) {
-      document.getElementById(`cn-${connecting}`)?.classList.remove('connecting');
-      connecting = null;
-      if (connHint) connHint.classList.remove('visible');
-    }
+    if (e.key === 'Escape' && document.fullscreenElement) document.exitFullscreen();
   });
+  document.addEventListener('fullscreenchange', () => setTimeout(resize, 50));
 
-  // ── Toolbar ──────────────────────────────────
-  document.getElementById('canvas-add-btn')?.addEventListener('click', () => {
-    const { x, y } = s2w(canvas.width / 2 + (Math.random() - 0.5) * 80, canvas.height / 2 + (Math.random() - 0.5) * 80);
-    const id = addNode(x, y);
-    const el = document.getElementById(`cn-${id}`);
-    if (el) {
-      el.style.outline = '2px solid var(--accent)';
-      setTimeout(() => { el.style.outline = ''; }, 700);
+  /* ── Sidebar: shop ────────────────────────── */
+  function renderShop() {
+    const el = document.getElementById('csb-shop');
+    if (!el) return;
+    el.innerHTML = '';
+    Object.entries(DEFS).forEach(([type, def]) => {
+      if (!def.unlocked) return;
+      const [r,g,b] = def.col;
+      const can = totalEnergy >= def.cost;
+      const btn = document.createElement('button');
+      btn.className = `csb-item${can ? ' can' : ''}`;
+      btn.style.setProperty('--ic', `rgb(${r},${g},${b})`);
+      btn.innerHTML = `
+        <span class="csi-icon">${def.icon}</span>
+        <span class="csi-info"><b>${def.name}</b><small>${def.desc}</small></span>
+        <span class="csi-cost">${def.cost===0?'Gratuit':fmtN(def.cost)+'⚡'}</span>`;
+      btn.addEventListener('click', () => {
+        if (totalEnergy < def.cost) return;
+        totalEnergy -= def.cost;
+        const { x, y } = s2w(
+          canvasW()/2 + (Math.random()-0.5)*120,
+          canvas.height/2 + (Math.random()-0.5)*80
+        );
+        addNode(type, x, y);
+      });
+      btn.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+      btn.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
+      el.appendChild(btn);
+    });
+  }
+
+  /* ── Sidebar: challenges ──────────────────── */
+  function renderChals() {
+    const el = document.getElementById('csb-ch');
+    if (!el) return;
+    el.innerHTML = '';
+    CHALS.forEach(c => {
+      const div = document.createElement('div');
+      div.className = `csc-item${c.done ? ' done' : ''}`;
+      div.innerHTML = `
+        <span class="csc-icon">${c.done ? '✓' : '○'}</span>
+        <div><b>${c.title}</b><small>${c.desc}</small>${
+          !c.done && c.reward ? `<span class="csc-reward">→ Débloque ${DEFS[c.reward]?.name || ''}</span>` : ''
+        }</div>`;
+      el.appendChild(div);
+    });
+  }
+
+  function checkChals() {
+    let changed = false;
+    CHALS.forEach(c => {
+      if (!c.done && c.check()) {
+        c.done = true; changed = true;
+        if (c.reward && DEFS[c.reward]) {
+          DEFS[c.reward].unlocked = true;
+          const csb = document.getElementById('csb');
+          if (csb) { csb.classList.add('notif'); setTimeout(() => csb.classList.remove('notif'), 1400); }
+        }
+      }
+    });
+    if (changed) { renderChals(); renderShop(); }
+  }
+
+  /* ── Stats update ─────────────────────────── */
+  function updateStats() {
+    const ev  = document.getElementById('csb-ev');
+    const eps = document.getElementById('csb-eps');
+    if (ev)  ev.textContent  = fmtN(totalEnergy);
+    if (eps) eps.textContent = `+${energyPerSec.toFixed(1)} / sec`;
+    renderShop();
+  }
+
+  /* ── Main loop ────────────────────────────── */
+  function loop(ts) {
+    if (!lastTs) lastTs = ts;
+    const dt = Math.min((ts - lastTs) / 1000, 0.05);
+    lastTs = ts;
+    animT += dt;
+    totalEnergy += energyPerSec * dt;
+    if (Math.floor(animT * 2) !== Math.floor((animT - dt) * 2)) {
+      checkChals(); updateStats();
     }
-  });
-  document.getElementById('canvas-reset-view')?.addEventListener('click', () => {
-    vp.x = 0; vp.y = 0; vp.scale = 1; draw();
-  });
-  document.getElementById('canvas-clear-btn')?.addEventListener('click', () => {
-    nodes.length = 0; edges.length = 0;
-    nodesDiv.innerHTML = '';
-    connecting = null;
-    if (connHint) connHint.classList.remove('visible');
     draw();
-  });
-  document.getElementById('canvas-fullscreen-btn')?.addEventListener('click', () => {
-    if (!document.fullscreenElement) wrapper.requestFullscreen().catch(() => {});
-    else document.exitFullscreen();
-  });
-  document.addEventListener('fullscreenchange', () => { setTimeout(resize, 50); });
+    requestAnimationFrame(loop);
+  }
 
-  // ── Theme redraws ─────────────────────────────
-  new MutationObserver(() => draw())
+  /* ── Theme observer ───────────────────────── */
+  new MutationObserver(() => {})
     .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
-  // ── Init + pre-populated example ─────────────
+  /* ── Init ─────────────────────────────────── */
+  // Mark source as unlocked (only one unlocked by default)
+  DEFS.source.unlocked = true;
+
   resize();
   new ResizeObserver(resize).observe(wrapper);
 
-  const n1 = addNode(-180, -70,  'Frontend');
-  const n2 = addNode(  30, -90,  'Backend');
-  const n3 = addNode( 200,  20,  'Base de données');
-  const n4 = addNode(-110,  80,  'UI / Design');
-  const n5 = addNode(  60,  90,  'API REST');
-  edges.push({ from: n1, to: n2 }, { from: n2, to: n3 }, { from: n2, to: n5 }, { from: n4, to: n1 });
-  draw();
+  // Center viewport on origin after first layout
+  requestAnimationFrame(() => {
+    vp.x = canvasW() / 2;
+    vp.y = canvas.height / 2;
+    addNode('source', 0, 0);
+    renderChals();
+    renderShop();
+    updateStats();
+    requestAnimationFrame(loop);
+  });
 }
 
 // ─────────────────────────────────────────────

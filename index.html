@@ -357,18 +357,34 @@
       <span class="label-sep">/</span>
       <span>Terrain de jeu</span>
     </div>
-    <p class="canvas-intro reveal-up">Un espace infini. Double-cliquez pour créer un bloc, glissez pour déplacer, scroll pour zoomer.</p>
+    <p class="canvas-intro reveal-up">Construisez un réseau de blocs énergétiques. Connectez, amplifiez, accumulez de l'énergie.</p>
     <div id="canvas-wrapper">
       <canvas id="infinite-canvas" aria-hidden="true"></canvas>
-      <div id="canvas-nodes" aria-label="Blocs"></div>
-      <div id="canvas-connect-hint" class="canvas-connect-hint" aria-live="polite"></div>
+      <div id="canvas-nodes"></div>
+
+      <!-- Sidebar: stats / shop / challenges -->
+      <aside id="csb" aria-label="Panneau de jeu">
+        <div class="csb-stats">
+          <span id="csb-ev" class="csb-ev">0</span>
+          <span class="csb-el">énergie</span>
+          <span id="csb-eps" class="csb-eps">+0 / sec</span>
+        </div>
+        <p class="csb-ttl">BLOCS</p>
+        <div id="csb-shop" class="csb-shop"></div>
+        <div class="csb-sep"></div>
+        <p class="csb-ttl">DÉFIS</p>
+        <div id="csb-ch" class="csb-ch"></div>
+      </aside>
+
+      <!-- Toolbar (top-left) -->
       <div class="canvas-toolbar">
-        <button id="canvas-add-btn"        class="canvas-tool-btn">+ Bloc</button>
-        <button id="canvas-reset-view"     class="canvas-tool-btn">⊙ Reset</button>
-        <button id="canvas-clear-btn"      class="canvas-tool-btn">✕ Effacer</button>
-        <button id="canvas-fullscreen-btn" class="canvas-tool-btn">⤢</button>
+        <button id="cv-zi"  class="canvas-tool-btn" title="Zoom avant">+</button>
+        <button id="cv-zo"  class="canvas-tool-btn" title="Zoom arrière">−</button>
+        <button id="cv-rst" class="canvas-tool-btn" title="Recentrer">⊙</button>
+        <button id="cv-fs"  class="canvas-tool-btn" title="Plein écran">⤢</button>
       </div>
-      <span class="canvas-hint">Double-clic sur la grille pour ajouter · Glisser pour déplacer · Scroll pour zoomer</span>
+
+      <span class="canvas-hint">Glisser pour déplacer · ○ pour connecter · ⋯ pour les options du bloc</span>
     </div>
   </section>
 

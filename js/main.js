@@ -1415,16 +1415,18 @@ function initCanvasSection() {
   });
 
   /* ── Sidebar ────────────────────────────────────────────── */
+  const shopBtns = {};
+
   function renderShop() {
     const el = document.getElementById('csb-shop');
     if (!el) return;
     el.innerHTML = '';
+    Object.keys(shopBtns).forEach(k => delete shopBtns[k]);
     Object.entries(DEFS).forEach(([type, def]) => {
       if (!def.unlocked) return;
       const [r,g,b] = def.col;
-      const can = argent >= def.cost;
       const btn = document.createElement('button');
-      btn.className = `csb-item${can ? ' can' : ''}`;
+      btn.className = 'csb-item';
       btn.style.setProperty('--ic', `rgb(${r},${g},${b})`);
       btn.innerHTML = `
         <span class="csi-icon">${def.icon}</span>
@@ -1440,6 +1442,14 @@ function initCanvasSection() {
         addNode(type, x, y);
       });
       el.appendChild(btn);
+      shopBtns[type] = btn;
+    });
+    updateShopAffordability();
+  }
+
+  function updateShopAffordability() {
+    Object.entries(shopBtns).forEach(([type, btn]) => {
+      btn.classList.toggle('can', argent >= DEFS[type].cost);
     });
   }
 
@@ -1483,7 +1493,7 @@ function initCanvasSection() {
     if (dps) dps.textContent = `+${dataPerSec.toFixed(1)} / sec`;
     if (mEl) mEl.textContent = fmtN(argent);
     if (mps) mps.textContent = moneyPerSec > 0 ? `+${moneyPerSec.toFixed(2)} / sec` : '+0 / sec';
-    renderShop();
+    updateShopAffordability();
   }
 
   /* ── Main loop ──────────────────────────────────────────── */

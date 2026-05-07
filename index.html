@@ -12,6 +12,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="assets/css/main.css">
+  <script>
+    (function () {
+      const t = localStorage.getItem('portfolio-theme');
+      if (t && t !== 'dark') document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 </head>
 
 <body class="is-loading">
@@ -46,9 +52,16 @@
       <li><a href="#projects" class="nav-link">Projets</a></li>
       <li><a href="#contact" class="nav-link">Contact</a></li>
     </ul>
-    <div class="nav-socials">
-      <a href="https://github.com/Nin0A" target="_blank" rel="noopener noreferrer" class="nav-social">GH</a>
-      <a href="https://www.linkedin.com/in/nino-arcelin/" target="_blank" rel="noopener noreferrer" class="nav-social">LI</a>
+    <div class="nav-right">
+      <div class="theme-switcher" role="group" aria-label="Changer de thème">
+        <button class="theme-dot" data-theme="dark"  title="Sombre"  aria-label="Thème sombre"></button>
+        <button class="theme-dot" data-theme="light" title="Clair"   aria-label="Thème clair"></button>
+        <button class="theme-dot" data-theme="red"   title="Rouge"   aria-label="Thème rouge"></button>
+      </div>
+      <div class="nav-socials">
+        <a href="https://github.com/Nin0A" target="_blank" rel="noopener noreferrer" class="nav-social">GH</a>
+        <a href="https://www.linkedin.com/in/nino-arcelin/" target="_blank" rel="noopener noreferrer" class="nav-social">LI</a>
+      </div>
     </div>
   </nav>
 

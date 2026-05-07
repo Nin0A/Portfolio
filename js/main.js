@@ -334,9 +334,38 @@ function initAnchorScroll(lenis) {
 // ─────────────────────────────────────────────
 // Bootstrap
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// Theme switcher
+// ─────────────────────────────────────────────
+function applyTheme(theme) {
+  const root = document.documentElement;
+  root.classList.add('theme-transitioning');
+  setTimeout(() => root.classList.remove('theme-transitioning'), 400);
+
+  if (theme === 'dark') {
+    root.removeAttribute('data-theme');
+  } else {
+    root.setAttribute('data-theme', theme);
+  }
+  localStorage.setItem('portfolio-theme', theme);
+
+  document.querySelectorAll('.theme-dot').forEach(btn => {
+    btn.classList.toggle('is-active', btn.dataset.theme === theme);
+  });
+}
+
+function initThemeSwitcher() {
+  const saved = localStorage.getItem('portfolio-theme') || 'dark';
+  applyTheme(saved);
+  document.querySelectorAll('.theme-dot').forEach(btn => {
+    btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
+  });
+}
+
 async function init() {
   initGrain();
   initCursor();
+  initThemeSwitcher();
 
   // Wait for preloader to finish, then reveal hero
   await initPreloader();

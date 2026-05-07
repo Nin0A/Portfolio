@@ -24,59 +24,29 @@ function initGrain() {
 // Custom cursor + trail
 // ─────────────────────────────────────────────
 function initCursor() {
-  const dot    = document.getElementById('cursor-dot');
-  const ring   = document.getElementById('cursor-ring');
-  const cursor = document.getElementById('cursor');
+  const dot  = document.getElementById('cursor-dot');
+  const ring = document.getElementById('cursor-ring');
   let mx = 0, my = 0, rx = 0, ry = 0;
 
-  // Label inside ring (shown when cursor-project is active)
   const label = document.createElement('span');
   label.id = 'cursor-label';
   ring.appendChild(label);
 
-  // Trail dots — inside #cursor so they share its fixed stacking context
-  const TRAIL_N = 6;
-  const trail = Array.from({ length: TRAIL_N }, (_, i) => {
-    const d = document.createElement('div');
-    d.className = 'cursor-trail';
-    cursor.appendChild(d);
-    return { el: d, x: 0, y: 0, lag: 0.20 - i * 0.022 };
-  });
-
-  let trailReady = false;
   document.addEventListener('mousemove', e => {
     mx = e.clientX; my = e.clientY;
     gsap.set(dot, { x: mx, y: my });
-    if (!trailReady) {
-      trailReady = true;
-      trail.forEach((t, i) => {
-        t.x = mx; t.y = my;
-        gsap.to(t.el, { opacity: 0.28 - i * 0.04, duration: 0.6, delay: i * 0.05 });
-      });
-    }
   });
 
   (function animateRing() {
     rx += (mx - rx) * 0.12;
     ry += (my - ry) * 0.12;
     gsap.set(ring, { x: rx, y: ry });
-
-    // Each trail dot chases the previous with increasing lag
-    let px = rx, py = ry;
-    trail.forEach(t => {
-      t.x += (px - t.x) * t.lag;
-      t.y += (py - t.y) * t.lag;
-      gsap.set(t.el, { x: t.x, y: t.y });
-      px = t.x; py = t.y;
-    });
-
     requestAnimationFrame(animateRing);
   })();
 
   document.addEventListener('mouseenter', () => document.body.classList.remove('cursor-hidden'));
   document.addEventListener('mouseleave', () => document.body.classList.add('cursor-hidden'));
 
-  // Generic hover — a/button only; .project-item uses cursor-project (set in initProjectInteractions)
   document.querySelectorAll('a, button').forEach(el => {
     el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
     el.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));

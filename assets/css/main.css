@@ -1358,6 +1358,19 @@ body.is-loading .cursor-trail {
   pointer-events: none;
 }
 
+/* ── Native cursor in game UI (sidebar + toolbar) ── */
+#csb,
+#csb *,
+.canvas-toolbar,
+.canvas-toolbar * {
+  cursor: auto;
+}
+#csb button,
+#csb .csb-item,
+.canvas-toolbar button {
+  cursor: pointer;
+}
+
 /* ── Sidebar ── */
 #csb {
   position: absolute;

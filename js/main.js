@@ -706,135 +706,283 @@ function initAnchorScroll(lenis) {
 }
 
 // ─────────────────────────────────────────────
-// dev.idle — incremental game easter egg
+// Infinite canvas — pan/zoom node editor
 // ─────────────────────────────────────────────
-function initGame() {
-  const UPS = [
-    { id: 'coffee',  e: '☕', name: 'Café',         desc: '+1 ligne / sec',   base: 10,    ps: 1,  pc: 0  },
-    { id: 'snippet', e: '📋', name: 'Snippets',     desc: '+1 / clic',        base: 40,    ps: 0,  pc: 1  },
-    { id: 'npm',     e: '📦', name: 'npm install',  desc: '+5 lignes / sec',  base: 200,   ps: 5,  pc: 0  },
-    { id: 'copilot', e: '🤖', name: 'Copilot',      desc: '+3 / clic',        base: 750,   ps: 0,  pc: 3  },
-    { id: 'server',  e: '🖥️', name: 'Serveur VPS',  desc: '+25 lignes / sec', base: 3200,  ps: 25, pc: 0  },
-    { id: 'startup', e: '🚀', name: 'Startup',      desc: '+15 / clic',       base: 14000, ps: 0,  pc: 15 },
-  ];
+function initCanvasSection() {
+  const wrapper   = document.getElementById('canvas-wrapper');
+  const canvas    = document.getElementById('infinite-canvas');
+  const nodesDiv  = document.getElementById('canvas-nodes');
+  const connHint  = document.getElementById('canvas-connect-hint');
+  if (!wrapper || !canvas) return;
 
-  const KEY = 'nino-idle-v1';
-  let sv = {}; try { sv = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch {}
-  let lines = sv.lines || 0;
-  const owned = sv.owned || {};
+  const ctx = canvas.getContext('2d');
 
-  function fmt(n) {
-    n = Math.floor(n);
-    if (n < 1000) return String(n);
-    if (n < 1e6)  return (n / 1e3).toFixed(1).replace('.0','') + 'K';
-    if (n < 1e9)  return (n / 1e6).toFixed(1).replace('.0','') + 'M';
-    return (n / 1e9).toFixed(1).replace('.0','') + 'G';
+  // ── Viewport state ───────────────────────────
+  const vp = { x: 0, y: 0, scale: 1 };
+
+  // ── Data ─────────────────────────────────────
+  const nodes = []; // { id, x, y }
+  const edges = []; // { from, to }
+  let nodeSeq   = 0;
+  let dragging  = null; // { type:'pan'|'node', id?, ox, oy, vpx?, vpy?, nx?, ny? }
+  let connecting = null; // id of node being connected from
+
+  const GRID = 40; // world-space units per cell
+
+  // ── Coord helpers ────────────────────────────
+  function w2s(wx, wy) { return { x: wx * vp.scale + vp.x, y: wy * vp.scale + vp.y }; }
+  function s2w(sx, sy) { return { x: (sx - vp.x) / vp.scale, y: (sy - vp.y) / vp.scale }; }
+
+  // ── Resize ───────────────────────────────────
+  function resize() {
+    canvas.width  = wrapper.clientWidth;
+    canvas.height = wrapper.clientHeight;
+    draw();
   }
-  function stats() {
-    let pc = 1, ps = 0;
-    UPS.forEach(u => { pc += (owned[u.id]||0)*u.pc; ps += (owned[u.id]||0)*u.ps; });
-    return { pc, ps };
-  }
-  function upCost(u) { return Math.ceil(u.base * Math.pow(1.15, owned[u.id]||0)); }
-  function save()    { try { localStorage.setItem(KEY, JSON.stringify({ lines, owned })); } catch {} }
 
-  // ── Inject widget HTML ────────────────────────────────────
-  const w = document.createElement('div');
-  w.id = 'game-widget';
-  w.innerHTML = `
-    <button class="game-toggle magnetic" id="game-toggle" title="dev.idle">&gt;_</button>
-    <div id="game-panel" aria-hidden="true">
-      <div class="gtitlebar">
-        <span class="gdots"><i></i><i></i><i></i></span>
-        <span class="gfilename">dev.idle</span>
-        <button class="gclose" id="game-close">✕</button>
-      </div>
-      <div class="gbody">
-        <div class="gcounter">
-          <div id="game-count" class="gcount">0</div>
-          <div class="gcount-lbl">lignes de code</div>
-          <div id="game-lps" class="glps"></div>
-        </div>
-        <button id="game-click" class="gclick">
-          <span>écrire du code</span>
-          <span id="game-click-val" class="gclick-val">+1</span>
-        </button>
-        <p class="gups-lbl">AMÉLIORATIONS</p>
-        <div id="game-list" class="glist"></div>
-      </div>
-    </div>`;
-  document.body.appendChild(w);
+  // ── Main draw (grid + edges + node positions) ─
+  function draw() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
 
-  const panel    = document.getElementById('game-panel');
-  const countEl  = document.getElementById('game-count');
-  const lpsEl    = document.getElementById('game-lps');
-  const clickBtn = document.getElementById('game-click');
-  const cvalEl   = document.getElementById('game-click-val');
-  const listEl   = document.getElementById('game-list');
-  let open = false;
+    // Grid lines
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const step = GRID * vp.scale;
+    const ox = ((vp.x % step) + step) % step;
+    const oy = ((vp.y % step) + step) % step;
+    ctx.strokeStyle = isLight ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.07)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let gx = ox - step; gx < W + step; gx += step) { ctx.moveTo(gx, 0); ctx.lineTo(gx, H); }
+    for (let gy = oy - step; gy < H + step; gy += step) { ctx.moveTo(0, gy); ctx.lineTo(W, gy); }
+    ctx.stroke();
 
-  function toggle(state) {
-    open = state;
-    panel.classList.toggle('is-open', open);
-    panel.setAttribute('aria-hidden', String(!open));
-  }
-  document.getElementById('game-toggle').addEventListener('click', () => toggle(!open));
-  document.getElementById('game-close').addEventListener('click', e => { e.stopPropagation(); toggle(false); });
+    // Subtle origin cross
+    const o = w2s(0, 0);
+    ctx.strokeStyle = isLight ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (o.x >= 0 && o.x <= W) { ctx.moveTo(o.x, 0); ctx.lineTo(o.x, H); }
+    if (o.y >= 0 && o.y <= H) { ctx.moveTo(0, o.y); ctx.lineTo(W, o.y); }
+    ctx.stroke();
 
-  // Cursor hover for game buttons (initCursor runs before initGame)
-  w.querySelectorAll('button').forEach(b => {
-    b.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-    b.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
-  });
+    // Edges (bezier curves)
+    const accentRaw = getComputedStyle(document.documentElement).getPropertyValue('--accent-rgb').trim() || '201,245,101';
+    edges.forEach(e => {
+      const fn = nodes.find(n => n.id === e.from);
+      const tn = nodes.find(n => n.id === e.to);
+      if (!fn || !tn) return;
+      const fs = w2s(fn.x, fn.y);
+      const ts = w2s(tn.x, tn.y);
+      const dx = (ts.x - fs.x) * 0.55;
+      ctx.beginPath();
+      ctx.moveTo(fs.x, fs.y);
+      ctx.bezierCurveTo(fs.x + dx, fs.y, ts.x - dx, ts.y, ts.x, ts.y);
+      ctx.strokeStyle = `rgba(${accentRaw},0.6)`;
+      ctx.lineWidth   = Math.max(1, 1.5 * vp.scale);
+      ctx.stroke();
 
-  // ── Click to code ─────────────────────────────────────────
-  clickBtn.addEventListener('click', () => {
-    const { pc } = stats();
-    lines += pc;
-    // Floating +n
-    const f = document.createElement('span');
-    f.className = 'game-float';
-    f.textContent = `+${fmt(pc)}`;
-    document.body.appendChild(f);
-    const r = clickBtn.getBoundingClientRect();
-    gsap.set(f, { x: r.left + r.width / 2, y: r.top, xPercent: -50 });
-    gsap.to(f, { y: r.top - 44, opacity: 0, duration: 0.72, ease: 'power2.out',
-                 onComplete: () => f.remove() });
-    render();
-  });
+      // Arrow head
+      const angle = Math.atan2(ts.y - (ts.y - (ts.y - ts.y + 0)), ts.x - (ts.x - dx));
+      const aw = 8 * Math.min(1, vp.scale);
+      const headAngle = Math.atan2(ts.y - (fs.y + (ts.y - fs.y) * 0.5), ts.x - (fs.x + (ts.x - fs.x) * 0.5));
+      ctx.beginPath();
+      ctx.moveTo(ts.x, ts.y);
+      ctx.lineTo(ts.x - aw * Math.cos(headAngle - 0.4), ts.y - aw * Math.sin(headAngle - 0.4));
+      ctx.lineTo(ts.x - aw * Math.cos(headAngle + 0.4), ts.y - aw * Math.sin(headAngle + 0.4));
+      ctx.closePath();
+      ctx.fillStyle = `rgba(${accentRaw},0.7)`;
+      ctx.fill();
+    });
 
-  // ── Render ────────────────────────────────────────────────
-  function render() {
-    const { pc, ps } = stats();
-    if (countEl) countEl.textContent = fmt(lines);
-    if (lpsEl)   lpsEl.textContent   = ps > 0 ? `+${fmt(ps)} ligne${ps > 1 ? 's' : ''}/sec` : '';
-    if (cvalEl)  cvalEl.textContent  = `+${fmt(pc)}`;
-
-    if (!listEl) return;
-    listEl.innerHTML = '';
-    UPS.forEach(u => {
-      const c = upCost(u), n = owned[u.id]||0, can = lines >= c;
-      const btn = document.createElement('button');
-      btn.className = `gup${can ? ' can' : ''}`;
-      btn.innerHTML = `<span class="gue">${u.e}</span>
-        <span class="gui"><b>${u.name}</b><small>${u.desc}</small></span>
-        <span class="gur"><span class="gucost">${fmt(c)}</span>${n?`<span class="gun">×${n}</span>`:''}</span>`;
-      btn.addEventListener('click', () => {
-        if (lines < upCost(u)) return;
-        lines -= upCost(u);
-        owned[u.id] = (owned[u.id]||0) + 1;
-        save(); render();
-      });
-      // cursor hover for dynamically created buttons
-      btn.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-      btn.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
-      listEl.appendChild(btn);
+    // Sync node element positions
+    nodes.forEach(n => {
+      const el = document.getElementById(`cn-${n.id}`);
+      if (!el) return;
+      const s = w2s(n.x, n.y);
+      el.style.left      = `${s.x}px`;
+      el.style.top       = `${s.y}px`;
+      el.style.transform = `translate(-50%,-50%) scale(${vp.scale})`;
     });
   }
 
-  setInterval(() => { const { ps } = stats(); if (ps > 0) { lines += ps; render(); } }, 1000);
-  setInterval(save, 5000);
-  render();
+  // ── Create a node element ─────────────────────
+  function addNode(wx, wy, label) {
+    nodeSeq++;
+    const id  = nodeSeq;
+    const lbl = label || `Bloc ${id}`;
+    nodes.push({ id, x: wx, y: wy });
+
+    const el = document.createElement('div');
+    el.className = 'canvas-node';
+    el.id        = `cn-${id}`;
+    el.dataset.id = String(id);
+
+    const labelEl = document.createElement('span');
+    labelEl.className       = 'node-label';
+    labelEl.contentEditable = 'true';
+    labelEl.spellcheck      = false;
+    labelEl.textContent     = lbl;
+    labelEl.addEventListener('pointerdown', e => e.stopPropagation());
+    labelEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); labelEl.blur(); } });
+
+    const connBtn = document.createElement('button');
+    connBtn.className = 'node-connect';
+    connBtn.title     = 'Connecter à un autre bloc';
+    connBtn.setAttribute('aria-label', 'Connecter');
+    connBtn.textContent = '·';
+    connBtn.addEventListener('pointerdown', e => e.stopPropagation());
+    connBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (connecting === null) {
+        connecting = id;
+        el.classList.add('connecting');
+        if (connHint) { connHint.textContent = 'Cliquez sur un autre bloc · Échap pour annuler'; connHint.classList.add('visible'); }
+      } else if (connecting !== id) {
+        const dup = edges.some(e2 => (e2.from === connecting && e2.to === id) || (e2.from === id && e2.to === connecting));
+        if (!dup) edges.push({ from: connecting, to: id });
+        document.getElementById(`cn-${connecting}`)?.classList.remove('connecting');
+        connecting = null;
+        if (connHint) connHint.classList.remove('visible');
+        draw();
+      }
+    });
+
+    el.appendChild(labelEl);
+    el.appendChild(connBtn);
+    nodesDiv.appendChild(el);
+
+    // Drag node
+    el.addEventListener('pointerdown', e => {
+      if (e.target === labelEl || e.target === connBtn) return;
+      e.stopPropagation();
+      el.setPointerCapture(e.pointerId);
+      const node = nodes.find(n => n.id === id);
+      dragging = { type: 'node', id, ox: e.clientX, oy: e.clientY, nx: node.x, ny: node.y };
+    });
+    el.addEventListener('pointermove', e => {
+      if (!dragging || dragging.type !== 'node' || dragging.id !== id) return;
+      const node = nodes.find(n => n.id === id);
+      if (!node) return;
+      node.x = dragging.nx + (e.clientX - dragging.ox) / vp.scale;
+      node.y = dragging.ny + (e.clientY - dragging.oy) / vp.scale;
+      draw();
+    });
+    el.addEventListener('pointerup', () => { if (dragging?.type === 'node') dragging = null; });
+
+    // Double-click to delete
+    el.addEventListener('dblclick', e => {
+      if (e.target === labelEl) return;
+      e.stopPropagation();
+      const idx = nodes.findIndex(n => n.id === id);
+      if (idx !== -1) nodes.splice(idx, 1);
+      for (let i = edges.length - 1; i >= 0; i--) {
+        if (edges[i].from === id || edges[i].to === id) edges.splice(i, 1);
+      }
+      if (connecting === id) { connecting = null; if (connHint) connHint.classList.remove('visible'); }
+      el.remove();
+      draw();
+    });
+
+    // Cursor hover registration
+    [el, connBtn].forEach(b => {
+      b.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+      b.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
+    });
+
+    draw();
+    return id;
+  }
+
+  // ── Pan ──────────────────────────────────────
+  wrapper.addEventListener('pointerdown', e => {
+    if (e.target !== canvas && !e.target.classList.contains('canvas-hint')) return;
+    wrapper.setPointerCapture(e.pointerId);
+    dragging = { type: 'pan', ox: e.clientX, oy: e.clientY, vpx: vp.x, vpy: vp.y };
+    wrapper.style.cursor = 'grabbing';
+  });
+  wrapper.addEventListener('pointermove', e => {
+    if (!dragging || dragging.type !== 'pan') return;
+    vp.x = dragging.vpx + (e.clientX - dragging.ox);
+    vp.y = dragging.vpy + (e.clientY - dragging.oy);
+    draw();
+  });
+  wrapper.addEventListener('pointerup', () => {
+    if (dragging?.type === 'pan') { dragging = null; wrapper.style.cursor = ''; }
+  });
+
+  // ── Zoom ─────────────────────────────────────
+  wrapper.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rect   = wrapper.getBoundingClientRect();
+    const mx     = e.clientX - rect.left;
+    const my     = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    const ns     = Math.max(0.12, Math.min(4, vp.scale * factor));
+    vp.x = mx - (mx - vp.x) * (ns / vp.scale);
+    vp.y = my - (my - vp.y) * (ns / vp.scale);
+    vp.scale = ns;
+    draw();
+  }, { passive: false });
+
+  // ── Double-click to add node ──────────────────
+  wrapper.addEventListener('dblclick', e => {
+    if (e.target !== canvas) return;
+    const rect   = wrapper.getBoundingClientRect();
+    const { x, y } = s2w(e.clientX - rect.left, e.clientY - rect.top);
+    addNode(x, y);
+  });
+
+  // ── Keyboard: Escape cancels connection ───────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && connecting !== null) {
+      document.getElementById(`cn-${connecting}`)?.classList.remove('connecting');
+      connecting = null;
+      if (connHint) connHint.classList.remove('visible');
+    }
+  });
+
+  // ── Toolbar ──────────────────────────────────
+  document.getElementById('canvas-add-btn')?.addEventListener('click', () => {
+    const { x, y } = s2w(canvas.width / 2 + (Math.random() - 0.5) * 80, canvas.height / 2 + (Math.random() - 0.5) * 80);
+    const id = addNode(x, y);
+    const el = document.getElementById(`cn-${id}`);
+    if (el) {
+      el.style.outline = '2px solid var(--accent)';
+      setTimeout(() => { el.style.outline = ''; }, 700);
+    }
+  });
+  document.getElementById('canvas-reset-view')?.addEventListener('click', () => {
+    vp.x = 0; vp.y = 0; vp.scale = 1; draw();
+  });
+  document.getElementById('canvas-clear-btn')?.addEventListener('click', () => {
+    nodes.length = 0; edges.length = 0;
+    nodesDiv.innerHTML = '';
+    connecting = null;
+    if (connHint) connHint.classList.remove('visible');
+    draw();
+  });
+  document.getElementById('canvas-fullscreen-btn')?.addEventListener('click', () => {
+    if (!document.fullscreenElement) wrapper.requestFullscreen().catch(() => {});
+    else document.exitFullscreen();
+  });
+  document.addEventListener('fullscreenchange', () => { setTimeout(resize, 50); });
+
+  // ── Theme redraws ─────────────────────────────
+  new MutationObserver(() => draw())
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  // ── Init + pre-populated example ─────────────
+  resize();
+  new ResizeObserver(resize).observe(wrapper);
+
+  const n1 = addNode(-180, -70,  'Frontend');
+  const n2 = addNode(  30, -90,  'Backend');
+  const n3 = addNode( 200,  20,  'Base de données');
+  const n4 = addNode(-110,  80,  'UI / Design');
+  const n5 = addNode(  60,  90,  'API REST');
+  edges.push({ from: n1, to: n2 }, { from: n2, to: n3 }, { from: n2, to: n5 }, { from: n4, to: n1 });
+  draw();
 }
 
 // ─────────────────────────────────────────────
@@ -857,7 +1005,7 @@ async function init() {
   initTicker();
   initProjectInteractions();
   initProjectPreview();
-  initGame();
+  initCanvasSection();
   initMagnetic();
   initContactForm();
   initAnchorScroll(lenis);

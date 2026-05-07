@@ -104,7 +104,7 @@ function initThreeHero() {
   function accentColor() {
     const raw = getComputedStyle(document.documentElement)
       .getPropertyValue('--accent').trim();
-    try { return new THREE.Color(raw); } catch { return new THREE.Color('#c9f565'); }
+    try { return new THREE.Color(raw); } catch { return new THREE.Color('#4da6ff'); }
   }
 
   // ── Large wireframe icosahedron (right side) ──────────────
@@ -706,7 +706,7 @@ function initAnchorScroll(lenis) {
 }
 
 // ─────────────────────────────────────────────
-// Canvas — réseau de données / IA (incremental)
+// Canvas — infrastructure réseau (incremental)
 // ─────────────────────────────────────────────
 function initCanvasSection() {
   const wrapper  = document.getElementById('canvas-wrapper');
@@ -716,30 +716,35 @@ function initCanvasSection() {
   const ctx = canvas.getContext('2d');
 
   /* ── Block definitions ─────────────────────────────────────
-     cat: 'col' = collecteur  |  'proc' = processeur  |  'mon' = monétiseur
-     accepts: which categories can feed this block (null = no inputs)
-     bm: bonus multiplier — col: unused | proc: output = influx*bm | mon: argent = influx*bm
+     cat: 'end'/'srv' = sources | 'lan'/'net'/'sec' = relays | 'wan' = monetizer
+     accepts: which categories can feed this block (null = no inputs allowed)
+     bm: relay→ output = influx*bm ; wan→ mps = influx*bm
   ─────────────────────────────────────────────────────────── */
   const DEFS = {
-    sensor:     { icon:'🌐', name:'Capteur Web',    cat:'col', col:[96,165,250],   base:2,  bm:0,    cost:0,    unlocked:true,  accepts:null,              desc:'+2 données/sec' },
-    iot:        { icon:'📡', name:'Antenne IoT',    cat:'col', col:[52,211,153],   base:5,  bm:0,    cost:150,  unlocked:false, accepts:null,              desc:'+5 données/sec' },
-    satellite:  { icon:'🛰️', name:'Satellite',     cat:'col', col:[167,139,250],  base:15, bm:0,    cost:2000, unlocked:false, accepts:null,              desc:'+15 données/sec' },
-    aggregator: { icon:'🔗', name:'Agrégateur',    cat:'proc', col:[201,245,101],  base:0,  bm:1.5,  cost:100,  unlocked:false, accepts:['col'],           desc:'×1.5 par flux entrant (capteurs)' },
-    ai:         { icon:'🧠', name:'Modèle IA',     cat:'proc', col:[245,158,11],   base:0,  bm:2.5,  cost:800,  unlocked:false, accepts:['col','proc'],    desc:'×2.5 par flux entrant' },
-    api:        { icon:'💸', name:'API Market',    cat:'mon',  col:[232,121,249],  base:0,  bm:0.15, cost:200,  unlocked:false, accepts:['col','proc'],    desc:'Vend les données → 0.15 💰/donnée' },
-    fund:       { icon:'🏦', name:'Fonds Data',    cat:'mon',  col:[251,191,36],   base:0,  bm:0.4,  cost:3500, unlocked:false, accepts:['col','proc','mon'],desc:'Investissement → 0.4 💰/donnée' },
+    pc:         { icon:'💻', name:'Poste PC',     cat:'end', col:[96,165,250],  base:2,  bm:0,    cost:0,    unlocked:true,  accepts:null,                     desc:'+2 paquets/sec',         ip:'192.168.1' },
+    serveur:    { icon:'🖥️', name:'Serveur',      cat:'srv', col:[236,72,153],  base:8,  bm:0,    cost:300,  unlocked:false, accepts:null,                     desc:'+8 paquets/sec',         ip:'10.1.0'    },
+    switch_:    { icon:'🔌', name:'Switch',       cat:'lan', col:[52,211,153],  base:0,  bm:1.5,  cost:150,  unlocked:false, accepts:['end','srv','lan'],       desc:'×1.5 flux LAN entrant',  ip:'10.0.0'    },
+    routeur:    { icon:'📡', name:'Routeur',      cat:'net', col:[167,139,250], base:0,  bm:2,    cost:500,  unlocked:false, accepts:['end','lan','srv','net'], desc:'×2 flux entrant',        ip:'172.16.0'  },
+    firewall:   { icon:'🛡️', name:'Pare-feu',   cat:'sec', col:[249,115,22],  base:0,  bm:1.5,  cost:1200, unlocked:false, accepts:['end','lan','net'],      desc:'×1.5 · trafic sécurisé', ip:'10.10.0'   },
+    fai:        { icon:'☁️', name:'FAI / Cloud', cat:'wan', col:[251,191,36],  base:0,  bm:0.15, cost:200,  unlocked:false, accepts:['net','sec'],            desc:'0.15 💰/paquet',         ip:'1.1.1'     },
+    datacenter: { icon:'🏢', name:'Datacenter',  cat:'wan', col:[239,68,68],   base:0,  bm:0.4,  cost:3500, unlocked:false, accepts:['net','sec','srv'],      desc:'0.4 💰/paquet',          ip:'8.8.8'     },
   };
 
-  const CAT_LABEL = { col: 'COLLECTEUR', proc: 'PROCESSEUR', mon: 'MONÉTISEUR' };
+  const CAT_LABEL = { end:'POSTE', srv:'SERVEUR', lan:'LAN', net:'RÉSEAU', sec:'SÉCURITÉ', wan:'WAN' };
+  const ipCounters = {};
+  function nextIP(def) {
+    ipCounters[def.ip] = (ipCounters[def.ip] || 0) + 1;
+    return `${def.ip}.${ipCounters[def.ip]}`;
+  }
 
   /* ── Challenges ─────────────────────────────────────────── */
   const CHALS = [
-    { id:'c1', title:'Collecte initiale', desc:'Accumuler 10 données',    done:false, reward:'aggregator', check:()=>totalData>=10 },
-    { id:'c2', title:'Réseau connecté',   desc:'Créer une connexion',     done:false, reward:'api',        check:()=>edges.length>=1 },
-    { id:'c3', title:'100 données',       desc:'Accumuler 100 données',   done:false, reward:'iot',        check:()=>totalData>=100 },
-    { id:'c4', title:'Bien connecté',     desc:'Avoir 5 connexions',      done:false, reward:'ai',         check:()=>edges.length>=5 },
-    { id:'c5', title:'1 000 données',     desc:'Accumuler 1 000 données', done:false, reward:'satellite',  check:()=>totalData>=1000 },
-    { id:'c6', title:'500 argent',        desc:'Avoir 500 argent',        done:false, reward:'fund',       check:()=>argent>=500 },
+    { id:'c1', title:'Premier câble',   desc:'Connecter 2 appareils',          done:false, reward:'switch_',    check:()=>edges.length>=1 },
+    { id:'c2', title:'Réseau local',    desc:'Avoir 3 appareils en ligne',      done:false, reward:'routeur',    check:()=>onlineCount()>=3 },
+    { id:'c3', title:'30 paquets',      desc:'Accumuler 30 paquets de trafic',  done:false, reward:'fai',        check:()=>totalData>=30 },
+    { id:'c4', title:'5 connexions',    desc:'Avoir 5 câbles réseau',           done:false, reward:'firewall',   check:()=>edges.length>=5 },
+    { id:'c5', title:'300 paquets',     desc:'Accumuler 300 paquets',           done:false, reward:'serveur',    check:()=>totalData>=300 },
+    { id:'c6', title:'500 argent',      desc:'Avoir 500 argent',                done:false, reward:'datacenter', check:()=>argent>=500 },
   ];
 
   /* ── State ─────────────────────────────────────────────── */
@@ -748,7 +753,7 @@ function initCanvasSection() {
   const edges = [];
   let nodeSeq = 0, edgeSeq = 0;
   let totalData = 0, dataPerSec = 0;
-  let argent = 500, moneyPerSec = 0; // start with seed funding
+  let argent = 500, moneyPerSec = 0;
   let animT = 0, lastTs = 0;
 
   let panDrag = null, nodeDrag = null;
@@ -769,34 +774,56 @@ function initCanvasSection() {
     return (n/1e6).toFixed(1).replace('.0','')+'M';
   }
   function canvasW() { return canvas.width - CSB_W; }
+  function onlineCount() { return nodes.filter(n => n.online).length; }
 
   /* ── Resize ─────────────────────────────────────────────── */
   function resize() { canvas.width = wrapper.clientWidth; canvas.height = wrapper.clientHeight; }
 
-  /* ── Rate computation (topological passes) ──────────────── */
+  /* ── Online status (BFS backward from WAN nodes) ─────────── */
+  function computeOnline() {
+    const onlineSet = new Set();
+    nodes.filter(n => DEFS[n.type].cat === 'wan').forEach(n => onlineSet.add(n.id));
+    let changed = true;
+    while (changed) {
+      changed = false;
+      edges.forEach(e => {
+        if (onlineSet.has(e.to) && !onlineSet.has(e.from)) {
+          onlineSet.add(e.from);
+          changed = true;
+        }
+      });
+    }
+    nodes.forEach(n => { n.online = onlineSet.has(n.id); });
+  }
+
+  /* ── Rate computation ────────────────────────────────────── */
   function reRates() {
     nodes.forEach(n => { n.dps = 0; n.mps = 0; });
 
-    // Pass 1: collectors produce independently
-    nodes.filter(n => DEFS[n.type].cat === 'col').forEach(n => { n.dps = DEFS[n.type].base; });
+    // Base sources
+    nodes.filter(n => ['end','srv'].includes(DEFS[n.type].cat)).forEach(n => {
+      n.dps = DEFS[n.type].base;
+    });
 
-    // Passes 2-4: processors (handles proc→proc chains up to depth 3)
-    for (let p = 0; p < 3; p++) {
-      nodes.filter(n => DEFS[n.type].cat === 'proc').forEach(n => {
+    // Relay passes — handles chains up to depth 4
+    for (let p = 0; p < 4; p++) {
+      nodes.filter(n => ['lan','net','sec'].includes(DEFS[n.type].cat)).forEach(n => {
         const influx = edges.filter(e => e.to === n.id)
           .reduce((s, e) => s + (nodes.find(nd => nd.id === e.from)?.dps || 0), 0);
         n.dps = influx > 0 ? influx * DEFS[n.type].bm : 0;
       });
     }
 
-    // Pass 5: monetizers convert data flow → money
-    nodes.filter(n => DEFS[n.type].cat === 'mon').forEach(n => {
+    // WAN converts data flow → money
+    nodes.filter(n => DEFS[n.type].cat === 'wan').forEach(n => {
       const influx = edges.filter(e => e.to === n.id)
         .reduce((s, e) => s + (nodes.find(nd => nd.id === e.from)?.dps || 0), 0);
       n.mps = influx * DEFS[n.type].bm;
     });
 
-    dataPerSec  = nodes.reduce((s, n) => s + (n.dps || 0), 0);
+    computeOnline();
+
+    dataPerSec  = nodes.filter(n => DEFS[n.type].cat !== 'wan').reduce((s, n) => s + (n.dps || 0), 0);
     moneyPerSec = nodes.reduce((s, n) => s + (n.mps || 0), 0);
   }
 
@@ -806,7 +833,7 @@ function initCanvasSection() {
     const toNode   = nodes.find(n => n.id === toId);
     if (!fromNode || !toNode) return false;
     const acc = DEFS[toNode.type].accepts;
-    if (acc === null) return false; // target accepts no inputs
+    if (acc === null) return false;
     return acc.includes(DEFS[fromNode.type].cat);
   }
 
@@ -844,8 +871,7 @@ function initCanvasSection() {
       if (!fn || !tn) return;
       const fp = outP(fn), tp = inP(tn);
       const cpx = Math.max(Math.abs(tp.x - fp.x) * 0.5, 50);
-      const isMonEdge = DEFS[fn.type].cat === 'mon';
-      const [r,g,b] = isMonEdge ? [251,191,36] : DEFS[fn.type].col;
+      const [r,g,b] = DEFS[fn.type].col;
 
       ctx.save();
       ctx.beginPath();
@@ -883,7 +909,7 @@ function initCanvasSection() {
 
     ctx.restore();
 
-    // Sync node DOM positions + rate labels
+    // Sync node DOM positions, rate labels, online dot
     nodes.forEach(n => {
       const el = document.getElementById(`cn-${n.id}`);
       if (!el) return;
@@ -891,11 +917,13 @@ function initCanvasSection() {
       el.style.left      = `${s.x}px`;
       el.style.top       = `${s.y}px`;
       el.style.transform = `translate(-50%,-50%) scale(${vp.scale})`;
+      const dotEl = el.querySelector('.node-online-dot');
+      if (dotEl) dotEl.className = `node-online-dot${n.online ? ' is-online' : ''}`;
       const rEl = el.querySelector('.node-rate');
       if (rEl) {
         const def = DEFS[n.type];
-        if (def.cat === 'mon') rEl.textContent = n.mps > 0 ? `+${n.mps.toFixed(2)}💰/s` : '0💰/s';
-        else                   rEl.textContent = n.dps > 0 ? `+${n.dps.toFixed(1)}📊/s`  : `+${def.base}📊/s`;
+        if (def.cat === 'wan') rEl.textContent = n.mps > 0 ? `+${n.mps.toFixed(2)} 💰/s` : '0 💰/s';
+        else                   rEl.textContent = n.dps > 0 ? `+${n.dps.toFixed(1)} 📦/s` : (def.base > 0 ? `+${def.base} 📦/s` : '0 📦/s');
       }
     });
   }
@@ -906,7 +934,8 @@ function initCanvasSection() {
     if (!def || !def.unlocked) return null;
     nodeSeq++;
     const id = nodeSeq;
-    nodes.push({ id, type, x: wx, y: wy, dps: def.base, mps: 0 });
+    const ip = nextIP(def);
+    nodes.push({ id, type, x: wx, y: wy, dps: def.base, mps: 0, online: false, ip });
 
     const [r,g,b] = def.col;
     const el = document.createElement('div');
@@ -919,16 +948,17 @@ function initCanvasSection() {
         <span class="node-icon">${def.icon}</span>
         <div class="node-info">
           <span class="node-name">${def.name}</span>
-          <span class="node-rate">+${def.base}📊/s</span>
+          <span class="node-rate">${def.base > 0 ? '+'+def.base+' 📦/s' : '0 📦/s'}</span>
         </div>
       </div>
+      <span class="node-online-dot"></span>
       <div class="node-port node-port-out"></div>
       <button class="node-dots" aria-label="Options">⋯</button>
       <div class="node-menu">
         <button class="ndm-item" data-action="rename">✏️ Renommer</button>
         <button class="ndm-item danger" data-action="delete">🗑️ Supprimer</button>
       </div>
-      <span class="node-cat">${CAT_LABEL[def.cat]}</span>`;
+      <span class="node-cat">${ip}</span>`;
     nodesDiv.appendChild(el);
 
     const body    = el.querySelector('.node-body');
@@ -1206,7 +1236,7 @@ function initCanvasSection() {
   requestAnimationFrame(() => {
     vp.x = canvasW() / 2;
     vp.y = canvas.height / 2;
-    addNode('sensor', 0, 0);
+    addNode('pc', 0, 0);
     renderChals();
     renderShop();
     updateStats();

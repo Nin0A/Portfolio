@@ -9,8 +9,8 @@
   --bg-3: #1e1e1e;
   --text: #f0ece4;
   --text-muted: #666;
-  --accent: #c9f565;
-  --accent-rgb: 201, 245, 101;
+  --accent: #4da6ff;
+  --accent-rgb: 77, 166, 255;
   --accent-text: #0b0b0b;
   --border: rgba(240, 236, 228, 0.07);
   --border-hover: rgba(240, 236, 228, 0.18);
@@ -991,8 +991,8 @@ body.is-loading .cursor-trail {
 
 .project-item:hover .project-tags span {
   color: var(--accent);
-  border-color: rgba(201, 245, 101, 0.25);
-  background: rgba(201, 245, 101, 0.06);
+  border-color: rgba(var(--accent-rgb), 0.25);
+  background: rgba(var(--accent-rgb), 0.06);
 }
 
 .project-arrow {
@@ -1683,7 +1683,25 @@ body.is-loading .cursor-trail {
   letter-spacing: 0.02em;
 }
 
-/* Category badge */
+/* Online status dot */
+.node-online-dot {
+  position: absolute;
+  top: 8px;
+  right: 30px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.3;
+  pointer-events: none;
+  transition: background 0.4s, opacity 0.4s, box-shadow 0.4s;
+}
+.node-online-dot.is-online {
+  background: #4ade80;
+  opacity: 1;
+  box-shadow: 0 0 5px rgba(74, 222, 128, 0.6);
+}
+
+/* Category badge (repurposed as IP label) */
 .node-cat {
   position: absolute;
   bottom: 4px;

@@ -784,9 +784,6 @@ function initCanvasSection() {
   let connFrom = null, connPos = null;
   let openMenuId = null;
   let ipcTargetId = null, apsTargetId = null;
-  let rectSel = null;
-  const selectedIds = new Set();
-
   const NW = 160, GRID = 40, CSB_W = 220, CSB_H = 150;
 
   /* ── Helpers ────────────────────────────────────────────── */
@@ -1156,22 +1153,6 @@ function initCanvasSection() {
       }
     }
 
-    // Rectangle selection
-    if (rectSel) {
-      const rx = Math.min(rectSel.x0, rectSel.x1);
-      const ry = Math.min(rectSel.y0, rectSel.y1);
-      const rw = Math.abs(rectSel.x1 - rectSel.x0);
-      const rh = Math.abs(rectSel.y1 - rectSel.y0);
-      ctx.save();
-      ctx.strokeStyle = `rgba(var(--accent-rgb, 77,166,255), 0.8)`;
-      ctx.strokeStyle = `rgba(77,166,255,0.8)`;
-      ctx.fillStyle   = `rgba(77,166,255,0.07)`;
-      ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
-      ctx.strokeRect(rx, ry, rw, rh);
-      ctx.fillRect(rx, ry, rw, rh);
-      ctx.restore();
-    }
-
     ctx.restore();
 
     // Sync DOM nodes
@@ -1182,7 +1163,6 @@ function initCanvasSection() {
       el.style.left      = `${s.x}px`;
       el.style.top       = `${s.y}px`;
       el.style.transform = `translate(-50%,-50%) scale(${vp.scale})`;
-      el.classList.toggle('selected', selectedIds.has(n.id));
 
       const dotEl = el.querySelector('.node-online-dot');
       if (dotEl) dotEl.className = `node-online-dot${n.online ? ' is-online' : ''}`;
@@ -1272,7 +1252,6 @@ function initCanvasSection() {
       body.setPointerCapture(e.pointerId);
       const node = nodes.find(n => n.id === id);
       nodeDrag = { id, ox: e.clientX, oy: e.clientY, nx: node.x, ny: node.y };
-      if (!e.shiftKey && !selectedIds.has(id)) selectedIds.clear();
       closeMenu();
     });
     body.addEventListener('pointermove', e => {
@@ -1395,54 +1374,20 @@ function initCanvasSection() {
     }
   }
 
-  /* ── Pan (middle-click) + Rectangle selection (left-click) ── */
-  canvas.addEventListener('contextmenu', e => e.preventDefault()); // prevent right-click menu
+  /* ── Pan ────────────────────────────────────────────────── */
   canvas.addEventListener('pointerdown', e => {
     if (connFrom !== null) return;
     canvas.setPointerCapture(e.pointerId);
+    panDrag = { ox: e.clientX, oy: e.clientY, vpx: vp.x, vpy: vp.y };
+    canvas.style.cursor = 'grabbing';
     closeMenu();
-    if (e.button === 1) {
-      // Middle-click: pan
-      panDrag = { ox: e.clientX, oy: e.clientY, vpx: vp.x, vpy: vp.y };
-      canvas.style.cursor = 'grabbing';
-    } else if (e.button === 0) {
-      // Left-click: start rectangle selection
-      const wr = wrapper.getBoundingClientRect();
-      const sx = e.clientX - wr.left, sy = e.clientY - wr.top;
-      rectSel = { x0: sx, y0: sy, x1: sx, y1: sy };
-      if (!e.shiftKey) selectedIds.clear();
-    }
   });
   canvas.addEventListener('pointermove', e => {
-    if (panDrag) {
-      vp.x = panDrag.vpx + (e.clientX - panDrag.ox);
-      vp.y = panDrag.vpy + (e.clientY - panDrag.oy);
-    } else if (rectSel) {
-      const wr = wrapper.getBoundingClientRect();
-      rectSel.x1 = e.clientX - wr.left;
-      rectSel.y1 = e.clientY - wr.top;
-    }
+    if (!panDrag) return;
+    vp.x = panDrag.vpx + (e.clientX - panDrag.ox);
+    vp.y = panDrag.vpy + (e.clientY - panDrag.oy);
   });
-  canvas.addEventListener('pointerup', e => {
-    if (panDrag) {
-      panDrag = null;
-      canvas.style.cursor = '';
-    } else if (rectSel) {
-      const minX = Math.min(rectSel.x0, rectSel.x1);
-      const minY = Math.min(rectSel.y0, rectSel.y1);
-      const maxX = Math.max(rectSel.x0, rectSel.x1);
-      const maxY = Math.max(rectSel.y0, rectSel.y1);
-      if (maxX - minX > 6 || maxY - minY > 6) {
-        nodes.forEach(n => {
-          const s = w2s(n.x, n.y);
-          if (s.x >= minX && s.x <= maxX && s.y >= minY && s.y <= maxY) {
-            selectedIds.add(n.id);
-          }
-        });
-      }
-      rectSel = null;
-    }
-  });
+  canvas.addEventListener('pointerup', () => { panDrag = null; canvas.style.cursor = ''; });
 
   wrapper.addEventListener('pointermove', e => {
     if (!connFrom) return;

@@ -42,43 +42,45 @@
 
 /* ── Red ── */
 [data-theme="red"] {
-  --bg: #0d0707;
-  --bg-2: #1a0d0d;
-  --bg-3: #261414;
-  --text: #f5edeb;
-  --text-muted: #7a5656;
+  --bg: #ffffff;
+  --bg-2: #f5f5f5;
+  --bg-3: #ebebeb;
+  --text: #111111;
+  --text-muted: #888;
   --accent: #e8291c;
-  --accent-text: #f5edeb;
-  --border: rgba(245, 237, 235, 0.07);
-  --border-hover: rgba(245, 237, 235, 0.18);
-  --grain-opacity: 0.042;
+  --accent-text: #ffffff;
+  --border: rgba(0, 0, 0, 0.07);
+  --border-hover: rgba(0, 0, 0, 0.2);
+  --grain-opacity: 0.014;
 }
 
-/* Red theme — key typographic elements in red */
-[data-theme="red"] .hero-title em,
-[data-theme="red"] .contact-headline em {
+/* Red theme — typographic accents in red */
+[data-theme="red"] .hero-title em {
   color: var(--accent);
 }
 
-[data-theme="red"] .hero-title .hero-line:last-child {
-  -webkit-text-stroke: 1px var(--accent);
-  color: transparent;
+[data-theme="red"] .contact-headline em {
+  color: var(--accent);
 }
 
 [data-theme="red"] .stat-num {
   color: var(--accent);
 }
 
-[data-theme="red"] .project-name {
-  color: var(--text);
+[data-theme="red"] .about-lead strong {
+  color: var(--accent);
+}
+
+[data-theme="red"] .label-num {
+  color: var(--accent);
 }
 
 [data-theme="red"] .project-item:hover .project-name {
   color: var(--accent);
 }
 
-[data-theme="red"] .about-lead strong {
-  color: var(--accent);
+[data-theme="red"] .hero-scroll-line {
+  background: linear-gradient(to bottom, var(--accent), transparent);
 }
 
 /* Smooth theme transition */
@@ -267,26 +269,36 @@ body.cursor-hidden #cursor-ring {
   justify-content: space-between;
   padding: 0 var(--pad-x);
   z-index: 900;
-  /* Always transparent — text adapts via mix-blend-mode */
+  /* Always transparent — color set dynamically by JS luminance detection */
 }
 
-/* mix-blend-mode: difference makes white text auto-invert
-   on any background color, pixel by pixel */
+/* Nav text color: JS adds .over-dark or .over-light based on
+   the computed background luminance of elements behind the nav */
 .nav-logo,
-.nav-links,
-.nav-socials {
-  mix-blend-mode: difference;
+.nav-link,
+.nav-social {
+  transition: color 0.3s ease, opacity 0.2s;
+}
+
+#nav.over-dark .nav-logo,
+#nav.over-dark .nav-link,
+#nav.over-dark .nav-social {
+  color: #f0ece4;
+}
+
+#nav.over-light .nav-logo,
+#nav.over-light .nav-link,
+#nav.over-light .nav-social {
+  color: #111111;
 }
 
 .nav-logo {
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: white;
-  transition: opacity 0.2s;
 }
 
-.nav-logo:hover { opacity: 0.7; }
+.nav-logo:hover { opacity: 0.65; }
 
 .nav-links {
   display: flex;
@@ -298,8 +310,6 @@ body.cursor-hidden #cursor-ring {
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.02em;
-  color: white;
-  transition: opacity 0.2s;
   position: relative;
 }
 
@@ -310,11 +320,11 @@ body.cursor-hidden #cursor-ring {
   left: 0;
   width: 0;
   height: 1px;
-  background: white;
+  background: currentColor;
   transition: width 0.3s var(--ease-expo);
 }
 
-.nav-link:hover { opacity: 0.7; }
+.nav-link:hover { opacity: 0.65; }
 
 .nav-link:hover::after {
   width: 100%;
@@ -383,11 +393,9 @@ body.cursor-hidden #cursor-ring {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
-  color: white;
-  transition: opacity 0.2s;
 }
 
-.nav-social:hover { opacity: 0.7; }
+.nav-social:hover { opacity: 0.65; }
 
 /* ============================================================
    SCROLL PROGRESS

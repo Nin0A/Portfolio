@@ -327,8 +327,59 @@ function initAnchorScroll(lenis) {
 // Bootstrap
 // ─────────────────────────────────────────────
 // ─────────────────────────────────────────────
+// Nav color — real luminance detection
+// Reads the actual computed background behind
+// the nav on every scroll tick, pixel-accurate
+// ─────────────────────────────────────────────
+function initNavColor() {
+  const nav = document.getElementById('nav');
+
+  // Get the background color of the first non-transparent element at (x, y),
+  // skipping nav itself
+  function getBgRgb(x, y) {
+    const els = document.elementsFromPoint(x, y);
+    for (const el of els) {
+      if (el === nav || nav.contains(el)) continue;
+      const bg = getComputedStyle(el).backgroundColor;
+      const m  = bg.match(/[\d.]+/g);
+      if (m && m.length >= 3 && parseFloat(m[3] ?? '1') > 0.05) {
+        return [+m[0], +m[1], +m[2]];
+      }
+    }
+    // Fallback: read the CSS variable --bg directly
+    const hex = getComputedStyle(document.documentElement)
+      .getPropertyValue('--bg').trim();
+    if (hex.startsWith('#') && hex.length >= 7) {
+      return [
+        parseInt(hex.slice(1, 3), 16),
+        parseInt(hex.slice(3, 5), 16),
+        parseInt(hex.slice(5, 7), 16),
+      ];
+    }
+    return [11, 11, 11]; // safe dark fallback
+  }
+
+  function update() {
+    const x = window.innerWidth / 2;
+    const y = nav.offsetHeight + 2; // just below the nav bar
+    const [r, g, b] = getBgRgb(x, y);
+    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    nav.classList.toggle('over-light', lum > 0.5);
+    nav.classList.toggle('over-dark',  lum <= 0.5);
+  }
+
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update, { passive: true });
+  update();
+
+  return update; // returned so applyTheme can call it after theme change
+}
+
+// ─────────────────────────────────────────────
 // Theme switcher
 // ─────────────────────────────────────────────
+let _navColorUpdate = null;
+
 function applyTheme(theme) {
   const root = document.documentElement;
   root.classList.add('theme-transitioning');
@@ -344,6 +395,9 @@ function applyTheme(theme) {
   document.querySelectorAll('.theme-dot').forEach(btn => {
     btn.classList.toggle('is-active', btn.dataset.theme === theme);
   });
+
+  // Re-evaluate nav color after CSS variables update
+  if (_navColorUpdate) requestAnimationFrame(_navColorUpdate);
 }
 
 function initThemeSwitcher() {
@@ -358,6 +412,7 @@ async function init() {
   initGrain();
   initCursor();
   initThemeSwitcher();
+  _navColorUpdate = initNavColor();
 
   // Wait for preloader to finish, then reveal hero
   await initPreloader();

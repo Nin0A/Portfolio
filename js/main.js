@@ -709,34 +709,46 @@ function initAnchorScroll(lenis) {
 // Canvas — infrastructure réseau / IP game
 // ─────────────────────────────────────────────
 function initCanvasSection() {
-  const wrapper  = document.getElementById('canvas-wrapper');
-  const canvas   = document.getElementById('infinite-canvas');
-  const nodesDiv = document.getElementById('canvas-nodes');
-  const ipcModal = document.getElementById('ip-cfg');
+  const wrapper   = document.getElementById('canvas-wrapper');
+  const canvas    = document.getElementById('infinite-canvas');
+  const nodesDiv  = document.getElementById('canvas-nodes');
+  const ipcModal  = document.getElementById('ip-cfg');
+  const apsModal  = document.getElementById('app-store');
   if (!wrapper || !canvas) return;
   const ctx = canvas.getContext('2d');
 
   /* ── Block definitions ──────────────────────────────────────
-     Traffic flows: end/srv → lan → net/sec → wan
-     Online = node has a valid IP-configured path reaching a wan node
-     Revenue = online sources × wan rate × security bonus
+     end/srv = sources (no input port; need IP+GW to go online)
+     lan     = switch (4 input ports max, L2 transparent)
+     net/sec = routing layer (need LAN IP + WAN IP configured)
+     wan     = internet exit (fixed IPs, always reachable)
+     Revenue = apps on online nodes × security/datacenter multiplier
   ─────────────────────────────────────────────────────────── */
   const DEFS = {
-    pc:         { icon:'💻', name:'Poste PC',     cat:'end', col:[96,165,250],  base:2,  cost:0,    unlocked:true,  accepts:null,              desc:'+2 💰/s · nécessite IP+GW' },
-    switch_:    { icon:'🔌', name:'Switch',       cat:'lan', col:[52,211,153],  base:0,  cost:100,  unlocked:true,  accepts:['end','srv','lan'],desc:'Relie les appareils LAN'    },
-    routeur:    { icon:'📡', name:'Routeur',      cat:'net', col:[167,139,250], base:0,  cost:300,  unlocked:true,  accepts:['end','lan','srv'],desc:'Configure IP LAN + WAN'     },
-    fai:        { icon:'☁️', name:'FAI / Cloud', cat:'wan', col:[251,191,36],  base:0,  cost:150,  unlocked:true,  accepts:['net','sec'],      desc:'0.15 💰/paquet · IP 1.1.1.1'},
-    firewall:   { icon:'🛡️', name:'Pare-feu',   cat:'sec', col:[249,115,22],  base:0,  cost:800,  unlocked:false, accepts:['end','lan','net'],desc:'×1.5 revenu · IP LAN + WAN' },
-    serveur:    { icon:'🖥️', name:'Serveur',     cat:'srv', col:[236,72,153],  base:10, cost:600,  unlocked:false, accepts:null,              desc:'+10 💰/s · nécessite IP+GW' },
-    datacenter: { icon:'🏢', name:'Datacenter',  cat:'wan', col:[239,68,68],   base:0,  cost:3000, unlocked:false, accepts:['net','sec'],      desc:'0.4 💰/paquet · IP 8.8.8.1' },
+    pc:         { icon:'💻', name:'Poste PC',     cat:'end', col:[96,165,250],  cost:0,    unlocked:true,  accepts:null,              desc:'Installe des apps pour gagner 💰' },
+    switch_:    { icon:'🔌', name:'Switch',       cat:'lan', col:[52,211,153],  cost:100,  unlocked:true,  accepts:['end','srv','lan'],desc:'4 ports · relie le LAN' },
+    routeur:    { icon:'📡', name:'Routeur',      cat:'net', col:[167,139,250], cost:300,  unlocked:true,  accepts:['end','lan','srv'],desc:'Configure IP LAN + WAN' },
+    fai:        { icon:'☁️', name:'FAI / Cloud', cat:'wan', col:[251,191,36],  cost:150,  unlocked:true,  accepts:['net','sec'],      desc:'Accès internet · 1.1.1.1' },
+    firewall:   { icon:'🛡️', name:'Pare-feu',   cat:'sec', col:[249,115,22],  cost:800,  unlocked:false, accepts:['end','lan','net'],desc:'×1.5 revenus sécurisés' },
+    serveur:    { icon:'🖥️', name:'Serveur',     cat:'srv', col:[236,72,153],  cost:600,  unlocked:false, accepts:null,              desc:'Apps serveur haute perf.' },
+    datacenter: { icon:'🏢', name:'Datacenter',  cat:'wan', col:[239,68,68],   cost:3000, unlocked:false, accepts:['net','sec'],      desc:'×2 revenus globaux · 8.8.8.1' },
+  };
+
+  /* ── App definitions ─────────────────────────────────────── */
+  const APP_DEFS = {
+    browser:  { icon:'🌐', name:'Navigateur Web',    cost:50,   rev:1,   for:['end','srv'] },
+    email:    { icon:'📧', name:'Client Email',      cost:150,  rev:3,   for:['end']       },
+    office:   { icon:'💼', name:'Suite Bureautique', cost:400,  rev:8,   for:['end']       },
+    webapp:   { icon:'🌍', name:'Serveur Web',       cost:500,  rev:15,  for:['srv']       },
+    mining:   { icon:'⛏️', name:'Minage Crypto',    cost:1200, rev:20,  for:['end','srv'] },
+    database: { icon:'🗄️', name:'Base de données',  cost:1500, rev:30,  for:['srv']       },
+    trading:  { icon:'📈', name:'Bot de Trading',    cost:4000, rev:60,  for:['end','srv'] },
+    ai_srv:   { icon:'🤖', name:'IA en Production',  cost:8000, rev:120, for:['srv']       },
   };
 
   const CAT_LABEL = { end:'POSTE', srv:'SERVEUR', lan:'LAN', net:'RÉSEAU', sec:'SÉCURITÉ', wan:'WAN' };
+  const WAN_ADDR  = { fai: '1.1.1.1', datacenter: '8.8.8.1' };
 
-  /* fixed WAN addresses */
-  const WAN_ADDR = { fai: '1.1.1.1', datacenter: '8.8.8.1' };
-
-  /* default cfg template per cat */
   function defaultCfg(type) {
     const cat = DEFS[type].cat;
     if (['end','srv'].includes(cat)) return { addr: '', gw: '' };
@@ -745,14 +757,18 @@ function initCanvasSection() {
     return {};
   }
 
+  function nodeAppRevenue(n) {
+    return n.apps?.reduce((s, a) => s + (APP_DEFS[a]?.rev || 0), 0) || 0;
+  }
+
   /* ── Challenges ─────────────────────────────────────────── */
   const CHALS = [
-    { id:'c1', title:'LAN connecté',      desc:'Relier un PC à un Switch',              done:false, reward:null,         check:()=>edges.some(e=>{const a=nodes.find(n=>n.id===e.from),b=nodes.find(n=>n.id===e.to);return a&&b&&(a.type==='pc'||b.type==='pc')&&(a.type==='switch_'||b.type==='switch_');}) },
-    { id:'c2', title:'Routeur configuré', desc:'Configurer l\'IP LAN d\'un Routeur',     done:false, reward:'firewall',   check:()=>nodes.some(n=>n.type==='routeur'&&isValidIP(n.cfg.lanIp)) },
-    { id:'c3', title:'En ligne !',        desc:'Mettre un appareil en ligne',             done:false, reward:'serveur',    check:()=>onlineCount()>=1 },
-    { id:'c4', title:'Réseau actif',      desc:'Avoir 3 appareils en ligne',              done:false, reward:'datacenter', check:()=>onlineCount()>=3 },
-    { id:'c5', title:'1 000 💰',          desc:'Accumuler 1 000 argent',                  done:false, reward:null,         check:()=>argent>=1000 },
-    { id:'c6', title:'Réseau sécurisé',   desc:'Mettre un Pare-feu en ligne',             done:false, reward:null,         check:()=>nodes.some(n=>n.type==='firewall'&&n.online) },
+    { id:'c1', title:'LAN connecté',      desc:'Relier un PC à un Switch',                    done:false, reward:null,         check:()=>edges.some(e=>{const a=nodes.find(n=>n.id===e.from),b=nodes.find(n=>n.id===e.to);return a&&b&&(a.type==='pc'||b.type==='pc')&&(a.type==='switch_'||b.type==='switch_');}) },
+    { id:'c2', title:'Routeur configuré', desc:"Configurer l'IP LAN d'un Routeur",             done:false, reward:'firewall',   check:()=>nodes.some(n=>n.type==='routeur'&&isValidIP(n.cfg.lanIp)) },
+    { id:'c3', title:'En ligne !',        desc:'Mettre un appareil en ligne',                   done:false, reward:'serveur',    check:()=>onlineCount()>=1 },
+    { id:'c4', title:'Première app',      desc:'Installer une app sur un PC en ligne',          done:false, reward:'datacenter', check:()=>nodes.some(n=>n.online&&n.apps?.length>0) },
+    { id:'c5', title:'1 000 💰',          desc:'Accumuler 1 000 argent',                        done:false, reward:null,         check:()=>argent>=1000 },
+    { id:'c6', title:'Réseau sécurisé',   desc:'Mettre un Pare-feu en ligne',                   done:false, reward:null,         check:()=>nodes.some(n=>n.type==='firewall'&&n.online) },
   ];
 
   /* ── State ─────────────────────────────────────────────── */
@@ -767,7 +783,7 @@ function initCanvasSection() {
   let panDrag = null, nodeDrag = null;
   let connFrom = null, connPos = null;
   let openMenuId = null;
-  let ipcTargetId = null;
+  let ipcTargetId = null, apsTargetId = null;
 
   const NW = 160, GRID = 40, CSB_W = 220;
 
@@ -862,22 +878,26 @@ function initCanvasSection() {
   /* ── Rate computation ────────────────────────────────────── */
   function reRates() {
     computeOnline();
-    dataPerSec = nodes.reduce((s, n) => s + (n.online ? (DEFS[n.type].base || 0) : 0), 0);
-    let wanRate = 0;
-    if (nodes.some(n => n.online && n.type === 'datacenter')) wanRate = 0.4;
-    else if (nodes.some(n => n.online && DEFS[n.type].cat === 'wan')) wanRate = 0.15;
+    // Trafic = online device count × 2 (network activity metric)
+    dataPerSec = nodes.filter(n => n.online).length * 2;
+    // Revenue from apps on online nodes
+    const appRev = nodes.reduce((s, n) => s + (n.online ? nodeAppRevenue(n) : 0), 0);
     const secBonus = Math.pow(1.5, nodes.filter(n => n.online && n.type === 'firewall').length);
-    moneyPerSec = dataPerSec * wanRate * secBonus;
+    const dcBonus  = Math.pow(2,   nodes.filter(n => n.online && n.type === 'datacenter').length);
+    moneyPerSec = appRev * secBonus * dcBonus;
   }
 
-  /* ── Connection validation (physical topology) ──────────── */
+  /* ── Connection validation ──────────────────────────────── */
   function canConnect(fromId, toId) {
     const fn = nodes.find(n => n.id === fromId);
     const tn = nodes.find(n => n.id === toId);
     if (!fn || !tn) return false;
     const acc = DEFS[tn.type].accepts;
     if (acc === null) return false;
-    return acc.includes(DEFS[fn.type].cat);
+    if (!acc.includes(DEFS[fn.type].cat)) return false;
+    // Switch port limit: max 4 input connections
+    if (DEFS[tn.type].cat === 'lan' && edges.filter(e => e.to === toId).length >= 4) return false;
+    return true;
   }
 
   function flashError(nodeId) {
@@ -885,6 +905,35 @@ function initCanvasSection() {
     if (!el) return;
     el.classList.add('error');
     setTimeout(() => el.classList.remove('error'), 500);
+  }
+
+  /* ── IP auto-suggest ─────────────────────────────────────── */
+  function suggestIPForNode(nodeId) {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return null;
+    const visited = new Set([nodeId]);
+    const queue = [nodeId];
+    while (queue.length) {
+      const curr = queue.shift();
+      for (const e of edges.filter(e2 => e2.from === curr)) {
+        const to = nodes.find(n => n.id === e.to);
+        if (!to || visited.has(to.id)) continue;
+        visited.add(to.id);
+        if (['net','sec'].includes(DEFS[to.type].cat) && isValidIP(to.cfg.lanIp)) {
+          const subnet = to.cfg.lanIp.split('.').slice(0,3).join('.');
+          const used = new Set(nodes
+            .filter(n => n.id !== nodeId && isValidIP(n.cfg?.addr) && n.cfg.addr.startsWith(subnet+'.'))
+            .map(n => +n.cfg.addr.split('.')[3])
+          );
+          used.add(+to.cfg.lanIp.split('.')[3]);
+          let octet = 10;
+          while (used.has(octet) && octet < 254) octet++;
+          return { addr: `${subnet}.${octet}`, gw: to.cfg.lanIp };
+        }
+        queue.push(to.id);
+      }
+    }
+    return null;
   }
 
   /* ── IP config modal ─────────────────────────────────────── */
@@ -899,18 +948,27 @@ function initCanvasSection() {
     document.getElementById('ipc-err').textContent = '';
 
     const body = document.getElementById('ipc-body');
+    const suggestBtn = `<button type="button" id="ipc-suggest" class="ipc-suggest-btn">📡 Suggestion auto (depuis la topologie)</button>`;
     if (['end','srv'].includes(cat)) {
       body.innerHTML = `
         <label>Adresse IP<input id="ipc-f1" placeholder="ex. 192.168.1.10" value="${node.cfg.addr||''}"></label>
-        <label>Passerelle (Gateway)<input id="ipc-f2" placeholder="ex. 192.168.1.1" value="${node.cfg.gw||''}"></label>`;
+        <label>Passerelle (Gateway)<input id="ipc-f2" placeholder="ex. 192.168.1.1" value="${node.cfg.gw||''}"></label>
+        ${suggestBtn}`;
+      document.getElementById('ipc-suggest')?.addEventListener('click', () => {
+        const sug = suggestIPForNode(ipcTargetId);
+        if (!sug) { document.getElementById('ipc-err').textContent = 'Aucun routeur configuré trouvé en aval.'; return; }
+        document.getElementById('ipc-f1').value = sug.addr;
+        document.getElementById('ipc-f2').value = sug.gw;
+        document.getElementById('ipc-err').textContent = '';
+      });
     } else if (['net','sec'].includes(cat)) {
       body.innerHTML = `
         <label>IP LAN (côté réseau local)<input id="ipc-f1" placeholder="ex. 192.168.1.1" value="${node.cfg.lanIp||''}"></label>
-        <label>IP WAN (côté internet)<input id="ipc-f2" placeholder="ex. 1.1.1.2" value="${node.cfg.wanIp||''}"></label>`;
+        <label>IP WAN (côté internet — doit être en 1.1.1.x)<input id="ipc-f2" placeholder="ex. 1.1.1.2" value="${node.cfg.wanIp||''}"></label>`;
     } else if (cat === 'wan') {
       body.innerHTML = `<p class="ipc-fixed">Adresse fixe : <b>${node.cfg.addr}</b><br>Sous-réseau WAN : <b>${node.cfg.addr.split('.').slice(0,3).join('.')}.0/24</b></p>`;
     } else {
-      body.innerHTML = `<p class="ipc-fixed">Aucune configuration IP requise pour un Switch.</p>`;
+      body.innerHTML = `<p class="ipc-fixed">Switch : aucune IP requise (L2 transparent).</p>`;
     }
     ipcModal.classList.add('open');
     setTimeout(() => body.querySelector('input')?.focus(), 50);
@@ -921,18 +979,25 @@ function initCanvasSection() {
     if (!node || !ipcModal) return;
     const cat = DEFS[node.type].cat;
     const err = document.getElementById('ipc-err');
-    const f1 = document.getElementById('ipc-f1')?.value.trim();
-    const f2 = document.getElementById('ipc-f2')?.value.trim();
+    const f1v = document.getElementById('ipc-f1')?.value.trim();
+    const f2v = document.getElementById('ipc-f2')?.value.trim();
+    document.querySelectorAll('#ipc-body input').forEach(i => i.classList.remove('invalid'));
+    err.textContent = '';
 
     if (['end','srv'].includes(cat)) {
-      if (!isValidIP(f1)) { err.textContent = 'Adresse IP invalide.'; document.getElementById('ipc-f1')?.classList.add('invalid'); return; }
-      if (!isValidIP(f2)) { err.textContent = 'Passerelle invalide.'; document.getElementById('ipc-f2')?.classList.add('invalid'); return; }
-      if (!sameNet24(f1, f2)) { err.textContent = 'L\'IP et la passerelle doivent être dans le même sous-réseau /24.'; return; }
-      node.cfg.addr = f1; node.cfg.gw = f2;
+      if (!isValidIP(f1v)) { err.textContent = 'Adresse IP invalide.'; document.getElementById('ipc-f1').classList.add('invalid'); return; }
+      if (!isValidIP(f2v)) { err.textContent = 'Passerelle invalide.'; document.getElementById('ipc-f2').classList.add('invalid'); return; }
+      if (!sameNet24(f1v, f2v)) { err.textContent = 'IP et passerelle doivent être dans le même /24.'; return; }
+      // Check uniqueness against all IPs on the network
+      const allUsed = nodes.filter(n => n.id !== ipcTargetId).flatMap(n => [n.cfg?.addr, n.cfg?.lanIp].filter(Boolean));
+      if (allUsed.includes(f1v)) { err.textContent = 'Cette adresse IP est déjà utilisée.'; document.getElementById('ipc-f1').classList.add('invalid'); return; }
+      node.cfg.addr = f1v; node.cfg.gw = f2v;
     } else if (['net','sec'].includes(cat)) {
-      if (!isValidIP(f1)) { err.textContent = 'IP LAN invalide.'; document.getElementById('ipc-f1')?.classList.add('invalid'); return; }
-      if (!isValidIP(f2)) { err.textContent = 'IP WAN invalide.'; document.getElementById('ipc-f2')?.classList.add('invalid'); return; }
-      node.cfg.lanIp = f1; node.cfg.wanIp = f2;
+      if (!isValidIP(f1v)) { err.textContent = 'IP LAN invalide.'; document.getElementById('ipc-f1').classList.add('invalid'); return; }
+      if (!isValidIP(f2v)) { err.textContent = 'IP WAN invalide.'; document.getElementById('ipc-f2').classList.add('invalid'); return; }
+      const allUsed = nodes.filter(n => n.id !== ipcTargetId).flatMap(n => [n.cfg?.addr, n.cfg?.lanIp, n.cfg?.wanIp].filter(Boolean));
+      if (allUsed.includes(f1v)) { err.textContent = 'IP LAN déjà utilisée.'; document.getElementById('ipc-f1').classList.add('invalid'); return; }
+      node.cfg.lanIp = f1v; node.cfg.wanIp = f2v;
     }
 
     ipcModal.classList.remove('open');
@@ -940,10 +1005,7 @@ function initCanvasSection() {
     reRates(); checkChals(); renderShop();
   }
 
-  function closeIPConfig() {
-    ipcModal?.classList.remove('open');
-    ipcTargetId = null;
-  }
+  function closeIPConfig() { ipcModal?.classList.remove('open'); ipcTargetId = null; }
 
   if (ipcModal) {
     document.getElementById('ipc-close')?.addEventListener('click', closeIPConfig);
@@ -951,12 +1013,75 @@ function initCanvasSection() {
     document.getElementById('ipc-apply')?.addEventListener('click', applyIPConfig);
     ipcModal.addEventListener('click', e => { if (e.target === ipcModal) closeIPConfig(); });
     ipcModal.addEventListener('keydown', e => { if (e.key === 'Enter') applyIPConfig(); if (e.key === 'Escape') closeIPConfig(); });
-    [document.getElementById('ipc-close'), document.getElementById('ipc-cancel'),
-     document.getElementById('ipc-apply')].forEach(b => {
+    [document.getElementById('ipc-close'), document.getElementById('ipc-cancel'), document.getElementById('ipc-apply')].forEach(b => {
       if (!b) return;
       b.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
       b.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
     });
+  }
+
+  /* ── App store modal ─────────────────────────────────────── */
+  function openAppStore(id) {
+    const node = nodes.find(n => n.id === id);
+    if (!node || !apsModal) return;
+    apsTargetId = id;
+    const def = DEFS[node.type];
+    document.getElementById('aps-title').textContent = `${def.icon} ${def.name} — Apps`;
+    refreshAppStore();
+    apsModal.classList.add('open');
+  }
+
+  function refreshAppStore() {
+    const node = nodes.find(n => n.id === apsTargetId);
+    if (!node) return;
+    const cat = DEFS[node.type].cat;
+
+    const instEl = document.getElementById('aps-installed');
+    if (instEl) {
+      if (!node.apps?.length) {
+        instEl.innerHTML = '<span class="aps-empty">Aucune app installée</span>';
+      } else {
+        instEl.innerHTML = node.apps.map(a => `<span class="aps-chip">${APP_DEFS[a].icon} ${APP_DEFS[a].name}</span>`).join('');
+      }
+    }
+
+    const shopEl = document.getElementById('aps-shop');
+    if (!shopEl) return;
+    shopEl.innerHTML = '';
+    Object.entries(APP_DEFS).forEach(([key, app]) => {
+      if (!app.for.includes(cat)) return;
+      const installed = node.apps?.includes(key);
+      const can = !installed && argent >= app.cost;
+      const btn = document.createElement('button');
+      btn.className = `aps-item${installed ? ' installed' : ''}${!can && !installed ? ' cant' : ''}`;
+      btn.innerHTML = `
+        <span class="aps-icon">${app.icon}</span>
+        <span class="csi-info"><b>${app.name}</b><small>+${app.rev} 💰/s${installed ? ' · installé' : ''}</small></span>
+        <span class="aps-cost${installed ? ' done' : ''}">${installed ? '✓' : fmtN(app.cost)+'💰'}</span>`;
+      if (!installed) {
+        btn.addEventListener('click', () => {
+          if (argent < app.cost) return;
+          argent -= app.cost;
+          if (!node.apps) node.apps = [];
+          node.apps.push(key);
+          reRates(); checkChals(); renderShop();
+          refreshAppStore();
+        });
+      }
+      btn.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+      btn.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
+      shopEl.appendChild(btn);
+    });
+  }
+
+  function closeAppStore() { apsModal?.classList.remove('open'); apsTargetId = null; }
+
+  if (apsModal) {
+    document.getElementById('aps-close')?.addEventListener('click', closeAppStore);
+    apsModal.addEventListener('click', e => { if (e.target === apsModal) closeAppStore(); });
+    apsModal.addEventListener('keydown', e => { if (e.key === 'Escape') closeAppStore(); });
+    document.getElementById('aps-close')?.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+    document.getElementById('aps-close')?.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
   }
 
   /* ── Draw ───────────────────────────────────────────────── */
@@ -1045,10 +1170,23 @@ function initCanvasSection() {
       if (rEl) {
         const def = DEFS[n.type];
         if (['end','srv'].includes(def.cat)) {
-          rEl.textContent = n.online ? `+${def.base} 💰/s` : (isValidIP(n.cfg.addr) ? 'chemin invalide' : 'non configuré');
+          if (n.online) {
+            const rev = nodeAppRevenue(n);
+            rEl.textContent = rev > 0 ? `+${rev} 💰/s` : '0 app — 0 💰/s';
+            rEl.style.color = '';
+          } else {
+            rEl.textContent = isValidIP(n.cfg?.addr) ? 'chemin invalide' : 'non configuré';
+            rEl.style.color = 'var(--text-muted)';
+          }
           rEl.style.opacity = n.online ? '1' : '0.5';
+        } else if (def.cat === 'lan') {
+          const portCount = edges.filter(e => e.to === n.id).length;
+          rEl.textContent = `${portCount}/4 ports`;
+          rEl.style.color = portCount >= 4 ? '#f97316' : '';
+          rEl.style.opacity = '1';
         } else {
           rEl.textContent = n.online ? '● en ligne' : '○ hors ligne';
+          rEl.style.color = n.online ? '#4ade80' : 'var(--text-muted)';
           rEl.style.opacity = n.online ? '1' : '0.45';
         }
       }
@@ -1071,16 +1209,18 @@ function initCanvasSection() {
     nodeSeq++;
     const id = nodeSeq;
     const cfg = defaultCfg(type);
-    nodes.push({ id, type, x: wx, y: wy, online: false, cfg });
+    nodes.push({ id, type, x: wx, y: wy, online: false, cfg, apps: [] });
 
     const [r,g,b] = def.col;
-    const needsCfg = ['end','srv','net','sec'].includes(def.cat);
+    const hasInput  = def.accepts !== null; // end/srv have no input port
+    const needsCfg  = ['end','srv','net','sec'].includes(def.cat);
+    const needsApps = ['end','srv'].includes(def.cat);
     const el = document.createElement('div');
     el.className = 'canvas-node';
     el.id = `cn-${id}`;
     el.style.setProperty('--node-color', `rgb(${r},${g},${b})`);
     el.innerHTML = `
-      <div class="node-port node-port-in"></div>
+      ${hasInput ? '<div class="node-port node-port-in"></div>' : ''}
       <div class="node-body">
         <span class="node-icon">${def.icon}</span>
         <div class="node-info">
@@ -1092,7 +1232,8 @@ function initCanvasSection() {
       <div class="node-port node-port-out"></div>
       <button class="node-dots" aria-label="Options">⋯</button>
       <div class="node-menu">
-        ${needsCfg ? `<button class="ndm-item" data-action="config">⚙️ Configurer IP</button>` : ''}
+        ${needsApps ? `<button class="ndm-item" data-action="apps">💾 Applications</button>` : ''}
+        ${needsCfg  ? `<button class="ndm-item" data-action="config">⚙️ Configurer IP</button>` : ''}
         <button class="ndm-item" data-action="rename">✏️ Renommer</button>
         <button class="ndm-item danger" data-action="delete">🗑️ Supprimer</button>
       </div>
@@ -1101,7 +1242,7 @@ function initCanvasSection() {
 
     const body    = el.querySelector('.node-body');
     const portOut = el.querySelector('.node-port-out');
-    const portIn  = el.querySelector('.node-port-in');
+    const portIn  = el.querySelector('.node-port-in'); // null for end/srv
     const dotsBtn = el.querySelector('.node-dots');
     const menuEl  = el.querySelector('.node-menu');
 
@@ -1140,12 +1281,14 @@ function initCanvasSection() {
       finishConnect(id, e.clientX - wr.left, e.clientY - wr.top);
     });
 
-    portIn.addEventListener('pointerup', e => {
-      if (connFrom === null || connFrom === id) return;
-      e.stopPropagation();
-      tryConnect(connFrom, id);
-      connFrom = null; connPos = null;
-    });
+    if (portIn) {
+      portIn.addEventListener('pointerup', e => {
+        if (connFrom === null || connFrom === id) return;
+        e.stopPropagation();
+        tryConnect(connFrom, id);
+        connFrom = null; connPos = null;
+      });
+    }
 
     dotsBtn.addEventListener('pointerdown', e => e.stopPropagation());
     dotsBtn.addEventListener('click', e => {
@@ -1159,7 +1302,9 @@ function initCanvasSection() {
       btn.addEventListener('click', e => {
         e.stopPropagation();
         closeMenu();
-        if (btn.dataset.action === 'config') {
+        if (btn.dataset.action === 'apps') {
+          openAppStore(id);
+        } else if (btn.dataset.action === 'config') {
           openIPConfig(id);
         } else if (btn.dataset.action === 'rename') {
           const nameEl = el.querySelector('.node-name');
@@ -1171,7 +1316,7 @@ function initCanvasSection() {
       });
     });
 
-    [el, portOut, portIn, dotsBtn].forEach(b => {
+    [el, portOut, dotsBtn, ...(portIn ? [portIn] : [])].forEach(b => {
       b.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
       b.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
     });

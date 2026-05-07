@@ -1807,6 +1807,54 @@ body.is-loading .cursor-trail {
 .ipc-btns button:hover { background: rgba(var(--accent-rgb),0.08); border-color: var(--accent); }
 .ipc-apply-btn { border-color: var(--accent) !important; color: var(--accent) !important; font-weight: 600; }
 
+.ipc-suggest-btn {
+  width: 100%; margin: 0 0 10px;
+  padding: 7px 10px; border-radius: 7px;
+  border: 1px dashed var(--border-hover);
+  background: transparent; color: var(--text-muted);
+  font-size: 11px; font-family: inherit; cursor: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+.ipc-suggest-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── App store modal ── */
+.aps-inner { width: 340px; }
+.aps-sec-title {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-muted); opacity: 0.6;
+  margin: 10px 0 7px;
+}
+.aps-installed {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin-bottom: 6px; min-height: 24px;
+}
+.aps-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 20px;
+  background: rgba(var(--accent-rgb),0.1);
+  border: 1px solid rgba(var(--accent-rgb),0.22);
+  font-size: 10px; color: var(--accent);
+}
+.aps-empty { font-size: 11px; color: var(--text-muted); opacity: 0.5; }
+.aps-shop {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 240px; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+.aps-item {
+  width: 100%; display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px; background: transparent;
+  border: 1px solid var(--border); border-radius: 7px;
+  text-align: left; cursor: none; font-family: inherit; color: var(--text);
+  transition: border-color 0.15s, background 0.15s;
+}
+.aps-item:not(.installed):not(.cant):hover { border-color: var(--accent); background: rgba(var(--accent-rgb),0.05); }
+.aps-item.installed { opacity: 0.35; pointer-events: none; }
+.aps-item.cant { opacity: 0.35; }
+.aps-item .aps-icon { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
+.aps-item .aps-cost { font-size: 10px; font-weight: 700; color: var(--accent); flex-shrink: 0; white-space: nowrap; }
+.aps-item .aps-cost.done { color: #4ade80; }
+
 @media (max-width: 700px) {
   #csb { width: 180px; }
   .canvas-hint { display: none; }

@@ -391,7 +391,23 @@
         <button id="cv-fs"  class="canvas-tool-btn" title="Plein écran">⤢</button>
       </div>
 
-      <span class="canvas-hint">Glisser pour déplacer · ○ pour connecter · ⋯ pour les options du bloc</span>
+      <!-- IP configuration modal -->
+      <div id="ip-cfg" class="ip-cfg">
+        <div class="ipc-inner">
+          <div class="ipc-head">
+            <span id="ipc-title">Configuration IP</span>
+            <button id="ipc-close">✕</button>
+          </div>
+          <div id="ipc-body" class="ipc-body"></div>
+          <div id="ipc-err" class="ipc-err"></div>
+          <div class="ipc-btns">
+            <button id="ipc-cancel">Annuler</button>
+            <button id="ipc-apply" class="ipc-apply-btn">Appliquer</button>
+          </div>
+        </div>
+      </div>
+
+      <span class="canvas-hint">Glisser pour déplacer · ○ pour connecter · ⋯ options · ⚙️ configurer IP</span>
     </div>
   </section>
 

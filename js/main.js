@@ -706,45 +706,53 @@ function initAnchorScroll(lenis) {
 }
 
 // ─────────────────────────────────────────────
-// Canvas — infrastructure réseau (incremental)
+// Canvas — infrastructure réseau / IP game
 // ─────────────────────────────────────────────
 function initCanvasSection() {
   const wrapper  = document.getElementById('canvas-wrapper');
   const canvas   = document.getElementById('infinite-canvas');
   const nodesDiv = document.getElementById('canvas-nodes');
+  const ipcModal = document.getElementById('ip-cfg');
   if (!wrapper || !canvas) return;
   const ctx = canvas.getContext('2d');
 
-  /* ── Block definitions ─────────────────────────────────────
-     cat: 'end'/'srv' = sources | 'lan'/'net'/'sec' = relays | 'wan' = monetizer
-     accepts: which categories can feed this block (null = no inputs allowed)
-     bm: relay→ output = influx*bm ; wan→ mps = influx*bm
+  /* ── Block definitions ──────────────────────────────────────
+     Traffic flows: end/srv → lan → net/sec → wan
+     Online = node has a valid IP-configured path reaching a wan node
+     Revenue = online sources × wan rate × security bonus
   ─────────────────────────────────────────────────────────── */
   const DEFS = {
-    pc:         { icon:'💻', name:'Poste PC',     cat:'end', col:[96,165,250],  base:2,  bm:0,    cost:0,    unlocked:true,  accepts:null,                     desc:'+2 paquets/sec',         ip:'192.168.1' },
-    serveur:    { icon:'🖥️', name:'Serveur',      cat:'srv', col:[236,72,153],  base:8,  bm:0,    cost:300,  unlocked:false, accepts:null,                     desc:'+8 paquets/sec',         ip:'10.1.0'    },
-    switch_:    { icon:'🔌', name:'Switch',       cat:'lan', col:[52,211,153],  base:0,  bm:1.5,  cost:150,  unlocked:false, accepts:['end','srv','lan'],       desc:'×1.5 flux LAN entrant',  ip:'10.0.0'    },
-    routeur:    { icon:'📡', name:'Routeur',      cat:'net', col:[167,139,250], base:0,  bm:2,    cost:500,  unlocked:false, accepts:['end','lan','srv','net'], desc:'×2 flux entrant',        ip:'172.16.0'  },
-    firewall:   { icon:'🛡️', name:'Pare-feu',   cat:'sec', col:[249,115,22],  base:0,  bm:1.5,  cost:1200, unlocked:false, accepts:['end','lan','net'],      desc:'×1.5 · trafic sécurisé', ip:'10.10.0'   },
-    fai:        { icon:'☁️', name:'FAI / Cloud', cat:'wan', col:[251,191,36],  base:0,  bm:0.15, cost:200,  unlocked:false, accepts:['net','sec'],            desc:'0.15 💰/paquet',         ip:'1.1.1'     },
-    datacenter: { icon:'🏢', name:'Datacenter',  cat:'wan', col:[239,68,68],   base:0,  bm:0.4,  cost:3500, unlocked:false, accepts:['net','sec','srv'],      desc:'0.4 💰/paquet',          ip:'8.8.8'     },
+    pc:         { icon:'💻', name:'Poste PC',     cat:'end', col:[96,165,250],  base:2,  cost:0,    unlocked:true,  accepts:null,              desc:'+2 💰/s · nécessite IP+GW' },
+    switch_:    { icon:'🔌', name:'Switch',       cat:'lan', col:[52,211,153],  base:0,  cost:100,  unlocked:true,  accepts:['end','srv','lan'],desc:'Relie les appareils LAN'    },
+    routeur:    { icon:'📡', name:'Routeur',      cat:'net', col:[167,139,250], base:0,  cost:300,  unlocked:true,  accepts:['end','lan','srv'],desc:'Configure IP LAN + WAN'     },
+    fai:        { icon:'☁️', name:'FAI / Cloud', cat:'wan', col:[251,191,36],  base:0,  cost:150,  unlocked:true,  accepts:['net','sec'],      desc:'0.15 💰/paquet · IP 1.1.1.1'},
+    firewall:   { icon:'🛡️', name:'Pare-feu',   cat:'sec', col:[249,115,22],  base:0,  cost:800,  unlocked:false, accepts:['end','lan','net'],desc:'×1.5 revenu · IP LAN + WAN' },
+    serveur:    { icon:'🖥️', name:'Serveur',     cat:'srv', col:[236,72,153],  base:10, cost:600,  unlocked:false, accepts:null,              desc:'+10 💰/s · nécessite IP+GW' },
+    datacenter: { icon:'🏢', name:'Datacenter',  cat:'wan', col:[239,68,68],   base:0,  cost:3000, unlocked:false, accepts:['net','sec'],      desc:'0.4 💰/paquet · IP 8.8.8.1' },
   };
 
   const CAT_LABEL = { end:'POSTE', srv:'SERVEUR', lan:'LAN', net:'RÉSEAU', sec:'SÉCURITÉ', wan:'WAN' };
-  const ipCounters = {};
-  function nextIP(def) {
-    ipCounters[def.ip] = (ipCounters[def.ip] || 0) + 1;
-    return `${def.ip}.${ipCounters[def.ip]}`;
+
+  /* fixed WAN addresses */
+  const WAN_ADDR = { fai: '1.1.1.1', datacenter: '8.8.8.1' };
+
+  /* default cfg template per cat */
+  function defaultCfg(type) {
+    const cat = DEFS[type].cat;
+    if (['end','srv'].includes(cat)) return { addr: '', gw: '' };
+    if (['net','sec'].includes(cat)) return { lanIp: '', wanIp: '' };
+    if (cat === 'wan') return { addr: WAN_ADDR[type] || '1.1.1.1' };
+    return {};
   }
 
   /* ── Challenges ─────────────────────────────────────────── */
   const CHALS = [
-    { id:'c1', title:'Premier câble',   desc:'Connecter 2 appareils',          done:false, reward:'switch_',    check:()=>edges.length>=1 },
-    { id:'c2', title:'Réseau local',    desc:'Avoir 3 appareils en ligne',      done:false, reward:'routeur',    check:()=>onlineCount()>=3 },
-    { id:'c3', title:'30 paquets',      desc:'Accumuler 30 paquets de trafic',  done:false, reward:'fai',        check:()=>totalData>=30 },
-    { id:'c4', title:'5 connexions',    desc:'Avoir 5 câbles réseau',           done:false, reward:'firewall',   check:()=>edges.length>=5 },
-    { id:'c5', title:'300 paquets',     desc:'Accumuler 300 paquets',           done:false, reward:'serveur',    check:()=>totalData>=300 },
-    { id:'c6', title:'500 argent',      desc:'Avoir 500 argent',                done:false, reward:'datacenter', check:()=>argent>=500 },
+    { id:'c1', title:'LAN connecté',      desc:'Relier un PC à un Switch',              done:false, reward:null,         check:()=>edges.some(e=>{const a=nodes.find(n=>n.id===e.from),b=nodes.find(n=>n.id===e.to);return a&&b&&(a.type==='pc'||b.type==='pc')&&(a.type==='switch_'||b.type==='switch_');}) },
+    { id:'c2', title:'Routeur configuré', desc:'Configurer l\'IP LAN d\'un Routeur',     done:false, reward:'firewall',   check:()=>nodes.some(n=>n.type==='routeur'&&isValidIP(n.cfg.lanIp)) },
+    { id:'c3', title:'En ligne !',        desc:'Mettre un appareil en ligne',             done:false, reward:'serveur',    check:()=>onlineCount()>=1 },
+    { id:'c4', title:'Réseau actif',      desc:'Avoir 3 appareils en ligne',              done:false, reward:'datacenter', check:()=>onlineCount()>=3 },
+    { id:'c5', title:'1 000 💰',          desc:'Accumuler 1 000 argent',                  done:false, reward:null,         check:()=>argent>=1000 },
+    { id:'c6', title:'Réseau sécurisé',   desc:'Mettre un Pare-feu en ligne',             done:false, reward:null,         check:()=>nodes.some(n=>n.type==='firewall'&&n.online) },
   ];
 
   /* ── State ─────────────────────────────────────────────── */
@@ -753,12 +761,13 @@ function initCanvasSection() {
   const edges = [];
   let nodeSeq = 0, edgeSeq = 0;
   let totalData = 0, dataPerSec = 0;
-  let argent = 500, moneyPerSec = 0;
+  let argent = 1000, moneyPerSec = 0;
   let animT = 0, lastTs = 0;
 
   let panDrag = null, nodeDrag = null;
   let connFrom = null, connPos = null;
   let openMenuId = null;
+  let ipcTargetId = null;
 
   const NW = 160, GRID = 40, CSB_W = 220;
 
@@ -767,74 +776,108 @@ function initCanvasSection() {
   function s2w(sx, sy) { return { x: (sx - vp.x) / vp.scale, y: (sy - vp.y) / vp.scale }; }
   function outP(n) { const s = w2s(n.x, n.y); return { x: s.x + NW/2 * vp.scale, y: s.y }; }
   function inP(n)  { const s = w2s(n.x, n.y); return { x: s.x - NW/2 * vp.scale, y: s.y }; }
-  function fmtN(n) {
-    n = Math.floor(n);
-    if (n < 1000) return String(n);
-    if (n < 1e6)  return (n/1000).toFixed(1).replace('.0','')+'K';
-    return (n/1e6).toFixed(1).replace('.0','')+'M';
+  function fmtN(v) {
+    v = Math.floor(v);
+    if (v < 1000) return String(v);
+    if (v < 1e6)  return (v/1000).toFixed(1).replace('.0','')+'K';
+    return (v/1e6).toFixed(1).replace('.0','')+'M';
   }
   function canvasW() { return canvas.width - CSB_W; }
   function onlineCount() { return nodes.filter(n => n.online).length; }
 
+  function isValidIP(s) {
+    if (!s || typeof s !== 'string') return false;
+    const p = s.trim().split('.');
+    return p.length === 4 && p.every(x => /^\d{1,3}$/.test(x) && +x >= 0 && +x <= 255);
+  }
+  function sameNet24(a, b) {
+    if (!isValidIP(a) || !isValidIP(b)) return false;
+    const pa = a.split('.'), pb = b.split('.');
+    return pa[0]===pb[0] && pa[1]===pb[1] && pa[2]===pb[2];
+  }
+
   /* ── Resize ─────────────────────────────────────────────── */
   function resize() { canvas.width = wrapper.clientWidth; canvas.height = wrapper.clientHeight; }
 
-  /* ── Online status (BFS backward from WAN nodes) ─────────── */
+  /* ── Online computation (IP-aware path validation) ─────── */
   function computeOnline() {
-    const onlineSet = new Set();
-    nodes.filter(n => DEFS[n.type].cat === 'wan').forEach(n => onlineSet.add(n.id));
-    let changed = true;
-    while (changed) {
-      changed = false;
-      edges.forEach(e => {
-        if (onlineSet.has(e.to) && !onlineSet.has(e.from)) {
-          onlineSet.add(e.from);
-          changed = true;
-        }
+    const up = new Set();
+
+    // WAN nodes are always reachable
+    nodes.filter(n => DEFS[n.type].cat === 'wan').forEach(n => up.add(n.id));
+
+    // Router: up if valid LAN+WAN IPs AND output connects to up WAN (matching subnet)
+    nodes.filter(n => n.type === 'routeur').forEach(n => {
+      if (!isValidIP(n.cfg.lanIp) || !isValidIP(n.cfg.wanIp)) return;
+      const ok = edges.filter(e => e.from === n.id).some(e => {
+        const to = nodes.find(nd => nd.id === e.to);
+        return to && up.has(to.id) && DEFS[to.type].cat === 'wan' && sameNet24(n.cfg.wanIp, to.cfg.addr);
       });
-    }
-    nodes.forEach(n => { n.online = onlineSet.has(n.id); });
+      if (ok) up.add(n.id);
+    });
+
+    // Firewall: up if valid IPs AND output connects to up WAN
+    nodes.filter(n => n.type === 'firewall').forEach(n => {
+      if (!isValidIP(n.cfg.lanIp) || !isValidIP(n.cfg.wanIp)) return;
+      const ok = edges.filter(e => e.from === n.id).some(e => {
+        const to = nodes.find(nd => nd.id === e.to);
+        return to && up.has(to.id) && DEFS[to.type].cat === 'wan' && sameNet24(n.cfg.wanIp, to.cfg.addr);
+      });
+      if (ok) up.add(n.id);
+    });
+
+    // Switch: up if output connects to an up Router/Firewall
+    nodes.filter(n => n.type === 'switch_').forEach(n => {
+      const ok = edges.filter(e => e.from === n.id).some(e => {
+        const to = nodes.find(nd => nd.id === e.to);
+        return to && up.has(to.id) && ['net','sec'].includes(DEFS[to.type].cat);
+      });
+      if (ok) up.add(n.id);
+    });
+
+    // PC/Server: up if valid IP+GW, and reaches up Switch (with upstream router matching GW)
+    // or directly reaches an up Router/Firewall with matching LAN IP
+    nodes.filter(n => ['end','srv'].includes(DEFS[n.type].cat)).forEach(n => {
+      if (!isValidIP(n.cfg.addr) || !isValidIP(n.cfg.gw)) return;
+      if (!sameNet24(n.cfg.addr, n.cfg.gw)) return;
+      const ok = edges.filter(e => e.from === n.id).some(e => {
+        const to = nodes.find(nd => nd.id === e.to);
+        if (!to || !up.has(to.id)) return false;
+        if (DEFS[to.type].cat === 'lan') {
+          // Via switch: any downstream router/fw must have matching LAN IP
+          return edges.filter(ee => ee.from === to.id).some(ee => {
+            const rtr = nodes.find(nd => nd.id === ee.to);
+            return rtr && up.has(rtr.id) && ['net','sec'].includes(DEFS[rtr.type].cat) && rtr.cfg.lanIp === n.cfg.gw;
+          });
+        }
+        if (['net','sec'].includes(DEFS[to.type].cat)) return to.cfg.lanIp === n.cfg.gw;
+        return false;
+      });
+      if (ok) up.add(n.id);
+    });
+
+    nodes.forEach(n => { n.online = up.has(n.id); });
   }
 
   /* ── Rate computation ────────────────────────────────────── */
   function reRates() {
-    nodes.forEach(n => { n.dps = 0; n.mps = 0; });
-
-    // Base sources
-    nodes.filter(n => ['end','srv'].includes(DEFS[n.type].cat)).forEach(n => {
-      n.dps = DEFS[n.type].base;
-    });
-
-    // Relay passes — handles chains up to depth 4
-    for (let p = 0; p < 4; p++) {
-      nodes.filter(n => ['lan','net','sec'].includes(DEFS[n.type].cat)).forEach(n => {
-        const influx = edges.filter(e => e.to === n.id)
-          .reduce((s, e) => s + (nodes.find(nd => nd.id === e.from)?.dps || 0), 0);
-        n.dps = influx > 0 ? influx * DEFS[n.type].bm : 0;
-      });
-    }
-
-    // WAN converts data flow → money
-    nodes.filter(n => DEFS[n.type].cat === 'wan').forEach(n => {
-      const influx = edges.filter(e => e.to === n.id)
-        .reduce((s, e) => s + (nodes.find(nd => nd.id === e.from)?.dps || 0), 0);
-      n.mps = influx * DEFS[n.type].bm;
-    });
-
     computeOnline();
-
-    dataPerSec  = nodes.filter(n => DEFS[n.type].cat !== 'wan').reduce((s, n) => s + (n.dps || 0), 0);
-    moneyPerSec = nodes.reduce((s, n) => s + (n.mps || 0), 0);
+    dataPerSec = nodes.reduce((s, n) => s + (n.online ? (DEFS[n.type].base || 0) : 0), 0);
+    let wanRate = 0;
+    if (nodes.some(n => n.online && n.type === 'datacenter')) wanRate = 0.4;
+    else if (nodes.some(n => n.online && DEFS[n.type].cat === 'wan')) wanRate = 0.15;
+    const secBonus = Math.pow(1.5, nodes.filter(n => n.online && n.type === 'firewall').length);
+    moneyPerSec = dataPerSec * wanRate * secBonus;
   }
 
-  /* ── Connection validation ──────────────────────────────── */
+  /* ── Connection validation (physical topology) ──────────── */
   function canConnect(fromId, toId) {
-    const fromNode = nodes.find(n => n.id === fromId);
-    const toNode   = nodes.find(n => n.id === toId);
-    if (!fromNode || !toNode) return false;
-    const acc = DEFS[toNode.type].accepts;
+    const fn = nodes.find(n => n.id === fromId);
+    const tn = nodes.find(n => n.id === toId);
+    if (!fn || !tn) return false;
+    const acc = DEFS[tn.type].accepts;
     if (acc === null) return false;
-    return acc.includes(DEFS[fromNode.type].cat);
+    return acc.includes(DEFS[fn.type].cat);
   }
 
   function flashError(nodeId) {
@@ -842,6 +885,78 @@ function initCanvasSection() {
     if (!el) return;
     el.classList.add('error');
     setTimeout(() => el.classList.remove('error'), 500);
+  }
+
+  /* ── IP config modal ─────────────────────────────────────── */
+  function openIPConfig(id) {
+    const node = nodes.find(n => n.id === id);
+    if (!node || !ipcModal) return;
+    ipcTargetId = id;
+    const def = DEFS[node.type];
+    const cat = def.cat;
+
+    document.getElementById('ipc-title').textContent = `${def.icon} ${def.name} — IP`;
+    document.getElementById('ipc-err').textContent = '';
+
+    const body = document.getElementById('ipc-body');
+    if (['end','srv'].includes(cat)) {
+      body.innerHTML = `
+        <label>Adresse IP<input id="ipc-f1" placeholder="ex. 192.168.1.10" value="${node.cfg.addr||''}"></label>
+        <label>Passerelle (Gateway)<input id="ipc-f2" placeholder="ex. 192.168.1.1" value="${node.cfg.gw||''}"></label>`;
+    } else if (['net','sec'].includes(cat)) {
+      body.innerHTML = `
+        <label>IP LAN (côté réseau local)<input id="ipc-f1" placeholder="ex. 192.168.1.1" value="${node.cfg.lanIp||''}"></label>
+        <label>IP WAN (côté internet)<input id="ipc-f2" placeholder="ex. 1.1.1.2" value="${node.cfg.wanIp||''}"></label>`;
+    } else if (cat === 'wan') {
+      body.innerHTML = `<p class="ipc-fixed">Adresse fixe : <b>${node.cfg.addr}</b><br>Sous-réseau WAN : <b>${node.cfg.addr.split('.').slice(0,3).join('.')}.0/24</b></p>`;
+    } else {
+      body.innerHTML = `<p class="ipc-fixed">Aucune configuration IP requise pour un Switch.</p>`;
+    }
+    ipcModal.classList.add('open');
+    setTimeout(() => body.querySelector('input')?.focus(), 50);
+  }
+
+  function applyIPConfig() {
+    const node = nodes.find(n => n.id === ipcTargetId);
+    if (!node || !ipcModal) return;
+    const cat = DEFS[node.type].cat;
+    const err = document.getElementById('ipc-err');
+    const f1 = document.getElementById('ipc-f1')?.value.trim();
+    const f2 = document.getElementById('ipc-f2')?.value.trim();
+
+    if (['end','srv'].includes(cat)) {
+      if (!isValidIP(f1)) { err.textContent = 'Adresse IP invalide.'; document.getElementById('ipc-f1')?.classList.add('invalid'); return; }
+      if (!isValidIP(f2)) { err.textContent = 'Passerelle invalide.'; document.getElementById('ipc-f2')?.classList.add('invalid'); return; }
+      if (!sameNet24(f1, f2)) { err.textContent = 'L\'IP et la passerelle doivent être dans le même sous-réseau /24.'; return; }
+      node.cfg.addr = f1; node.cfg.gw = f2;
+    } else if (['net','sec'].includes(cat)) {
+      if (!isValidIP(f1)) { err.textContent = 'IP LAN invalide.'; document.getElementById('ipc-f1')?.classList.add('invalid'); return; }
+      if (!isValidIP(f2)) { err.textContent = 'IP WAN invalide.'; document.getElementById('ipc-f2')?.classList.add('invalid'); return; }
+      node.cfg.lanIp = f1; node.cfg.wanIp = f2;
+    }
+
+    ipcModal.classList.remove('open');
+    ipcTargetId = null;
+    reRates(); checkChals(); renderShop();
+  }
+
+  function closeIPConfig() {
+    ipcModal?.classList.remove('open');
+    ipcTargetId = null;
+  }
+
+  if (ipcModal) {
+    document.getElementById('ipc-close')?.addEventListener('click', closeIPConfig);
+    document.getElementById('ipc-cancel')?.addEventListener('click', closeIPConfig);
+    document.getElementById('ipc-apply')?.addEventListener('click', applyIPConfig);
+    ipcModal.addEventListener('click', e => { if (e.target === ipcModal) closeIPConfig(); });
+    ipcModal.addEventListener('keydown', e => { if (e.key === 'Enter') applyIPConfig(); if (e.key === 'Escape') closeIPConfig(); });
+    [document.getElementById('ipc-close'), document.getElementById('ipc-cancel'),
+     document.getElementById('ipc-apply')].forEach(b => {
+      if (!b) return;
+      b.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+      b.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
+    });
   }
 
   /* ── Draw ───────────────────────────────────────────────── */
@@ -871,24 +986,29 @@ function initCanvasSection() {
       if (!fn || !tn) return;
       const fp = outP(fn), tp = inP(tn);
       const cpx = Math.max(Math.abs(tp.x - fp.x) * 0.5, 50);
-      const [r,g,b] = DEFS[fn.type].col;
+      const active = fn.online && tn.online;
+      const [r,g,b] = active ? [74,222,128] : DEFS[fn.type].col;
+      const baseAlpha = active ? 0.25 : 0.12;
+      const lineAlpha = active ? 0.9 : 0.35;
 
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(fp.x, fp.y);
       ctx.bezierCurveTo(fp.x+cpx, fp.y, tp.x-cpx, tp.y, tp.x, tp.y);
-      ctx.strokeStyle = `rgba(${r},${g},${b},0.2)`;
+      ctx.strokeStyle = `rgba(${r},${g},${b},${baseAlpha})`;
       ctx.lineWidth = 2; ctx.setLineDash([]);
       ctx.stroke();
 
-      ctx.beginPath();
-      ctx.moveTo(fp.x, fp.y);
-      ctx.bezierCurveTo(fp.x+cpx, fp.y, tp.x-cpx, tp.y, tp.x, tp.y);
-      ctx.strokeStyle = `rgba(${r},${g},${b},0.85)`;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([5, 13]);
-      ctx.lineDashOffset = -(animT * 38);
-      ctx.stroke();
+      if (active) {
+        ctx.beginPath();
+        ctx.moveTo(fp.x, fp.y);
+        ctx.bezierCurveTo(fp.x+cpx, fp.y, tp.x-cpx, tp.y, tp.x, tp.y);
+        ctx.strokeStyle = `rgba(${r},${g},${b},${lineAlpha})`;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([5, 13]);
+        ctx.lineDashOffset = -(animT * 38);
+        ctx.stroke();
+      }
       ctx.restore();
     });
 
@@ -909,7 +1029,7 @@ function initCanvasSection() {
 
     ctx.restore();
 
-    // Sync node DOM positions, rate labels, online dot
+    // Sync DOM nodes
     nodes.forEach(n => {
       const el = document.getElementById(`cn-${n.id}`);
       if (!el) return;
@@ -917,13 +1037,29 @@ function initCanvasSection() {
       el.style.left      = `${s.x}px`;
       el.style.top       = `${s.y}px`;
       el.style.transform = `translate(-50%,-50%) scale(${vp.scale})`;
+
       const dotEl = el.querySelector('.node-online-dot');
       if (dotEl) dotEl.className = `node-online-dot${n.online ? ' is-online' : ''}`;
+
       const rEl = el.querySelector('.node-rate');
       if (rEl) {
         const def = DEFS[n.type];
-        if (def.cat === 'wan') rEl.textContent = n.mps > 0 ? `+${n.mps.toFixed(2)} 💰/s` : '0 💰/s';
-        else                   rEl.textContent = n.dps > 0 ? `+${n.dps.toFixed(1)} 📦/s` : (def.base > 0 ? `+${def.base} 📦/s` : '0 📦/s');
+        if (['end','srv'].includes(def.cat)) {
+          rEl.textContent = n.online ? `+${def.base} 💰/s` : (isValidIP(n.cfg.addr) ? 'chemin invalide' : 'non configuré');
+          rEl.style.opacity = n.online ? '1' : '0.5';
+        } else {
+          rEl.textContent = n.online ? '● en ligne' : '○ hors ligne';
+          rEl.style.opacity = n.online ? '1' : '0.45';
+        }
+      }
+
+      const catEl = el.querySelector('.node-cat');
+      if (catEl) {
+        const def = DEFS[n.type];
+        if (def.cat === 'wan') catEl.textContent = n.cfg.addr;
+        else if (['end','srv'].includes(def.cat)) catEl.textContent = n.cfg.addr || '—';
+        else if (['net','sec'].includes(def.cat)) catEl.textContent = n.cfg.lanIp || '—';
+        else catEl.textContent = '';
       }
     });
   }
@@ -934,10 +1070,11 @@ function initCanvasSection() {
     if (!def || !def.unlocked) return null;
     nodeSeq++;
     const id = nodeSeq;
-    const ip = nextIP(def);
-    nodes.push({ id, type, x: wx, y: wy, dps: def.base, mps: 0, online: false, ip });
+    const cfg = defaultCfg(type);
+    nodes.push({ id, type, x: wx, y: wy, online: false, cfg });
 
     const [r,g,b] = def.col;
+    const needsCfg = ['end','srv','net','sec'].includes(def.cat);
     const el = document.createElement('div');
     el.className = 'canvas-node';
     el.id = `cn-${id}`;
@@ -948,17 +1085,18 @@ function initCanvasSection() {
         <span class="node-icon">${def.icon}</span>
         <div class="node-info">
           <span class="node-name">${def.name}</span>
-          <span class="node-rate">${def.base > 0 ? '+'+def.base+' 📦/s' : '0 📦/s'}</span>
+          <span class="node-rate">${def.cat === 'wan' ? def.desc.split('·')[0].trim() : 'non configuré'}</span>
         </div>
       </div>
       <span class="node-online-dot"></span>
       <div class="node-port node-port-out"></div>
       <button class="node-dots" aria-label="Options">⋯</button>
       <div class="node-menu">
+        ${needsCfg ? `<button class="ndm-item" data-action="config">⚙️ Configurer IP</button>` : ''}
         <button class="ndm-item" data-action="rename">✏️ Renommer</button>
         <button class="ndm-item danger" data-action="delete">🗑️ Supprimer</button>
       </div>
-      <span class="node-cat">${ip}</span>`;
+      <span class="node-cat">${def.cat === 'wan' ? cfg.addr : '—'}</span>`;
     nodesDiv.appendChild(el);
 
     const body    = el.querySelector('.node-body');
@@ -967,7 +1105,6 @@ function initCanvasSection() {
     const dotsBtn = el.querySelector('.node-dots');
     const menuEl  = el.querySelector('.node-menu');
 
-    // Drag
     body.addEventListener('pointerdown', e => {
       e.stopPropagation();
       body.setPointerCapture(e.pointerId);
@@ -984,7 +1121,6 @@ function initCanvasSection() {
     });
     body.addEventListener('pointerup', () => { if (nodeDrag?.id === id) nodeDrag = null; });
 
-    // Output port — start connection drag
     portOut.addEventListener('pointerdown', e => {
       e.stopPropagation();
       portOut.setPointerCapture(e.pointerId);
@@ -1004,7 +1140,6 @@ function initCanvasSection() {
       finishConnect(id, e.clientX - wr.left, e.clientY - wr.top);
     });
 
-    // Input port — receive drop
     portIn.addEventListener('pointerup', e => {
       if (connFrom === null || connFrom === id) return;
       e.stopPropagation();
@@ -1012,7 +1147,6 @@ function initCanvasSection() {
       connFrom = null; connPos = null;
     });
 
-    // 3-dots menu
     dotsBtn.addEventListener('pointerdown', e => e.stopPropagation());
     dotsBtn.addEventListener('click', e => {
       e.stopPropagation();
@@ -1025,7 +1159,9 @@ function initCanvasSection() {
       btn.addEventListener('click', e => {
         e.stopPropagation();
         closeMenu();
-        if (btn.dataset.action === 'rename') {
+        if (btn.dataset.action === 'config') {
+          openIPConfig(id);
+        } else if (btn.dataset.action === 'rename') {
           const nameEl = el.querySelector('.node-name');
           const v = prompt('Nouveau nom :', nameEl.textContent);
           if (v && v.trim()) nameEl.textContent = v.trim();
@@ -1102,7 +1238,7 @@ function initCanvasSection() {
     finishConnect(connFrom, e.clientX - wr.left, e.clientY - wr.top);
   });
 
-  /* ── Zoom (buttons always, scroll only fullscreen) ───────── */
+  /* ── Zoom ───────────────────────────────────────────────── */
   function doZoom(f) {
     const cx = canvasW()/2, cy = canvas.height/2;
     const ns = Math.max(0.2, Math.min(3, vp.scale * f));
@@ -1112,29 +1248,23 @@ function initCanvasSection() {
   }
   document.getElementById('cv-zi')?.addEventListener('click', () => doZoom(1.25));
   document.getElementById('cv-zo')?.addEventListener('click', () => doZoom(1/1.25));
-  document.getElementById('cv-rst')?.addEventListener('click', () => {
-    vp.x = canvasW()/2; vp.y = canvas.height/2; vp.scale = 1;
-  });
+  document.getElementById('cv-rst')?.addEventListener('click', () => { vp.x = canvasW()/2; vp.y = canvas.height/2; vp.scale = 1; });
   document.getElementById('cv-fs')?.addEventListener('click', () => {
     if (!document.fullscreenElement) wrapper.requestFullscreen().catch(()=>{});
     else document.exitFullscreen();
   });
-
   wrapper.addEventListener('wheel', e => {
     if (!document.fullscreenElement) return;
     e.preventDefault();
     const wr = wrapper.getBoundingClientRect();
     const mx = e.clientX - wr.left, my = e.clientY - wr.top;
-    const f  = e.deltaY < 0 ? 1.1 : 1/1.1;
+    const f = e.deltaY < 0 ? 1.1 : 1/1.1;
     const ns = Math.max(0.2, Math.min(3, vp.scale * f));
     vp.x = mx - (mx - vp.x) * (ns / vp.scale);
     vp.y = my - (my - vp.y) * (ns / vp.scale);
     vp.scale = ns;
   }, { passive: false });
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && document.fullscreenElement) document.exitFullscreen();
-  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.fullscreenElement) document.exitFullscreen(); });
   document.addEventListener('fullscreenchange', () => setTimeout(resize, 50));
 
   /* ── Sidebar ────────────────────────────────────────────── */
@@ -1159,10 +1289,7 @@ function initCanvasSection() {
       btn.addEventListener('click', () => {
         if (argent < def.cost) return;
         argent -= def.cost;
-        const { x, y } = s2w(
-          canvasW()/2 + (Math.random()-0.5)*140,
-          canvas.height/2 + (Math.random()-0.5)*80
-        );
+        const { x, y } = s2w(canvasW()/2 + (Math.random()-0.5)*140, canvas.height/2 + (Math.random()-0.5)*80);
         addNode(type, x, y);
       });
       btn.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));

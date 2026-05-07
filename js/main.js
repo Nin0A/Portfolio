@@ -163,14 +163,6 @@ function animateHero() {
 function initScrollAnimations() {
   gsap.registerPlugin(ScrollTrigger);
 
-  // Nav scroll state
-  ScrollTrigger.create({
-    start: 'top -60',
-    onUpdate: (self) => {
-      document.getElementById('nav').classList.toggle('scrolled', self.progress > 0);
-    }
-  });
-
   // Scroll progress bar
   ScrollTrigger.create({
     start: 'top top',

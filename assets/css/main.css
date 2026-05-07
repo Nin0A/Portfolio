@@ -54,6 +54,33 @@
   --grain-opacity: 0.042;
 }
 
+/* Red theme — key typographic elements in red */
+[data-theme="red"] .hero-title em,
+[data-theme="red"] .contact-headline em {
+  color: var(--accent);
+}
+
+[data-theme="red"] .hero-title .hero-line:last-child {
+  -webkit-text-stroke: 1px var(--accent);
+  color: transparent;
+}
+
+[data-theme="red"] .stat-num {
+  color: var(--accent);
+}
+
+[data-theme="red"] .project-name {
+  color: var(--text);
+}
+
+[data-theme="red"] .project-item:hover .project-name {
+  color: var(--accent);
+}
+
+[data-theme="red"] .about-lead strong {
+  color: var(--accent);
+}
+
 /* Smooth theme transition */
 .theme-transitioning,
 .theme-transitioning * {
@@ -240,27 +267,26 @@ body.cursor-hidden #cursor-ring {
   justify-content: space-between;
   padding: 0 var(--pad-x);
   z-index: 900;
-  transition: background 0.4s ease, backdrop-filter 0.4s ease;
+  /* Always transparent — text adapts via mix-blend-mode */
 }
 
-#nav.scrolled {
-  background: rgba(11, 11, 11, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border);
+/* mix-blend-mode: difference makes white text auto-invert
+   on any background color, pixel by pixel */
+.nav-logo,
+.nav-links,
+.nav-socials {
+  mix-blend-mode: difference;
 }
 
 .nav-logo {
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--text);
-  transition: color 0.2s;
+  color: white;
+  transition: opacity 0.2s;
 }
 
-.nav-logo:hover {
-  color: var(--accent);
-}
+.nav-logo:hover { opacity: 0.7; }
 
 .nav-links {
   display: flex;
@@ -272,8 +298,8 @@ body.cursor-hidden #cursor-ring {
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.02em;
-  color: var(--text-muted);
-  transition: color 0.2s;
+  color: white;
+  transition: opacity 0.2s;
   position: relative;
 }
 
@@ -284,13 +310,11 @@ body.cursor-hidden #cursor-ring {
   left: 0;
   width: 0;
   height: 1px;
-  background: var(--accent);
+  background: white;
   transition: width 0.3s var(--ease-expo);
 }
 
-.nav-link:hover {
-  color: var(--text);
-}
+.nav-link:hover { opacity: 0.7; }
 
 .nav-link:hover::after {
   width: 100%;
@@ -359,13 +383,11 @@ body.cursor-hidden #cursor-ring {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
-  color: var(--text-muted);
-  transition: color 0.2s;
+  color: white;
+  transition: opacity 0.2s;
 }
 
-.nav-social:hover {
-  color: var(--accent);
-}
+.nav-social:hover { opacity: 0.7; }
 
 /* ============================================================
    SCROLL PROGRESS

@@ -329,16 +329,17 @@ function initTicker() {
     wrap.addEventListener('mouseleave',  () => { targetSpeed = 0.65; });
   }
 
-  // Compute halfW after layout so scrollWidth is correct
+  // One frame delay so scrollWidth is accurate after paint
   requestAnimationFrame(() => {
     const halfW = track.scrollWidth / 2;
+    // `pos` accumulates freely; `pos % halfW` gives the seamless visual offset
+    // — no reset jump, no rounding artifact, sub-pixel accurate
     gsap.ticker.add(() => {
       curSpeed += (targetSpeed - curSpeed) * 0.06;
       const speed = curSpeed + Math.abs(scrollV) * 0.055;
       scrollV *= 0.87;
       x -= speed;
-      if (x <= -halfW) x += halfW;
-      gsap.set(track, { x: Math.round(x) });
+      gsap.set(track, { x: x % halfW }); // modulo keeps range (-halfW, 0]
     });
   });
 }
@@ -705,6 +706,138 @@ function initAnchorScroll(lenis) {
 }
 
 // ─────────────────────────────────────────────
+// dev.idle — incremental game easter egg
+// ─────────────────────────────────────────────
+function initGame() {
+  const UPS = [
+    { id: 'coffee',  e: '☕', name: 'Café',         desc: '+1 ligne / sec',   base: 10,    ps: 1,  pc: 0  },
+    { id: 'snippet', e: '📋', name: 'Snippets',     desc: '+1 / clic',        base: 40,    ps: 0,  pc: 1  },
+    { id: 'npm',     e: '📦', name: 'npm install',  desc: '+5 lignes / sec',  base: 200,   ps: 5,  pc: 0  },
+    { id: 'copilot', e: '🤖', name: 'Copilot',      desc: '+3 / clic',        base: 750,   ps: 0,  pc: 3  },
+    { id: 'server',  e: '🖥️', name: 'Serveur VPS',  desc: '+25 lignes / sec', base: 3200,  ps: 25, pc: 0  },
+    { id: 'startup', e: '🚀', name: 'Startup',      desc: '+15 / clic',       base: 14000, ps: 0,  pc: 15 },
+  ];
+
+  const KEY = 'nino-idle-v1';
+  let sv = {}; try { sv = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch {}
+  let lines = sv.lines || 0;
+  const owned = sv.owned || {};
+
+  function fmt(n) {
+    n = Math.floor(n);
+    if (n < 1000) return String(n);
+    if (n < 1e6)  return (n / 1e3).toFixed(1).replace('.0','') + 'K';
+    if (n < 1e9)  return (n / 1e6).toFixed(1).replace('.0','') + 'M';
+    return (n / 1e9).toFixed(1).replace('.0','') + 'G';
+  }
+  function stats() {
+    let pc = 1, ps = 0;
+    UPS.forEach(u => { pc += (owned[u.id]||0)*u.pc; ps += (owned[u.id]||0)*u.ps; });
+    return { pc, ps };
+  }
+  function upCost(u) { return Math.ceil(u.base * Math.pow(1.15, owned[u.id]||0)); }
+  function save()    { try { localStorage.setItem(KEY, JSON.stringify({ lines, owned })); } catch {} }
+
+  // ── Inject widget HTML ────────────────────────────────────
+  const w = document.createElement('div');
+  w.id = 'game-widget';
+  w.innerHTML = `
+    <button class="game-toggle magnetic" id="game-toggle" title="dev.idle">&gt;_</button>
+    <div id="game-panel" aria-hidden="true">
+      <div class="gtitlebar">
+        <span class="gdots"><i></i><i></i><i></i></span>
+        <span class="gfilename">dev.idle</span>
+        <button class="gclose" id="game-close">✕</button>
+      </div>
+      <div class="gbody">
+        <div class="gcounter">
+          <div id="game-count" class="gcount">0</div>
+          <div class="gcount-lbl">lignes de code</div>
+          <div id="game-lps" class="glps"></div>
+        </div>
+        <button id="game-click" class="gclick">
+          <span>écrire du code</span>
+          <span id="game-click-val" class="gclick-val">+1</span>
+        </button>
+        <p class="gups-lbl">AMÉLIORATIONS</p>
+        <div id="game-list" class="glist"></div>
+      </div>
+    </div>`;
+  document.body.appendChild(w);
+
+  const panel    = document.getElementById('game-panel');
+  const countEl  = document.getElementById('game-count');
+  const lpsEl    = document.getElementById('game-lps');
+  const clickBtn = document.getElementById('game-click');
+  const cvalEl   = document.getElementById('game-click-val');
+  const listEl   = document.getElementById('game-list');
+  let open = false;
+
+  function toggle(state) {
+    open = state;
+    panel.classList.toggle('is-open', open);
+    panel.setAttribute('aria-hidden', String(!open));
+  }
+  document.getElementById('game-toggle').addEventListener('click', () => toggle(!open));
+  document.getElementById('game-close').addEventListener('click', e => { e.stopPropagation(); toggle(false); });
+
+  // Cursor hover for game buttons (initCursor runs before initGame)
+  w.querySelectorAll('button').forEach(b => {
+    b.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+    b.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
+  });
+
+  // ── Click to code ─────────────────────────────────────────
+  clickBtn.addEventListener('click', () => {
+    const { pc } = stats();
+    lines += pc;
+    // Floating +n
+    const f = document.createElement('span');
+    f.className = 'game-float';
+    f.textContent = `+${fmt(pc)}`;
+    document.body.appendChild(f);
+    const r = clickBtn.getBoundingClientRect();
+    gsap.set(f, { x: r.left + r.width / 2, y: r.top, xPercent: -50 });
+    gsap.to(f, { y: r.top - 44, opacity: 0, duration: 0.72, ease: 'power2.out',
+                 onComplete: () => f.remove() });
+    render();
+  });
+
+  // ── Render ────────────────────────────────────────────────
+  function render() {
+    const { pc, ps } = stats();
+    if (countEl) countEl.textContent = fmt(lines);
+    if (lpsEl)   lpsEl.textContent   = ps > 0 ? `+${fmt(ps)} ligne${ps > 1 ? 's' : ''}/sec` : '';
+    if (cvalEl)  cvalEl.textContent  = `+${fmt(pc)}`;
+
+    if (!listEl) return;
+    listEl.innerHTML = '';
+    UPS.forEach(u => {
+      const c = upCost(u), n = owned[u.id]||0, can = lines >= c;
+      const btn = document.createElement('button');
+      btn.className = `gup${can ? ' can' : ''}`;
+      btn.innerHTML = `<span class="gue">${u.e}</span>
+        <span class="gui"><b>${u.name}</b><small>${u.desc}</small></span>
+        <span class="gur"><span class="gucost">${fmt(c)}</span>${n?`<span class="gun">×${n}</span>`:''}</span>`;
+      btn.addEventListener('click', () => {
+        if (lines < upCost(u)) return;
+        lines -= upCost(u);
+        owned[u.id] = (owned[u.id]||0) + 1;
+        save(); render();
+      });
+      // cursor hover for dynamically created buttons
+      btn.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
+      btn.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
+      listEl.appendChild(btn);
+    });
+  }
+
+  setInterval(() => { const { ps } = stats(); if (ps > 0) { lines += ps; render(); } }, 1000);
+  setInterval(save, 5000);
+  render();
+}
+
+// ─────────────────────────────────────────────
 // Bootstrap
 // ─────────────────────────────────────────────
 async function init() {
@@ -724,6 +857,7 @@ async function init() {
   initTicker();
   initProjectInteractions();
   initProjectPreview();
+  initGame();
   initMagnetic();
   initContactForm();
   initAnchorScroll(lenis);

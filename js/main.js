@@ -706,7 +706,7 @@ function initAnchorScroll(lenis) {
 }
 
 // ─────────────────────────────────────────────
-// Canvas — incremental node graph game
+// Canvas — réseau de données / IA (incremental)
 // ─────────────────────────────────────────────
 function initCanvasSection() {
   const wrapper  = document.getElementById('canvas-wrapper');
@@ -715,48 +715,53 @@ function initCanvasSection() {
   if (!wrapper || !canvas) return;
   const ctx = canvas.getContext('2d');
 
-  /* ── Block definitions ────────────────────── */
+  /* ── Block definitions ─────────────────────────────────────
+     cat: 'col' = collecteur  |  'proc' = processeur  |  'mon' = monétiseur
+     accepts: which categories can feed this block (null = no inputs)
+     bm: bonus multiplier — col: unused | proc: output = influx*bm | mon: argent = influx*bm
+  ─────────────────────────────────────────────────────────── */
   const DEFS = {
-    source:    { icon:'⚡', name:'Source',        col:[201,245,101], base:2,  bm:0.5,  cost:0,    desc:'Produit 2 énergie/sec. +50% par entrée.' },
-    collector: { icon:'📡', name:'Collecteur',    col:[96,165,250],  base:1,  bm:1.5,  cost:50,   desc:'1 énergie/sec. ×1.5 par connexion.' },
-    battery:   { icon:'🔋', name:'Batterie',      col:[52,211,153],  base:3,  bm:0.15, cost:200,  desc:'Réservoir stable, +3/sec.' },
-    solar:     { icon:'☀️', name:'Solaire',       col:[251,191,36],  base:5,  bm:0.25, cost:500,  desc:'Énergie solaire +5/sec.' },
-    amplifier: { icon:'🔊', name:'Amplificateur', col:[245,158,11],  base:1,  bm:3.0,  cost:1000, desc:'×3 bonus par connexion entrante.' },
-    server:    { icon:'🖥️', name:'Serveur',       col:[167,139,250], base:10, bm:0.5,  cost:5000, desc:'Centre haute perf. +10/sec.' },
+    sensor:     { icon:'🌐', name:'Capteur Web',    cat:'col', col:[96,165,250],   base:2,  bm:0,    cost:0,    unlocked:true,  accepts:null,              desc:'+2 données/sec' },
+    iot:        { icon:'📡', name:'Antenne IoT',    cat:'col', col:[52,211,153],   base:5,  bm:0,    cost:150,  unlocked:false, accepts:null,              desc:'+5 données/sec' },
+    satellite:  { icon:'🛰️', name:'Satellite',     cat:'col', col:[167,139,250],  base:15, bm:0,    cost:2000, unlocked:false, accepts:null,              desc:'+15 données/sec' },
+    aggregator: { icon:'🔗', name:'Agrégateur',    cat:'proc', col:[201,245,101],  base:0,  bm:1.5,  cost:100,  unlocked:false, accepts:['col'],           desc:'×1.5 par flux entrant (capteurs)' },
+    ai:         { icon:'🧠', name:'Modèle IA',     cat:'proc', col:[245,158,11],   base:0,  bm:2.5,  cost:800,  unlocked:false, accepts:['col','proc'],    desc:'×2.5 par flux entrant' },
+    api:        { icon:'💸', name:'API Market',    cat:'mon',  col:[232,121,249],  base:0,  bm:0.15, cost:200,  unlocked:false, accepts:['col','proc'],    desc:'Vend les données → 0.15 💰/donnée' },
+    fund:       { icon:'🏦', name:'Fonds Data',    cat:'mon',  col:[251,191,36],   base:0,  bm:0.4,  cost:3500, unlocked:false, accepts:['col','proc','mon'],desc:'Investissement → 0.4 💰/donnée' },
   };
 
-  /* ── Challenges ───────────────────────────── */
+  const CAT_LABEL = { col: 'COLLECTEUR', proc: 'PROCESSEUR', mon: 'MONÉTISEUR' };
+
+  /* ── Challenges ─────────────────────────────────────────── */
   const CHALS = [
-    { id:'c1', title:'Premier lien',    desc:'Créer une connexion',      done:false, reward:'collector', check:()=>edges.length>=1 },
-    { id:'c2', title:'Réseau naissant', desc:'Avoir 3 blocs sur le canvas',done:false, reward:'battery',   check:()=>nodes.length>=3 },
-    { id:'c3', title:'100 énergie',     desc:'Accumuler 100 énergie',    done:false, reward:'solar',     check:()=>totalEnergy>=100 },
-    { id:'c4', title:'Bien connecté',   desc:'Créer 5 connexions',       done:false, reward:'amplifier', check:()=>edges.length>=5 },
-    { id:'c5', title:'1 000 énergie',   desc:'Accumuler 1 000 énergie',  done:false, reward:'server',    check:()=>totalEnergy>=1000 },
+    { id:'c1', title:'Collecte initiale', desc:'Accumuler 10 données',    done:false, reward:'aggregator', check:()=>totalData>=10 },
+    { id:'c2', title:'Réseau connecté',   desc:'Créer une connexion',     done:false, reward:'api',        check:()=>edges.length>=1 },
+    { id:'c3', title:'100 données',       desc:'Accumuler 100 données',   done:false, reward:'iot',        check:()=>totalData>=100 },
+    { id:'c4', title:'Bien connecté',     desc:'Avoir 5 connexions',      done:false, reward:'ai',         check:()=>edges.length>=5 },
+    { id:'c5', title:'1 000 données',     desc:'Accumuler 1 000 données', done:false, reward:'satellite',  check:()=>totalData>=1000 },
+    { id:'c6', title:'500 argent',        desc:'Avoir 500 argent',        done:false, reward:'fund',       check:()=>argent>=500 },
   ];
 
-  /* ── State ────────────────────────────────── */
+  /* ── State ─────────────────────────────────────────────── */
   const vp    = { x: 0, y: 0, scale: 1 };
-  const nodes = []; // { id, type, x, y, eps }
-  const edges = []; // { id, from, to }
+  const nodes = [];
+  const edges = [];
   let nodeSeq = 0, edgeSeq = 0;
-  let totalEnergy = 0, energyPerSec = 0;
+  let totalData = 0, dataPerSec = 0;
+  let argent = 500, moneyPerSec = 0; // start with seed funding
   let animT = 0, lastTs = 0;
 
-  /* ── Interaction ──────────────────────────── */
-  let panDrag    = null; // { ox, oy, vpx, vpy }
-  let nodeDrag   = null; // { id, ox, oy, nx, ny }
-  let connFrom   = null; // nodeId being connected from
-  let connPos    = null; // { x, y } screen cursor during drag
+  let panDrag = null, nodeDrag = null;
+  let connFrom = null, connPos = null;
   let openMenuId = null;
 
-  /* ── Constants ────────────────────────────── */
-  const NW = 160, NH = 56, GRID = 40, CSB_W = 220;
+  const NW = 160, GRID = 40, CSB_W = 220;
 
-  /* ── Helpers ──────────────────────────────── */
+  /* ── Helpers ────────────────────────────────────────────── */
   function w2s(wx, wy) { return { x: wx * vp.scale + vp.x, y: wy * vp.scale + vp.y }; }
   function s2w(sx, sy) { return { x: (sx - vp.x) / vp.scale, y: (sy - vp.y) / vp.scale }; }
-  function outP(node)  { const s = w2s(node.x, node.y); return { x: s.x + NW/2 * vp.scale, y: s.y }; }
-  function inP(node)   { const s = w2s(node.x, node.y); return { x: s.x - NW/2 * vp.scale, y: s.y }; }
+  function outP(n) { const s = w2s(n.x, n.y); return { x: s.x + NW/2 * vp.scale, y: s.y }; }
+  function inP(n)  { const s = w2s(n.x, n.y); return { x: s.x - NW/2 * vp.scale, y: s.y }; }
   function fmtN(n) {
     n = Math.floor(n);
     if (n < 1000) return String(n);
@@ -765,30 +770,58 @@ function initCanvasSection() {
   }
   function canvasW() { return canvas.width - CSB_W; }
 
-  /* ── Resize ───────────────────────────────── */
-  function resize() {
-    canvas.width  = wrapper.clientWidth;
-    canvas.height = wrapper.clientHeight;
-  }
+  /* ── Resize ─────────────────────────────────────────────── */
+  function resize() { canvas.width = wrapper.clientWidth; canvas.height = wrapper.clientHeight; }
 
-  /* ── EPS recompute ────────────────────────── */
-  function reEPS() {
-    let total = 0;
-    nodes.forEach(n => {
-      const def = DEFS[n.type];
-      const inC = edges.filter(e => e.to === n.id).length;
-      n.eps = def.base * (1 + inC * def.bm);
-      total += n.eps;
+  /* ── Rate computation (topological passes) ──────────────── */
+  function reRates() {
+    nodes.forEach(n => { n.dps = 0; n.mps = 0; });
+
+    // Pass 1: collectors produce independently
+    nodes.filter(n => DEFS[n.type].cat === 'col').forEach(n => { n.dps = DEFS[n.type].base; });
+
+    // Passes 2-4: processors (handles proc→proc chains up to depth 3)
+    for (let p = 0; p < 3; p++) {
+      nodes.filter(n => DEFS[n.type].cat === 'proc').forEach(n => {
+        const influx = edges.filter(e => e.to === n.id)
+          .reduce((s, e) => s + (nodes.find(nd => nd.id === e.from)?.dps || 0), 0);
+        n.dps = influx > 0 ? influx * DEFS[n.type].bm : 0;
+      });
+    }
+
+    // Pass 5: monetizers convert data flow → money
+    nodes.filter(n => DEFS[n.type].cat === 'mon').forEach(n => {
+      const influx = edges.filter(e => e.to === n.id)
+        .reduce((s, e) => s + (nodes.find(nd => nd.id === e.from)?.dps || 0), 0);
+      n.mps = influx * DEFS[n.type].bm;
     });
-    energyPerSec = total;
+
+    dataPerSec  = nodes.reduce((s, n) => s + (n.dps || 0), 0);
+    moneyPerSec = nodes.reduce((s, n) => s + (n.mps || 0), 0);
   }
 
-  /* ── Draw ─────────────────────────────────── */
+  /* ── Connection validation ──────────────────────────────── */
+  function canConnect(fromId, toId) {
+    const fromNode = nodes.find(n => n.id === fromId);
+    const toNode   = nodes.find(n => n.id === toId);
+    if (!fromNode || !toNode) return false;
+    const acc = DEFS[toNode.type].accepts;
+    if (acc === null) return false; // target accepts no inputs
+    return acc.includes(DEFS[fromNode.type].cat);
+  }
+
+  function flashError(nodeId) {
+    const el = document.getElementById(`cn-${nodeId}`);
+    if (!el) return;
+    el.classList.add('error');
+    setTimeout(() => el.classList.remove('error'), 500);
+  }
+
+  /* ── Draw ───────────────────────────────────────────────── */
   function draw() {
     const W = canvasW(), H = canvas.height;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Clip to canvas area (left of sidebar)
     ctx.save();
     ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
 
@@ -798,8 +831,7 @@ function initCanvasSection() {
     const ox = ((vp.x % step) + step) % step;
     const oy = ((vp.y % step) + step) % step;
     ctx.strokeStyle = isL ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([]);
+    ctx.lineWidth = 1; ctx.setLineDash([]);
     ctx.beginPath();
     for (let gx = ox-step; gx < W+step; gx += step) { ctx.moveTo(gx,0); ctx.lineTo(gx,H); }
     for (let gy = oy-step; gy < H+step; gy += step) { ctx.moveTo(0,gy); ctx.lineTo(W,gy); }
@@ -811,21 +843,21 @@ function initCanvasSection() {
       const tn = nodes.find(n => n.id === edge.to);
       if (!fn || !tn) return;
       const fp = outP(fn), tp = inP(tn);
-      const cx = Math.max(Math.abs(tp.x - fp.x) * 0.5, 40);
-      const [r,g,b] = DEFS[fn.type].col;
+      const cpx = Math.max(Math.abs(tp.x - fp.x) * 0.5, 50);
+      const isMonEdge = DEFS[fn.type].cat === 'mon';
+      const [r,g,b] = isMonEdge ? [251,191,36] : DEFS[fn.type].col;
 
       ctx.save();
-      // Base line
       ctx.beginPath();
       ctx.moveTo(fp.x, fp.y);
-      ctx.bezierCurveTo(fp.x+cx, fp.y, tp.x-cx, tp.y, tp.x, tp.y);
-      ctx.strokeStyle = `rgba(${r},${g},${b},0.22)`;
+      ctx.bezierCurveTo(fp.x+cpx, fp.y, tp.x-cpx, tp.y, tp.x, tp.y);
+      ctx.strokeStyle = `rgba(${r},${g},${b},0.2)`;
       ctx.lineWidth = 2; ctx.setLineDash([]);
       ctx.stroke();
-      // Flowing dashes
+
       ctx.beginPath();
       ctx.moveTo(fp.x, fp.y);
-      ctx.bezierCurveTo(fp.x+cx, fp.y, tp.x-cx, tp.y, tp.x, tp.y);
+      ctx.bezierCurveTo(fp.x+cpx, fp.y, tp.x-cpx, tp.y, tp.x, tp.y);
       ctx.strokeStyle = `rgba(${r},${g},${b},0.85)`;
       ctx.lineWidth = 1.5;
       ctx.setLineDash([5, 13]);
@@ -834,16 +866,14 @@ function initCanvasSection() {
       ctx.restore();
     });
 
-    // Connection-in-progress
+    // Connection in progress
     if (connFrom !== null && connPos) {
       const fn = nodes.find(n => n.id === connFrom);
       if (fn) {
         const fp = outP(fn);
         const [r,g,b] = DEFS[fn.type].col;
         ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(fp.x, fp.y);
-        ctx.lineTo(connPos.x, connPos.y);
+        ctx.beginPath(); ctx.moveTo(fp.x, fp.y); ctx.lineTo(connPos.x, connPos.y);
         ctx.strokeStyle = `rgba(${r},${g},${b},0.55)`;
         ctx.lineWidth = 1.5; ctx.setLineDash([4, 8]);
         ctx.stroke();
@@ -851,9 +881,9 @@ function initCanvasSection() {
       }
     }
 
-    ctx.restore(); // end clip
+    ctx.restore();
 
-    // Sync node DOM positions
+    // Sync node DOM positions + rate labels
     nodes.forEach(n => {
       const el = document.getElementById(`cn-${n.id}`);
       if (!el) return;
@@ -862,38 +892,43 @@ function initCanvasSection() {
       el.style.top       = `${s.y}px`;
       el.style.transform = `translate(-50%,-50%) scale(${vp.scale})`;
       const rEl = el.querySelector('.node-rate');
-      if (rEl) rEl.textContent = `+${n.eps.toFixed(1)}/s`;
+      if (rEl) {
+        const def = DEFS[n.type];
+        if (def.cat === 'mon') rEl.textContent = n.mps > 0 ? `+${n.mps.toFixed(2)}💰/s` : '0💰/s';
+        else                   rEl.textContent = n.dps > 0 ? `+${n.dps.toFixed(1)}📊/s`  : `+${def.base}📊/s`;
+      }
     });
   }
 
-  /* ── addNode ──────────────────────────────── */
+  /* ── addNode ────────────────────────────────────────────── */
   function addNode(type, wx, wy) {
     const def = DEFS[type];
     if (!def || !def.unlocked) return null;
     nodeSeq++;
     const id = nodeSeq;
-    nodes.push({ id, type, x: wx, y: wy, eps: def.base });
+    nodes.push({ id, type, x: wx, y: wy, dps: def.base, mps: 0 });
 
     const [r,g,b] = def.col;
     const el = document.createElement('div');
-    el.className = `canvas-node`;
+    el.className = 'canvas-node';
     el.id = `cn-${id}`;
     el.style.setProperty('--node-color', `rgb(${r},${g},${b})`);
     el.innerHTML = `
-      <div class="node-port node-port-in"  data-nid="${id}"></div>
+      <div class="node-port node-port-in"></div>
       <div class="node-body">
         <span class="node-icon">${def.icon}</span>
         <div class="node-info">
           <span class="node-name">${def.name}</span>
-          <span class="node-rate">+${def.base}/s</span>
+          <span class="node-rate">+${def.base}📊/s</span>
         </div>
       </div>
-      <div class="node-port node-port-out" data-nid="${id}"></div>
+      <div class="node-port node-port-out"></div>
       <button class="node-dots" aria-label="Options">⋯</button>
       <div class="node-menu">
         <button class="ndm-item" data-action="rename">✏️ Renommer</button>
         <button class="ndm-item danger" data-action="delete">🗑️ Supprimer</button>
-      </div>`;
+      </div>
+      <span class="node-cat">${CAT_LABEL[def.cat]}</span>`;
     nodesDiv.appendChild(el);
 
     const body    = el.querySelector('.node-body');
@@ -902,7 +937,7 @@ function initCanvasSection() {
     const dotsBtn = el.querySelector('.node-dots');
     const menuEl  = el.querySelector('.node-menu');
 
-    // Drag node via body
+    // Drag
     body.addEventListener('pointerdown', e => {
       e.stopPropagation();
       body.setPointerCapture(e.pointerId);
@@ -919,7 +954,7 @@ function initCanvasSection() {
     });
     body.addEventListener('pointerup', () => { if (nodeDrag?.id === id) nodeDrag = null; });
 
-    // Output port starts connection drag
+    // Output port — start connection drag
     portOut.addEventListener('pointerdown', e => {
       e.stopPropagation();
       portOut.setPointerCapture(e.pointerId);
@@ -936,16 +971,14 @@ function initCanvasSection() {
     portOut.addEventListener('pointerup', e => {
       if (connFrom !== id) return;
       const wr = wrapper.getBoundingClientRect();
-      const sx = e.clientX - wr.left, sy = e.clientY - wr.top;
-      finishConnect(id, sx, sy);
+      finishConnect(id, e.clientX - wr.left, e.clientY - wr.top);
     });
 
-    // Input port receives drop
+    // Input port — receive drop
     portIn.addEventListener('pointerup', e => {
       if (connFrom === null || connFrom === id) return;
       e.stopPropagation();
-      const dup = edges.some(e2 => e2.from === connFrom && e2.to === id);
-      if (!dup) { edgeSeq++; edges.push({ id: edgeSeq, from: connFrom, to: id }); reEPS(); checkChals(); }
+      tryConnect(connFrom, id);
       connFrom = null; connPos = null;
     });
 
@@ -961,51 +994,49 @@ function initCanvasSection() {
       btn.addEventListener('pointerdown', e => e.stopPropagation());
       btn.addEventListener('click', e => {
         e.stopPropagation();
-        const action = btn.dataset.action;
         closeMenu();
-        if (action === 'rename') {
+        if (btn.dataset.action === 'rename') {
           const nameEl = el.querySelector('.node-name');
           const v = prompt('Nouveau nom :', nameEl.textContent);
           if (v && v.trim()) nameEl.textContent = v.trim();
-        } else if (action === 'delete') {
+        } else if (btn.dataset.action === 'delete') {
           removeNode(id);
         }
       });
     });
 
-    // Cursor hover
     [el, portOut, portIn, dotsBtn].forEach(b => {
       b.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
       b.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
     });
 
-    reEPS(); renderShop(); checkChals();
+    reRates(); renderShop(); checkChals();
     return id;
+  }
+
+  function tryConnect(fromId, toId) {
+    if (!canConnect(fromId, toId)) { flashError(toId); return; }
+    const dup = edges.some(e => e.from === fromId && e.to === toId);
+    if (!dup) { edgeSeq++; edges.push({ id: edgeSeq, from: fromId, to: toId }); reRates(); checkChals(); }
   }
 
   function finishConnect(fromId, sx, sy) {
     for (const node of nodes) {
       if (node.id === fromId) continue;
-      const ip = inP(node);
-      if (Math.hypot(ip.x - sx, ip.y - sy) < 20) {
-        const dup = edges.some(e2 => e2.from === fromId && e2.to === node.id);
-        if (!dup) { edgeSeq++; edges.push({ id: edgeSeq, from: fromId, to: node.id }); reEPS(); checkChals(); }
-        break;
-      }
+      if (Math.hypot(inP(node).x - sx, inP(node).y - sy) < 22) { tryConnect(fromId, node.id); break; }
     }
     connFrom = null; connPos = null;
   }
 
   function removeNode(id) {
-    const idx = nodes.findIndex(n => n.id === id);
-    if (idx !== -1) nodes.splice(idx, 1);
+    nodes.splice(nodes.findIndex(n => n.id === id), 1);
     for (let i = edges.length-1; i>=0; i--) {
       if (edges[i].from === id || edges[i].to === id) edges.splice(i, 1);
     }
     document.getElementById(`cn-${id}`)?.remove();
     if (connFrom === id) { connFrom = null; connPos = null; }
     if (openMenuId === id) openMenuId = null;
-    reEPS(); renderShop();
+    reRates(); renderShop();
   }
 
   function closeMenu() {
@@ -1015,7 +1046,7 @@ function initCanvasSection() {
     }
   }
 
-  /* ── Pan (canvas click-drag) ──────────────── */
+  /* ── Pan ────────────────────────────────────────────────── */
   canvas.addEventListener('pointerdown', e => {
     if (connFrom !== null) return;
     canvas.setPointerCapture(e.pointerId);
@@ -1030,35 +1061,35 @@ function initCanvasSection() {
   });
   canvas.addEventListener('pointerup', () => { panDrag = null; canvas.style.cursor = ''; });
 
-  /* ── Connection drag fallback on wrapper ─────*/
   wrapper.addEventListener('pointermove', e => {
-    if (connFrom === null) return;
+    if (!connFrom) return;
     const wr = wrapper.getBoundingClientRect();
     connPos = { x: e.clientX - wr.left, y: e.clientY - wr.top };
   });
   wrapper.addEventListener('pointerup', e => {
-    if (connFrom === null) return;
+    if (!connFrom) return;
     const wr = wrapper.getBoundingClientRect();
     finishConnect(connFrom, e.clientX - wr.left, e.clientY - wr.top);
   });
 
-  /* ── Zoom buttons (always) ────────────────── */
-  function doZoom(factor) {
-    const cx = canvasW() / 2, cy = canvas.height / 2;
-    const ns = Math.max(0.2, Math.min(3, vp.scale * factor));
+  /* ── Zoom (buttons always, scroll only fullscreen) ───────── */
+  function doZoom(f) {
+    const cx = canvasW()/2, cy = canvas.height/2;
+    const ns = Math.max(0.2, Math.min(3, vp.scale * f));
     vp.x = cx - (cx - vp.x) * (ns / vp.scale);
     vp.y = cy - (cy - vp.y) * (ns / vp.scale);
     vp.scale = ns;
   }
   document.getElementById('cv-zi')?.addEventListener('click', () => doZoom(1.25));
   document.getElementById('cv-zo')?.addEventListener('click', () => doZoom(1/1.25));
-  document.getElementById('cv-rst')?.addEventListener('click', () => { vp.x = canvasW()/2; vp.y = canvas.height/2; vp.scale = 1; });
+  document.getElementById('cv-rst')?.addEventListener('click', () => {
+    vp.x = canvasW()/2; vp.y = canvas.height/2; vp.scale = 1;
+  });
   document.getElementById('cv-fs')?.addEventListener('click', () => {
     if (!document.fullscreenElement) wrapper.requestFullscreen().catch(()=>{});
     else document.exitFullscreen();
   });
 
-  /* ── Scroll zoom — fullscreen only ───────── */
   wrapper.addEventListener('wheel', e => {
     if (!document.fullscreenElement) return;
     e.preventDefault();
@@ -1071,13 +1102,12 @@ function initCanvasSection() {
     vp.scale = ns;
   }, { passive: false });
 
-  /* ── Escape exits fullscreen ──────────────── */
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && document.fullscreenElement) document.exitFullscreen();
   });
   document.addEventListener('fullscreenchange', () => setTimeout(resize, 50));
 
-  /* ── Sidebar: shop ────────────────────────── */
+  /* ── Sidebar ────────────────────────────────────────────── */
   function renderShop() {
     const el = document.getElementById('csb-shop');
     if (!el) return;
@@ -1085,19 +1115,22 @@ function initCanvasSection() {
     Object.entries(DEFS).forEach(([type, def]) => {
       if (!def.unlocked) return;
       const [r,g,b] = def.col;
-      const can = totalEnergy >= def.cost;
+      const can = argent >= def.cost;
       const btn = document.createElement('button');
       btn.className = `csb-item${can ? ' can' : ''}`;
       btn.style.setProperty('--ic', `rgb(${r},${g},${b})`);
       btn.innerHTML = `
         <span class="csi-icon">${def.icon}</span>
-        <span class="csi-info"><b>${def.name}</b><small>${def.desc}</small></span>
-        <span class="csi-cost">${def.cost===0?'Gratuit':fmtN(def.cost)+'⚡'}</span>`;
+        <span class="csi-info">
+          <b>${def.name}</b>
+          <small>${CAT_LABEL[def.cat]} · ${def.desc}</small>
+        </span>
+        <span class="csi-cost">${def.cost===0 ? 'Gratuit' : fmtN(def.cost)+'💰'}</span>`;
       btn.addEventListener('click', () => {
-        if (totalEnergy < def.cost) return;
-        totalEnergy -= def.cost;
+        if (argent < def.cost) return;
+        argent -= def.cost;
         const { x, y } = s2w(
-          canvasW()/2 + (Math.random()-0.5)*120,
+          canvasW()/2 + (Math.random()-0.5)*140,
           canvas.height/2 + (Math.random()-0.5)*80
         );
         addNode(type, x, y);
@@ -1108,7 +1141,6 @@ function initCanvasSection() {
     });
   }
 
-  /* ── Sidebar: challenges ──────────────────── */
   function renderChals() {
     const el = document.getElementById('csb-ch');
     if (!el) return;
@@ -1119,7 +1151,7 @@ function initCanvasSection() {
       div.innerHTML = `
         <span class="csc-icon">${c.done ? '✓' : '○'}</span>
         <div><b>${c.title}</b><small>${c.desc}</small>${
-          !c.done && c.reward ? `<span class="csc-reward">→ Débloque ${DEFS[c.reward]?.name || ''}</span>` : ''
+          !c.done && c.reward ? `<span class="csc-reward">→ Débloque ${DEFS[c.reward]?.name || c.reward}</span>` : ''
         }</div>`;
       el.appendChild(div);
     });
@@ -1140,22 +1172,26 @@ function initCanvasSection() {
     if (changed) { renderChals(); renderShop(); }
   }
 
-  /* ── Stats update ─────────────────────────── */
   function updateStats() {
-    const ev  = document.getElementById('csb-ev');
-    const eps = document.getElementById('csb-eps');
-    if (ev)  ev.textContent  = fmtN(totalEnergy);
-    if (eps) eps.textContent = `+${energyPerSec.toFixed(1)} / sec`;
+    const dEl = document.getElementById('csb-data');
+    const dps = document.getElementById('csb-dps');
+    const mEl = document.getElementById('csb-money');
+    const mps = document.getElementById('csb-mps');
+    if (dEl) dEl.textContent = fmtN(totalData);
+    if (dps) dps.textContent = `+${dataPerSec.toFixed(1)} / sec`;
+    if (mEl) mEl.textContent = fmtN(argent);
+    if (mps) mps.textContent = moneyPerSec > 0 ? `+${moneyPerSec.toFixed(2)} / sec` : '+0 / sec';
     renderShop();
   }
 
-  /* ── Main loop ────────────────────────────── */
+  /* ── Main loop ──────────────────────────────────────────── */
   function loop(ts) {
     if (!lastTs) lastTs = ts;
     const dt = Math.min((ts - lastTs) / 1000, 0.05);
     lastTs = ts;
-    animT += dt;
-    totalEnergy += energyPerSec * dt;
+    animT   += dt;
+    totalData += dataPerSec  * dt;
+    argent    += moneyPerSec * dt;
     if (Math.floor(animT * 2) !== Math.floor((animT - dt) * 2)) {
       checkChals(); updateStats();
     }
@@ -1163,22 +1199,14 @@ function initCanvasSection() {
     requestAnimationFrame(loop);
   }
 
-  /* ── Theme observer ───────────────────────── */
-  new MutationObserver(() => {})
-    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-
-  /* ── Init ─────────────────────────────────── */
-  // Mark source as unlocked (only one unlocked by default)
-  DEFS.source.unlocked = true;
-
+  /* ── Init ───────────────────────────────────────────────── */
   resize();
   new ResizeObserver(resize).observe(wrapper);
 
-  // Center viewport on origin after first layout
   requestAnimationFrame(() => {
     vp.x = canvasW() / 2;
     vp.y = canvas.height / 2;
-    addNode('source', 0, 0);
+    addNode('sensor', 0, 0);
     renderChals();
     renderShop();
     updateStats();

@@ -21,28 +21,63 @@ function initGrain() {
 }
 
 // ─────────────────────────────────────────────
-// Custom cursor
+// Custom cursor + trail
 // ─────────────────────────────────────────────
 function initCursor() {
-  const dot  = document.getElementById('cursor-dot');
-  const ring = document.getElementById('cursor-ring');
+  const dot    = document.getElementById('cursor-dot');
+  const ring   = document.getElementById('cursor-ring');
+  const cursor = document.getElementById('cursor');
   let mx = 0, my = 0, rx = 0, ry = 0;
 
+  // Label inside ring (shown when cursor-project is active)
+  const label = document.createElement('span');
+  label.id = 'cursor-label';
+  ring.appendChild(label);
+
+  // Trail dots — inside #cursor so they share its fixed stacking context
+  const TRAIL_N = 6;
+  const trail = Array.from({ length: TRAIL_N }, (_, i) => {
+    const d = document.createElement('div');
+    d.className = 'cursor-trail';
+    cursor.appendChild(d);
+    return { el: d, x: 0, y: 0, lag: 0.20 - i * 0.022 };
+  });
+
+  let trailReady = false;
   document.addEventListener('mousemove', e => {
     mx = e.clientX; my = e.clientY;
     gsap.set(dot, { x: mx, y: my });
+    if (!trailReady) {
+      trailReady = true;
+      trail.forEach((t, i) => {
+        t.x = mx; t.y = my;
+        gsap.to(t.el, { opacity: 0.28 - i * 0.04, duration: 0.6, delay: i * 0.05 });
+      });
+    }
   });
 
   (function animateRing() {
     rx += (mx - rx) * 0.12;
     ry += (my - ry) * 0.12;
     gsap.set(ring, { x: rx, y: ry });
+
+    // Each trail dot chases the previous with increasing lag
+    let px = rx, py = ry;
+    trail.forEach(t => {
+      t.x += (px - t.x) * t.lag;
+      t.y += (py - t.y) * t.lag;
+      gsap.set(t.el, { x: t.x, y: t.y });
+      px = t.x; py = t.y;
+    });
+
     requestAnimationFrame(animateRing);
   })();
 
   document.addEventListener('mouseenter', () => document.body.classList.remove('cursor-hidden'));
   document.addEventListener('mouseleave', () => document.body.classList.add('cursor-hidden'));
-  document.querySelectorAll('a, button, .project-item').forEach(el => {
+
+  // Generic hover — a/button only; .project-item uses cursor-project (set in initProjectInteractions)
+  document.querySelectorAll('a, button').forEach(el => {
     el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
     el.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
   });
@@ -215,28 +250,95 @@ function initParallax() {
 }
 
 // ─────────────────────────────────────────────
-// 3D Tilt on project items
+// Text scramble — characters cycle through glyphs before resolving
 // ─────────────────────────────────────────────
-function initProjectTilt() {
+const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$!?';
+
+function scramble(el, duration = 460) {
+  const original = el.dataset.original || el.textContent;
+  if (!el.dataset.original) el.dataset.original = original;
+  let raf = null, t0 = null;
+
+  function tick(ts) {
+    if (!t0) t0 = ts;
+    const p = Math.min((ts - t0) / duration, 1);
+    const revealed = Math.floor(p * original.length);
+    el.textContent = [...original].map((ch, i) => {
+      if (i < revealed || ch === ' ') return ch;
+      return GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+    }).join('');
+    if (p < 1) raf = requestAnimationFrame(tick);
+    else el.textContent = original;
+  }
+
+  if (raf) cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(tick);
+  return () => { if (raf) cancelAnimationFrame(raf); el.textContent = original; };
+}
+
+// ─────────────────────────────────────────────
+// Project interactions — scramble + cursor bubble + spotlight
+// ─────────────────────────────────────────────
+function initProjectInteractions() {
+  const label = document.getElementById('cursor-label');
+
   document.querySelectorAll('.project-item').forEach(item => {
-    item.addEventListener('mousemove', e => {
-      const r  = item.getBoundingClientRect();
-      const x  = ((e.clientX - r.left)  / r.width  - 0.5) *  9;
-      const y  = ((e.clientY - r.top)   / r.height - 0.5) * -4;
-      gsap.to(item, {
-        rotateY: x, rotateX: y,
-        z: 12,
-        transformPerspective: 1200,
-        duration: 0.45,
-        ease: 'power2.out'
-      });
+    const nameEl = item.querySelector('.project-name');
+    let stopScramble = null;
+
+    item.addEventListener('mouseenter', () => {
+      document.body.classList.add('cursor-project');
+      if (label) label.textContent = 'VOIR';
+      if (nameEl) stopScramble = scramble(nameEl);
     });
+
     item.addEventListener('mouseleave', () => {
-      gsap.to(item, {
-        rotateY: 0, rotateX: 0, z: 0,
-        duration: 0.9,
-        ease: 'elastic.out(1, 0.4)'
-      });
+      document.body.classList.remove('cursor-project');
+      if (stopScramble) { stopScramble(); stopScramble = null; }
+    });
+
+    // Drive the radial spotlight via CSS custom properties
+    item.addEventListener('mousemove', e => {
+      const r = item.getBoundingClientRect();
+      item.style.setProperty('--sx', `${((e.clientX - r.left) / r.width * 100).toFixed(1)}%`);
+      item.style.setProperty('--sy', `${((e.clientY - r.top) / r.height * 100).toFixed(1)}%`);
+    });
+  });
+}
+
+// ─────────────────────────────────────────────
+// Ticker — GSAP rAF loop: seamless, no CSS-reset flicker, scroll-velocity aware
+// ─────────────────────────────────────────────
+function initTicker() {
+  const wrap  = document.querySelector('.hero-ticker');
+  const track = document.querySelector('.ticker-track');
+  if (!track) return;
+
+  track.style.animation = 'none';
+
+  let x = 0, lastSY = 0, scrollV = 0;
+  let targetSpeed = 0.65, curSpeed = 0.65;
+
+  window.addEventListener('scroll', () => {
+    scrollV = window.scrollY - lastSY;
+    lastSY  = window.scrollY;
+  }, { passive: true });
+
+  if (wrap) {
+    wrap.addEventListener('mouseenter', () => { targetSpeed = 0.08; });
+    wrap.addEventListener('mouseleave',  () => { targetSpeed = 0.65; });
+  }
+
+  // Compute halfW after layout so scrollWidth is correct
+  requestAnimationFrame(() => {
+    const halfW = track.scrollWidth / 2;
+    gsap.ticker.add(() => {
+      curSpeed += (targetSpeed - curSpeed) * 0.06;
+      const speed = curSpeed + Math.abs(scrollV) * 0.055;
+      scrollV *= 0.87;
+      x -= speed;
+      if (x <= -halfW) x += halfW;
+      gsap.set(track, { x: Math.round(x) });
     });
   });
 }
@@ -619,7 +721,8 @@ async function init() {
   animateHero();
   initScrollAnimations();
   initParallax();
-  initProjectTilt();
+  initTicker();
+  initProjectInteractions();
   initProjectPreview();
   initMagnetic();
   initContactForm();

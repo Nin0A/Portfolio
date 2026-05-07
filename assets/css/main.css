@@ -10,6 +10,7 @@
   --text: #f0ece4;
   --text-muted: #666;
   --accent: #c9f565;
+  --accent-rgb: 201, 245, 101;
   --accent-text: #0b0b0b;
   --border: rgba(240, 236, 228, 0.07);
   --border-hover: rgba(240, 236, 228, 0.18);
@@ -34,6 +35,7 @@
   --text: #141414;
   --text-muted: #999;
   --accent: #141414;
+  --accent-rgb: 20, 20, 20;
   --accent-text: #f5f1ea;
   --border: rgba(20, 20, 20, 0.08);
   --border-hover: rgba(20, 20, 20, 0.2);
@@ -48,6 +50,7 @@
   --text: #111111;
   --text-muted: #888;
   --accent: #e8291c;
+  --accent-rgb: 232, 41, 28;
   --accent-text: #ffffff;
   --border: rgba(0, 0, 0, 0.07);
   --border-hover: rgba(0, 0, 0, 0.2);
@@ -168,9 +171,39 @@ button {
   border: 1.5px solid var(--text);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  transition: width 0.35s var(--ease-expo), height 0.35s var(--ease-expo), opacity 0.35s, border-color 0.35s;
+  transition: width 0.35s var(--ease-expo), height 0.35s var(--ease-expo),
+              opacity 0.35s, border-color 0.35s, background 0.35s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* Label inside cursor ring — shown on project hover */
+#cursor-label {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Cursor trail dots */
+.cursor-trail {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  pointer-events: none;
+  opacity: 0;
+  margin: -2px 0 0 -2px;
+}
+
+/* Hover state — generic links/buttons */
 body.cursor-hover #cursor-dot {
   width: 10px;
   height: 10px;
@@ -182,8 +215,26 @@ body.cursor-hover #cursor-ring {
   height: 60px;
 }
 
+/* Project hover state — ring becomes accent bubble with VOIR label */
+body.cursor-project #cursor-ring {
+  width: 80px;
+  height: 80px;
+  background: var(--accent);
+  border-color: transparent;
+}
+
+body.cursor-project #cursor-label {
+  opacity: 1;
+}
+
+body.cursor-project #cursor-dot {
+  opacity: 0;
+}
+
 body.cursor-hidden #cursor-dot,
-body.cursor-hidden #cursor-ring {
+body.cursor-hidden #cursor-ring,
+body.cursor-hidden .cursor-trail,
+body.is-loading .cursor-trail {
   opacity: 0;
 }
 
@@ -823,8 +874,27 @@ body.cursor-hidden #cursor-ring {
   opacity: 0;
   overflow: hidden;
   transition: background 0.3s;
-  transform-style: preserve-3d;
-  will-change: transform;
+}
+
+/* Cursor-following radial spotlight */
+.project-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.35s;
+  background: radial-gradient(
+    circle 300px at var(--sx, 50%) var(--sy, 50%),
+    rgba(var(--accent-rgb), 0.09),
+    transparent 70%
+  );
+}
+
+.project-item:hover::after {
+  opacity: 1;
 }
 
 .project-item::before {

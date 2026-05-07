@@ -1435,11 +1435,12 @@ function initCanvasSection() {
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.fullscreenElement) document.exitFullscreen(); });
   document.addEventListener('fullscreenchange', () => {
     setTimeout(resize, 50);
-    const cursorEls = [document.getElementById('cursor-dot'), document.getElementById('cursor-ring'), document.getElementById('cursor')].filter(Boolean);
+    const cursorEl = document.getElementById('cursor');
+    if (!cursorEl) return;
     if (document.fullscreenElement) {
-      cursorEls.forEach(el => document.fullscreenElement.appendChild(el));
+      document.fullscreenElement.appendChild(cursorEl);
     } else {
-      cursorEls.forEach(el => document.body.appendChild(el));
+      document.body.appendChild(cursorEl);
     }
   });
 
@@ -1535,6 +1536,10 @@ function initCanvasSection() {
   /* ── Init ───────────────────────────────────────────────── */
   resize();
   new ResizeObserver(resize).observe(wrapper);
+
+  /* ── Hide custom cursor inside game zone ── */
+  wrapper.addEventListener('mouseenter', () => document.body.classList.add('cursor-canvas'));
+  wrapper.addEventListener('mouseleave', () => document.body.classList.remove('cursor-canvas'));
 
   requestAnimationFrame(() => {
     vp.x = canvasW() / 2;

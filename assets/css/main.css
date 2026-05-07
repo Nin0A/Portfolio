@@ -233,9 +233,15 @@ body.cursor-project #cursor-dot {
   opacity: 0;
 }
 
+#cursor-dot { pointer-events: none; }
+#cursor-ring { pointer-events: none; }
+
 body.cursor-hidden #cursor-dot,
 body.cursor-hidden #cursor-ring,
 body.cursor-hidden .cursor-trail,
+body.cursor-canvas  #cursor-dot,
+body.cursor-canvas  #cursor-ring,
+body.cursor-canvas  .cursor-trail,
 body.is-loading .cursor-trail {
   opacity: 0;
 }
@@ -1332,6 +1338,7 @@ body.is-loading .cursor-trail {
   border-radius: 14px;
   overflow: hidden;
   touch-action: none;
+  cursor: crosshair;
   user-select: none;
 }
 

@@ -242,33 +242,125 @@ function initProjectTilt() {
 }
 
 // ─────────────────────────────────────────────
-// Nav color — luminance detection via elementsFromPoint
+// Hero char split — wraps each character in a span for stagger animation
 // ─────────────────────────────────────────────
-function initNavColor() {
+function splitHeroChars() {
+  document.querySelectorAll('.hero-line').forEach(line => {
+    const fragments = [];
+    line.childNodes.forEach(node => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        [...node.textContent].forEach(ch => {
+          const s = document.createElement('span');
+          s.className = 'hero-char';
+          s.style.display = 'inline-block';
+          s.textContent = ch === ' ' ? ' ' : ch;
+          fragments.push(s);
+        });
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const wrapper = node.cloneNode(false);
+        [...node.textContent].forEach(ch => {
+          const s = document.createElement('span');
+          s.className = 'hero-char';
+          s.style.display = 'inline-block';
+          s.textContent = ch === ' ' ? ' ' : ch;
+          wrapper.appendChild(s);
+        });
+        fragments.push(wrapper);
+      }
+    });
+    line.innerHTML = '';
+    fragments.forEach(f => line.appendChild(f));
+  });
+}
+
+// ─────────────────────────────────────────────
+// Nav split text — dual-layer SVG clipPath technique
+// Primary nav: dark text (#111111) for light backgrounds
+// Clone nav:   light text (#f0ece4) clipped to dark-bg regions
+// Produces per-pixel, per-character color splitting at section boundaries
+// ─────────────────────────────────────────────
+function initNavSplitText() {
   const nav = document.getElementById('nav');
 
-  function getBgRgb(x, y) {
-    // Walk elementsFromPoint, skip the nav itself
-    for (const el of (document.elementsFromPoint(x, y) ?? [])) {
-      if (el === nav || nav.contains(el)) continue;
-      const bg = getComputedStyle(el).backgroundColor;
-      const m  = bg.match(/[\d.]+/g);
-      if (m && m.length >= 3 && parseFloat(m[3] ?? '1') > 0.05)
-        return [+m[0], +m[1], +m[2]];
+  // ── SVG clipPath ──────────────────────────────────────────
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;overflow:visible;pointer-events:none;z-index:0';
+  const defs = document.createElementNS(svgNS, 'defs');
+  const clipPath = document.createElementNS(svgNS, 'clipPath');
+  clipPath.id = 'nav-dark-clip';
+  clipPath.setAttribute('clipPathUnits', 'userSpaceOnUse');
+  const clipRect = document.createElementNS(svgNS, 'rect');
+  clipRect.setAttribute('x', '0');
+  clipRect.setAttribute('y', '0');
+  clipRect.setAttribute('width', String(window.innerWidth));
+  clipRect.setAttribute('height', '0');
+  clipPath.appendChild(clipRect);
+  defs.appendChild(clipPath);
+  svg.appendChild(defs);
+  document.body.appendChild(svg);
+
+  // ── Clone nav ─────────────────────────────────────────────
+  const clone = nav.cloneNode(true);
+  clone.id = 'nav-clone';
+  clone.setAttribute('aria-hidden', 'true');
+  // Replicate fixed layout since #nav CSS won't apply to #nav-clone
+  clone.style.cssText = [
+    'position:fixed', 'top:0', 'left:0', 'right:0',
+    'height:var(--nav-h)', 'display:flex', 'align-items:center',
+    'justify-content:space-between', 'padding:0 var(--pad-x)',
+    'z-index:900', 'pointer-events:none',
+    'clip-path:url(#nav-dark-clip)'
+  ].join(';');
+  nav.insertAdjacentElement('afterend', clone);
+
+  // ── Luminance — walks up DOM to find first opaque background ─
+  function sectionLuminance(el) {
+    let node = el;
+    while (node && node !== document.documentElement) {
+      const bg = getComputedStyle(node).backgroundColor;
+      const m = bg.match(/[\d.]+/g);
+      if (m && m.length >= 3 && parseFloat(m[3] ?? '1') > 0.05) {
+        return (0.299 * +m[0] + 0.587 * +m[1] + 0.114 * +m[2]) / 255;
+      }
+      node = node.parentElement;
     }
-    // Fallback: parse --bg CSS variable directly
+    // Fallback: parse --bg hex
     const hex = getComputedStyle(document.documentElement)
       .getPropertyValue('--bg').trim().replace(/\s/g, '');
-    if (/^#[0-9a-f]{6}/i.test(hex))
-      return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
-    return [11, 11, 11];
+    if (/^#[0-9a-f]{6}/i.test(hex)) {
+      return (0.299 * parseInt(hex.slice(1, 3), 16)
+            + 0.587 * parseInt(hex.slice(3, 5), 16)
+            + 0.114 * parseInt(hex.slice(5, 7), 16)) / 255;
+    }
+    return 0;
   }
 
+  const sections = Array.from(document.querySelectorAll('#hero, .section, #footer'));
+
   function update() {
-    const [r, g, b] = getBgRgb(window.innerWidth / 2, nav.offsetHeight + 2);
-    const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
-    nav.classList.toggle('over-light', lum > 0.55);
-    nav.classList.toggle('over-dark',  lum <= 0.55);
+    const h = nav.offsetHeight;
+    let darkY0 = Infinity, darkY1 = -Infinity;
+
+    for (const sec of sections) {
+      if (sectionLuminance(sec) > 0.55) continue; // light section — skip
+      const r = sec.getBoundingClientRect();
+      const top = Math.max(0, r.top);
+      const bot = Math.min(h, r.bottom);
+      if (bot > top) {
+        if (top < darkY0) darkY0 = top;
+        if (bot > darkY1) darkY1 = bot;
+      }
+    }
+
+    clipRect.setAttribute('width', String(window.innerWidth));
+    if (darkY1 > darkY0) {
+      clipRect.setAttribute('y', String(darkY0));
+      clipRect.setAttribute('height', String(darkY1 - darkY0));
+    } else {
+      clipRect.setAttribute('height', '0');
+    }
   }
 
   window.addEventListener('scroll', update, { passive: true });
@@ -341,8 +433,13 @@ function initPreloader() {
 // ─────────────────────────────────────────────
 function animateHero() {
   gsap.timeline({ defaults: { ease: 'power4.out' } })
-    .to('.hero-line',   { y: 0, duration: 1.1, stagger: 0.12 })
-    .to('.hero-status', { opacity: 1, duration: 0.7 }, '-=0.5')
+    .to('.hero-line', { y: 0, duration: 1.1, stagger: 0.12 })
+    .from('.hero-char', {
+      opacity: 0, y: 12,
+      duration: 0.55, stagger: { amount: 0.45 },
+      ease: 'power3.out'
+    }, '-=1.0')
+    .to('.hero-status', { opacity: 1, duration: 0.7 }, '-=0.25')
     .to('.hero-bottom', { opacity: 1, duration: 0.7 }, '-=0.4')
     .to('.hero-ticker', { opacity: 1, duration: 0.6 }, '-=0.3');
 }
@@ -511,8 +608,9 @@ function initAnchorScroll(lenis) {
 async function init() {
   initGrain();
   initCursor();
+  splitHeroChars();
   initThemeSwitcher();
-  _navUpdate  = initNavColor();
+  _navUpdate  = initNavSplitText();
   threeScene  = initThreeHero();
 
   await initPreloader();

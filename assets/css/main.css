@@ -272,27 +272,31 @@ body.cursor-hidden #cursor-ring {
   /* Always transparent — color set dynamically by JS luminance detection */
 }
 
-/* Nav text color:
-   - Default = var(--text), always correct for current theme
-   - JS overrides with .over-dark / .over-light when scrolling
-     over sections whose background differs from the theme bg */
+/* Primary nav: dark text (readable on light backgrounds).
+   Clone nav (#nav-clone) shows light text, clipped to dark-bg regions.
+   Together they produce per-pixel, per-character color splitting. */
 .nav-logo,
 .nav-link,
 .nav-social {
-  color: var(--text);
-  transition: color 0.4s ease, opacity 0.2s;
-}
-
-#nav.over-dark .nav-logo,
-#nav.over-dark .nav-link,
-#nav.over-dark .nav-social {
-  color: #f0ece4;
-}
-
-#nav.over-light .nav-logo,
-#nav.over-light .nav-link,
-#nav.over-light .nav-social {
   color: #111111;
+  transition: opacity 0.2s;
+}
+
+/* Clone nav — injected by JS, pixel-perfect overlay */
+#nav-clone {
+  pointer-events: none;
+  clip-path: url(#nav-dark-clip);
+}
+
+#nav-clone .nav-logo,
+#nav-clone .nav-link,
+#nav-clone .nav-social {
+  color: #f0ece4;
+  transition: none;
+}
+
+#nav-clone .nav-link::after {
+  background: #f0ece4;
 }
 
 .nav-logo {
@@ -694,6 +698,31 @@ body.cursor-hidden #cursor-ring {
 /* ============================================================
    SKILLS
    ============================================================ */
+
+/* Accent background on skills — creates the contrast that makes the
+   dual-layer nav split visible: nav chars show two colors at section edges */
+#skills {
+  background: var(--accent);
+  --text: var(--accent-text);
+  --text-muted: var(--accent-text);
+  --border: rgba(128, 128, 128, 0.2);
+  --border-hover: rgba(128, 128, 128, 0.45);
+}
+
+#skills .label-num {
+  color: var(--accent-text);
+  opacity: 0.6;
+}
+
+#skills .skill-bar {
+  background: var(--accent-text);
+}
+
+#skills .skill-item:hover .skill-name {
+  color: var(--accent-text);
+  opacity: 0.65;
+}
+
 .skills-list {
   display: flex;
   flex-direction: column;

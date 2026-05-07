@@ -784,8 +784,10 @@ function initCanvasSection() {
   let connFrom = null, connPos = null;
   let openMenuId = null;
   let ipcTargetId = null, apsTargetId = null;
+  let rectSel = null;
+  const selectedIds = new Set();
 
-  const NW = 160, GRID = 40, CSB_W = 220;
+  const NW = 160, GRID = 40, CSB_W = 220, CSB_H = 150;
 
   /* ── Helpers ────────────────────────────────────────────── */
   function w2s(wx, wy) { return { x: wx * vp.scale + vp.x, y: wy * vp.scale + vp.y }; }
@@ -798,7 +800,9 @@ function initCanvasSection() {
     if (v < 1e6)  return (v/1000).toFixed(1).replace('.0','')+'K';
     return (v/1e6).toFixed(1).replace('.0','')+'M';
   }
-  function canvasW() { return canvas.width - CSB_W; }
+  function isSidebarBottom() { return window.innerWidth <= 640; }
+  function canvasW() { return isSidebarBottom() ? canvas.width : canvas.width - CSB_W; }
+  function canvasH() { return isSidebarBottom() ? canvas.height - CSB_H : canvas.height; }
   function onlineCount() { return nodes.filter(n => n.online).length; }
 
   function isValidIP(s) {
@@ -1086,7 +1090,7 @@ function initCanvasSection() {
 
   /* ── Draw ───────────────────────────────────────────────── */
   function draw() {
-    const W = canvasW(), H = canvas.height;
+    const W = canvasW(), H = canvasH();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
@@ -1152,6 +1156,22 @@ function initCanvasSection() {
       }
     }
 
+    // Rectangle selection
+    if (rectSel) {
+      const rx = Math.min(rectSel.x0, rectSel.x1);
+      const ry = Math.min(rectSel.y0, rectSel.y1);
+      const rw = Math.abs(rectSel.x1 - rectSel.x0);
+      const rh = Math.abs(rectSel.y1 - rectSel.y0);
+      ctx.save();
+      ctx.strokeStyle = `rgba(var(--accent-rgb, 77,166,255), 0.8)`;
+      ctx.strokeStyle = `rgba(77,166,255,0.8)`;
+      ctx.fillStyle   = `rgba(77,166,255,0.07)`;
+      ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+      ctx.strokeRect(rx, ry, rw, rh);
+      ctx.fillRect(rx, ry, rw, rh);
+      ctx.restore();
+    }
+
     ctx.restore();
 
     // Sync DOM nodes
@@ -1162,6 +1182,7 @@ function initCanvasSection() {
       el.style.left      = `${s.x}px`;
       el.style.top       = `${s.y}px`;
       el.style.transform = `translate(-50%,-50%) scale(${vp.scale})`;
+      el.classList.toggle('selected', selectedIds.has(n.id));
 
       const dotEl = el.querySelector('.node-online-dot');
       if (dotEl) dotEl.className = `node-online-dot${n.online ? ' is-online' : ''}`;
@@ -1251,6 +1272,7 @@ function initCanvasSection() {
       body.setPointerCapture(e.pointerId);
       const node = nodes.find(n => n.id === id);
       nodeDrag = { id, ox: e.clientX, oy: e.clientY, nx: node.x, ny: node.y };
+      if (!e.shiftKey && !selectedIds.has(id)) selectedIds.clear();
       closeMenu();
     });
     body.addEventListener('pointermove', e => {
@@ -1308,8 +1330,24 @@ function initCanvasSection() {
           openIPConfig(id);
         } else if (btn.dataset.action === 'rename') {
           const nameEl = el.querySelector('.node-name');
-          const v = prompt('Nouveau nom :', nameEl.textContent);
-          if (v && v.trim()) nameEl.textContent = v.trim();
+          const input = document.createElement('input');
+          input.className = 'node-rename-input';
+          input.value = nameEl.textContent;
+          nameEl.replaceWith(input);
+          input.focus(); input.select();
+          const commit = () => {
+            const v = input.value.trim();
+            input.replaceWith(nameEl);
+            if (v) nameEl.textContent = v;
+          };
+          const cancel = () => input.replaceWith(nameEl);
+          input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); commit(); }
+            else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+            e.stopPropagation();
+          });
+          input.addEventListener('blur', commit);
+          input.addEventListener('pointerdown', e => e.stopPropagation());
         } else if (btn.dataset.action === 'delete') {
           removeNode(id);
         }
@@ -1357,20 +1395,54 @@ function initCanvasSection() {
     }
   }
 
-  /* ── Pan ────────────────────────────────────────────────── */
+  /* ── Pan (middle-click) + Rectangle selection (left-click) ── */
+  canvas.addEventListener('contextmenu', e => e.preventDefault()); // prevent right-click menu
   canvas.addEventListener('pointerdown', e => {
     if (connFrom !== null) return;
     canvas.setPointerCapture(e.pointerId);
-    panDrag = { ox: e.clientX, oy: e.clientY, vpx: vp.x, vpy: vp.y };
-    canvas.style.cursor = 'grabbing';
     closeMenu();
+    if (e.button === 1) {
+      // Middle-click: pan
+      panDrag = { ox: e.clientX, oy: e.clientY, vpx: vp.x, vpy: vp.y };
+      canvas.style.cursor = 'grabbing';
+    } else if (e.button === 0) {
+      // Left-click: start rectangle selection
+      const wr = wrapper.getBoundingClientRect();
+      const sx = e.clientX - wr.left, sy = e.clientY - wr.top;
+      rectSel = { x0: sx, y0: sy, x1: sx, y1: sy };
+      if (!e.shiftKey) selectedIds.clear();
+    }
   });
   canvas.addEventListener('pointermove', e => {
-    if (!panDrag) return;
-    vp.x = panDrag.vpx + (e.clientX - panDrag.ox);
-    vp.y = panDrag.vpy + (e.clientY - panDrag.oy);
+    if (panDrag) {
+      vp.x = panDrag.vpx + (e.clientX - panDrag.ox);
+      vp.y = panDrag.vpy + (e.clientY - panDrag.oy);
+    } else if (rectSel) {
+      const wr = wrapper.getBoundingClientRect();
+      rectSel.x1 = e.clientX - wr.left;
+      rectSel.y1 = e.clientY - wr.top;
+    }
   });
-  canvas.addEventListener('pointerup', () => { panDrag = null; canvas.style.cursor = ''; });
+  canvas.addEventListener('pointerup', e => {
+    if (panDrag) {
+      panDrag = null;
+      canvas.style.cursor = '';
+    } else if (rectSel) {
+      const minX = Math.min(rectSel.x0, rectSel.x1);
+      const minY = Math.min(rectSel.y0, rectSel.y1);
+      const maxX = Math.max(rectSel.x0, rectSel.x1);
+      const maxY = Math.max(rectSel.y0, rectSel.y1);
+      if (maxX - minX > 6 || maxY - minY > 6) {
+        nodes.forEach(n => {
+          const s = w2s(n.x, n.y);
+          if (s.x >= minX && s.x <= maxX && s.y >= minY && s.y <= maxY) {
+            selectedIds.add(n.id);
+          }
+        });
+      }
+      rectSel = null;
+    }
+  });
 
   wrapper.addEventListener('pointermove', e => {
     if (!connFrom) return;
@@ -1385,7 +1457,7 @@ function initCanvasSection() {
 
   /* ── Zoom ───────────────────────────────────────────────── */
   function doZoom(f) {
-    const cx = canvasW()/2, cy = canvas.height/2;
+    const cx = canvasW()/2, cy = canvasH()/2;
     const ns = Math.max(0.2, Math.min(3, vp.scale * f));
     vp.x = cx - (cx - vp.x) * (ns / vp.scale);
     vp.y = cy - (cy - vp.y) * (ns / vp.scale);
@@ -1393,7 +1465,7 @@ function initCanvasSection() {
   }
   document.getElementById('cv-zi')?.addEventListener('click', () => doZoom(1.25));
   document.getElementById('cv-zo')?.addEventListener('click', () => doZoom(1/1.25));
-  document.getElementById('cv-rst')?.addEventListener('click', () => { vp.x = canvasW()/2; vp.y = canvas.height/2; vp.scale = 1; });
+  document.getElementById('cv-rst')?.addEventListener('click', () => { vp.x = canvasW()/2; vp.y = canvasH()/2; vp.scale = 1; });
   document.getElementById('cv-fs')?.addEventListener('click', () => {
     if (!document.fullscreenElement) wrapper.requestFullscreen().catch(()=>{});
     else document.exitFullscreen();
@@ -1410,7 +1482,15 @@ function initCanvasSection() {
     vp.scale = ns;
   }, { passive: false });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.fullscreenElement) document.exitFullscreen(); });
-  document.addEventListener('fullscreenchange', () => setTimeout(resize, 50));
+  document.addEventListener('fullscreenchange', () => {
+    setTimeout(resize, 50);
+    const cursorEls = [document.getElementById('cursor-dot'), document.getElementById('cursor-ring'), document.getElementById('cursor')].filter(Boolean);
+    if (document.fullscreenElement) {
+      cursorEls.forEach(el => document.fullscreenElement.appendChild(el));
+    } else {
+      cursorEls.forEach(el => document.body.appendChild(el));
+    }
+  });
 
   /* ── Sidebar ────────────────────────────────────────────── */
   function renderShop() {
@@ -1434,7 +1514,7 @@ function initCanvasSection() {
       btn.addEventListener('click', () => {
         if (argent < def.cost) return;
         argent -= def.cost;
-        const { x, y } = s2w(canvasW()/2 + (Math.random()-0.5)*140, canvas.height/2 + (Math.random()-0.5)*80);
+        const { x, y } = s2w(canvasW()/2 + (Math.random()-0.5)*140, canvasH()/2 + (Math.random()-0.5)*80);
         addNode(type, x, y);
       });
       btn.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
@@ -1507,7 +1587,7 @@ function initCanvasSection() {
 
   requestAnimationFrame(() => {
     vp.x = canvasW() / 2;
-    vp.y = canvas.height / 2;
+    vp.y = canvasH() / 2;
     addNode('pc', 0, 0);
     renderChals();
     renderShop();

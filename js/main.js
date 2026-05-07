@@ -1357,6 +1357,12 @@ function initCanvasSection() {
   }
 
   function removeNode(id) {
+    const node = nodes.find(n => n.id === id);
+    if (node) {
+      const def = DEFS[node.type];
+      argent += def.cost;
+      (node.apps || []).forEach(a => { argent += APP_DEFS[a]?.cost || 0; });
+    }
     nodes.splice(nodes.findIndex(n => n.id === id), 1);
     for (let i = edges.length-1; i>=0; i--) {
       if (edges[i].from === id || edges[i].to === id) edges.splice(i, 1);

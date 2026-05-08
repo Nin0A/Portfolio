@@ -715,6 +715,14 @@ function initCanvasSection() {
       challenge:{ desc:"Calcule la somme des carrés de 1 à n  —  1² + 2² + ... + n²", objective:"gpu_id = Σ i² pour i de 1 à n",
         make:()=>{ const n=ri(3,8); let s=0; for(let i=1;i<=n;i++)s+=i*i; return {vars:{gpu_id:0,n},target:s,varName:'gpu_id'}; },
         kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'+=',rx:/\+=/},{l:'i * i  ou  i**2',rx:/i\s*\*\s*i|i\s*\*\*\s*2/}] }},
+    antivirus:{ icon:'🛡️', name:'Antivirus',         cost:600,  rev:0,   for:['end','srv'], isDefense:true, attackReduce:0.5,
+      challenge:{ desc:"Compte les nombres impairs de 1 à n et stocke dans threats (utilise % pour détecter)", objective:"threats = nombre d'impairs de 1 à n",
+        make:()=>{ const n=ri(5,15)*2-1; let c=0; for(let i=1;i<=n;i++) if(i%2!==0)c++; return {vars:{threats:0,n},target:c,varName:'threats'}; },
+        kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'if (',rx:/\bif\s*\(/},{l:'%',rx:/%/}] }},
+    vpn:     { icon:'🔒', name:'VPN',                cost:2000, rev:5,   for:['end','srv'], isDefense:true, attackReduce:0.85,
+      challenge:{ desc:"Trouve le plus grand diviseur commun de a et b (algo d'Euclide avec while et %)", objective:"key = PGCD(a, b)",
+        make:()=>{ const g=rp([2,3,4,5,6,7]); const a=g*ri(3,9), b=g*ri(2,8); let x=a,y=b; while(y!==0){let t=y;y=x%y;x=t;} return {vars:{key:0,a,b},target:x,varName:'key'}; },
+        kw:[{l:'while (',rx:/\bwhile\s*\(/},{l:'%',rx:/%/}] }},
   };
 
   const CAT_LABEL = { end:'POSTE', srv:'SERVEUR', lan:'LAN', net:'RÉSEAU', sec:'SÉCURITÉ', wan:'WAN' };
@@ -757,6 +765,10 @@ function initCanvasSection() {
   let ipcTargetId = null, apsTargetId = null;
   let cchNodeId = null, cchAppKey = null, cchState = null; // cchState = {vars, target, varName}
   const NW = 160, GRID = 40, CSB_W = 220, CSB_H = 150;
+
+  /* ── Attack state ─────────────────────────────────────────── */
+  const attacks  = new Set(); // Set of attacked node IDs
+  let attackCooldown = 0;     // seconds until next attack can start
 
   /* ── Helpers ────────────────────────────────────────────── */
   function w2s(wx, wy) { return { x: wx * vp.scale + vp.x, y: wy * vp.scale + vp.y }; }
@@ -851,13 +863,96 @@ function initCanvasSection() {
   /* ── Rate computation ────────────────────────────────────── */
   function reRates() {
     computeOnline();
-    // Trafic = online device count × 2 (network activity metric)
     dataPerSec = nodes.filter(n => n.online).length * 2;
-    // Revenue from apps on online nodes
-    const appRev = nodes.reduce((s, n) => s + (n.online ? nodeAppRevenue(n) : 0), 0);
+    // Attacked nodes generate no revenue
+    const appRev = nodes.reduce((s, n) => s + (n.online && !attacks.has(n.id) ? nodeAppRevenue(n) : 0), 0);
     const secBonus = Math.pow(1.5, nodes.filter(n => n.online && n.type === 'firewall').length);
     const dcBonus  = Math.pow(2,   nodes.filter(n => n.online && n.type === 'datacenter').length);
     moneyPerSec = appRev * secBonus * dcBonus;
+  }
+
+  /* ── Attack system ──────────────────────────────────────── */
+  function nodeAttackProbability(n) {
+    // Base multiplier from defense apps
+    const reduce = (n.apps || []).reduce((m, a) => m * (1 - (APP_DEFS[a]?.attackReduce || 0)), 1);
+    // Firewall protects nodes upstream of it (rough heuristic: if a firewall is online, global protection)
+    const fwBonus = nodes.some(nd => nd.online && nd.type === 'firewall') ? 0.5 : 1;
+    return reduce * fwBonus;
+  }
+
+  function tickAttacks(dt) {
+    attackCooldown -= dt;
+    if (attackCooldown > 0) return;
+
+    // Attack frequency grows with totalData (more traffic = more visibility on the internet)
+    // Min interval ~45s early game, ~18s at high traffic
+    const minInterval = Math.max(18, 45 - totalData / 800);
+
+    // Only pick from online end/srv nodes that aren't already attacked
+    const targets = nodes.filter(n =>
+      n.online &&
+      ['end','srv'].includes(DEFS[n.type].cat) &&
+      !attacks.has(n.id) &&
+      nodeAppRevenue(n) > 0
+    );
+    if (!targets.length) { attackCooldown = minInterval; return; }
+
+    // Pick a random target weighted by attack probability (higher prob = more likely)
+    const weights = targets.map(n => nodeAttackProbability(n));
+    const totalW  = weights.reduce((s, w) => s + w, 0);
+    if (totalW <= 0) { attackCooldown = minInterval; return; }
+
+    let r = Math.random() * totalW;
+    let chosen = null;
+    for (let i = 0; i < targets.length; i++) {
+      r -= weights[i];
+      if (r <= 0) { chosen = targets[i]; break; }
+    }
+    if (!chosen) chosen = targets[targets.length - 1];
+
+    // Only trigger if random chance is met (defense apps can push this to near-zero)
+    const baseChance = Math.min(0.85, 0.35 + totalData / 15000);
+    if (Math.random() > baseChance * nodeAttackProbability(chosen)) {
+      attackCooldown = minInterval * 0.6;
+      return;
+    }
+
+    attacks.add(chosen.id);
+    reRates();
+    showAttackAlert(chosen);
+    attackCooldown = minInterval;
+  }
+
+  function resolveAttack(nodeId) {
+    if (!attacks.has(nodeId)) return;
+    attacks.delete(nodeId);
+    reRates();
+    updateAttackAlerts();
+  }
+
+  function showAttackAlert(node) {
+    const el = document.getElementById('csb-alerts');
+    if (!el) return;
+    el.hidden = false;
+    const def = DEFS[node.type];
+    const item = document.createElement('div');
+    item.className = 'attack-alert';
+    item.dataset.nodeId = node.id;
+    item.innerHTML = `<span class="atk-icon">⚠️</span><span class="atk-msg"><b>${def.icon} ${def.name}</b><br><small>Reconfigurer l'IP pour résoudre</small></span>`;
+    item.addEventListener('click', () => openIPConfig(node.id));
+    el.appendChild(item);
+    // Pulse the sidebar
+    const csb = document.getElementById('csb');
+    if (csb) { csb.classList.add('notif'); setTimeout(() => csb.classList.remove('notif'), 1400); }
+  }
+
+  function updateAttackAlerts() {
+    const el = document.getElementById('csb-alerts');
+    if (!el) return;
+    el.querySelectorAll('.attack-alert').forEach(item => {
+      if (!attacks.has(item.dataset.nodeId)) item.remove();
+    });
+    if (!el.children.length) el.hidden = true;
   }
 
   /* ── Connection validation ──────────────────────────────── */
@@ -917,8 +1012,13 @@ function initCanvasSection() {
     const def = DEFS[node.type];
     const cat = def.cat;
 
-    document.getElementById('ipc-title').textContent = `${def.icon} ${def.name} — IP`;
-    document.getElementById('ipc-err').textContent = '';
+    const isAttacked = attacks.has(id);
+    document.getElementById('ipc-title').textContent = isAttacked
+      ? `⚠️ ${def.name} — ATTAQUÉ ! Changer l'IP`
+      : `${def.icon} ${def.name} — IP`;
+    document.getElementById('ipc-err').textContent = isAttacked
+      ? 'Votre nœud est sous attaque ! Entrez une nouvelle IP pour couper la connexion.'
+      : '';
 
     const body = document.getElementById('ipc-body');
     const suggestBtn = `<button type="button" id="ipc-suggest" class="ipc-suggest-btn">📡 Suggestion auto (depuis la topologie)</button>`;
@@ -974,8 +1074,11 @@ function initCanvasSection() {
     }
 
     ipcModal.classList.remove('open');
+    const wasAttacked = attacks.has(ipcTargetId);
+    resolveAttack(ipcTargetId);
     ipcTargetId = null;
     reRates(); checkChals(); renderShop();
+    if (wasAttacked) updateAttackAlerts();
   }
 
   function closeIPConfig() { ipcModal?.classList.remove('open'); ipcTargetId = null; }
@@ -1027,9 +1130,12 @@ function initCanvasSection() {
       const can = !installed && argent >= app.cost;
       const btn = document.createElement('button');
       btn.className = `aps-item${installed ? ' installed' : ''}${!can && !installed ? ' cant' : ''}`;
+      const revStr = app.isDefense
+        ? (app.rev > 0 ? `+${app.rev} 💰/s · 🛡️ défense` : '🛡️ défense — réduit les attaques')
+        : `+${app.rev} 💰/s`;
       btn.innerHTML = `
         <span class="aps-icon">${app.icon}</span>
-        <span class="csi-info"><b>${app.name}</b><small>+${app.rev} 💰/s${installed ? ' · installé' : ''}</small></span>
+        <span class="csi-info"><b>${app.name}</b><small>${revStr}${installed ? ' · installé' : ''}</small></span>
         <span class="aps-cost${installed ? ' done' : ''}">${installed ? '✓' : fmtN(app.cost)+'💰'}</span>`;
       if (!installed && can) {
         btn.addEventListener('click', () => openCodeChallenge(apsTargetId, key));
@@ -1218,14 +1324,16 @@ function initCanvasSection() {
 
       const DL = [77, 166, 255];   // download — blue
       const UL = [249, 115, 22];   // upload   — orange
+      const AT = [239, 68, 68];    // attack   — red
       const idle = DEFS[fn.type].col;
+      const underAttack = attacks.has(fn.id) || attacks.has(tn.id);
 
       ctx.save();
 
-      // Two lanes: download on top, upload on bottom
+      // Two lanes: download on top, upload on bottom (red when attacked)
       [
-        { col: active ? DL : idle, oy: -off, dir:  1 },
-        { col: active ? UL : idle, oy: +off, dir: -1 },
+        { col: underAttack ? AT : (active ? DL : idle), oy: -off, dir:  1 },
+        { col: underAttack ? AT : (active ? UL : idle), oy: +off, dir: -1 },
       ].forEach(({ col, oy, dir }) => {
         const [r,g,b] = col;
 
@@ -1282,11 +1390,17 @@ function initCanvasSection() {
       const dotEl = el.querySelector('.node-online-dot');
       if (dotEl) dotEl.className = `node-online-dot${n.online ? ' is-online' : ''}`;
 
+      el.classList.toggle('attacked', attacks.has(n.id));
+
       const rEl = el.querySelector('.node-rate');
       if (rEl) {
         const def = DEFS[n.type];
         if (['end','srv'].includes(def.cat)) {
-          if (n.online) {
+          if (attacks.has(n.id)) {
+            rEl.textContent = '⚠️ ATTAQUÉ — changer IP';
+            rEl.style.color = '#ef4444';
+            rEl.style.opacity = '1';
+          } else if (n.online) {
             const rev = nodeAppRevenue(n);
             rEl.textContent = rev > 0 ? `+${rev} 💰/s` : '0 app — 0 💰/s';
             rEl.style.color = '';
@@ -1294,7 +1408,7 @@ function initCanvasSection() {
             rEl.textContent = isValidIP(n.cfg?.addr) ? 'chemin invalide' : 'non configuré';
             rEl.style.color = 'var(--text-muted)';
           }
-          rEl.style.opacity = n.online ? '1' : '0.5';
+          if (!attacks.has(n.id)) rEl.style.opacity = n.online ? '1' : '0.5';
         } else if (def.cat === 'lan') {
           const portCount = edges.filter(e => e.to === n.id).length;
           rEl.textContent = `${portCount}/4 ports`;
@@ -1649,6 +1763,7 @@ function initCanvasSection() {
     animT   += dt;
     totalData += dataPerSec  * dt;
     argent    += moneyPerSec * dt;
+    tickAttacks(dt);
     if (Math.floor(animT * 2) !== Math.floor((animT - dt) * 2)) {
       checkChals(); updateStats();
     }

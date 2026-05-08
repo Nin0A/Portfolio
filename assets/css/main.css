@@ -1647,6 +1647,42 @@ button {
   animation: node-shake 0.35s ease;
 }
 
+.canvas-node.attacked {
+  border-color: #ef4444 !important;
+  animation: node-attack-pulse 1.2s ease-in-out infinite;
+}
+@keyframes node-attack-pulse {
+  0%,100% { box-shadow: 0 0 0 2px rgba(239,68,68,0.25); }
+  50%      { box-shadow: 0 0 0 8px rgba(239,68,68,0.55); }
+}
+
+/* ── Attack alerts ── */
+.csb-alerts {
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid rgba(239,68,68,0.3);
+  background: rgba(239,68,68,0.07);
+}
+.attack-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.35);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1.3;
+  transition: background 0.15s;
+}
+.attack-alert:hover { background: rgba(239,68,68,0.22); }
+.atk-icon { font-size: 14px; flex-shrink: 0; }
+.atk-msg b { color: #ef4444; display: block; margin-bottom: 1px; }
+.atk-msg small { color: var(--text-muted); }
+
 /* ── IP Config Modal ── */
 .ip-cfg {
   display: none;
@@ -1903,6 +1939,27 @@ button {
   .csc-reward     { font-size: 8px; }
 
   .canvas-hint { display: none; }
+
+  /* Alerts panel: compact strip on mobile */
+  .csb-alerts {
+    flex-direction: row;
+    flex-shrink: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px 6px;
+    gap: 4px;
+    border-bottom: none;
+    border-right: 1px solid rgba(239,68,68,0.3);
+    max-width: 100px;
+  }
+  .attack-alert {
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 4px 5px;
+    font-size: 9px;
+    min-width: 60px;
+  }
+  .atk-msg small { display: none; }
 }
 
 /* ── Code Challenge Modal ── */

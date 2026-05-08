@@ -679,15 +679,42 @@ function initCanvasSection() {
   };
 
   /* ── App definitions ─────────────────────────────────────── */
+  const ri = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+  const rp = arr   => arr[Math.floor(Math.random()*arr.length)];
+
   const APP_DEFS = {
-    browser:  { icon:'🌐', name:'Navigateur Web',    cost:50,   rev:1,   for:['end','srv'], challenge:{ desc:"Initialise le module navigateur",  keywords:['import','browser','start'],  varName:'timeout',  pick:[500,1000,2000,3000,5000] } },
-    email:    { icon:'📧', name:'Client Email',      cost:150,  rev:3,   for:['end'],       challenge:{ desc:"Configure le client SMTP",         keywords:['connect','smtp','auth'],     varName:'port',     pick:[25,465,587] } },
-    office:   { icon:'💼', name:'Suite Bureautique', cost:400,  rev:8,   for:['end'],       challenge:{ desc:"Lance la suite bureautique",        keywords:['load','office','init'],      varName:'workers',  range:[1,16] } },
-    webapp:   { icon:'🌍', name:'Serveur Web',       cost:500,  rev:15,  for:['srv'],       challenge:{ desc:"Démarre le serveur HTTP",           keywords:['server','listen','http'],    varName:'port',     pick:[80,443,8080,3000,8443] } },
-    mining:   { icon:'⛏️', name:'Minage Crypto',    cost:1200, rev:20,  for:['end','srv'], challenge:{ desc:"Lance le process de minage",        keywords:['mine','block','hash'],       varName:'threads',  range:[1,32] } },
-    database: { icon:'🗄️', name:'Base de données',  cost:1500, rev:30,  for:['srv'],       challenge:{ desc:"Initialise la base de données",     keywords:['db','connect','schema'],     varName:'port',     pick:[3306,5432,27017,1433] } },
-    trading:  { icon:'📈', name:'Bot de Trading',    cost:4000, rev:60,  for:['end','srv'], challenge:{ desc:"Configure le bot de trading",       keywords:['trade','market','api'],      varName:'interval', range:[10,999] } },
-    ai_srv:   { icon:'🤖', name:'IA en Production',  cost:8000, rev:120, for:['srv'],       challenge:{ desc:"Déploie le modèle d'IA",            keywords:['model','load','deploy'],     varName:'gpu_id',   range:[0,7] } },
+    browser: { icon:'🌐', name:'Navigateur Web',    cost:50,   rev:1,   for:['end','srv'],
+      challenge:{ desc:"Multiplie timeout par factor en bouclant — pas d'affectation directe", objective:"timeout = timeout × factor",
+        make:()=>{ const t=ri(5,20),f=ri(2,6); return {vars:{timeout:t,factor:f},target:t*f,varName:'timeout'}; },
+        kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'+=',rx:/\+=/}] }},
+    email: { icon:'📧', name:'Client Email',      cost:150,  rev:3,   for:['end'],
+      challenge:{ desc:"Incrémente port de step, répété limit fois", objective:"port = port + step × limit",
+        make:()=>{ const p=rp([25,110,143]),s=ri(5,20),l=ri(3,8); return {vars:{port:p,step:s,limit:l},target:p+s*l,varName:'port'}; },
+        kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'+=',rx:/\+=/}] }},
+    office: { icon:'💼', name:'Suite Bureautique', cost:400,  rev:8,   for:['end'],
+      challenge:{ desc:"Calcule workers = 2 puissance exponent en multipliant à chaque tour", objective:"workers = 2^exponent",
+        make:()=>{ const e=ri(2,5); return {vars:{workers:1,exponent:e},target:Math.pow(2,e),varName:'workers'}; },
+        kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'*=',rx:/\*=/}] }},
+    webapp: { icon:'🌍', name:'Serveur Web',       cost:500,  rev:15,  for:['srv'],
+      challenge:{ desc:"Double port tant qu'il est inférieur à limit", objective:"port doublé jusqu'à port ≥ limit",
+        make:()=>{ const p=rp([7,11,13,17,19]),l=ri(100,500); let v=p; while(v<l)v*=2; return {vars:{port:p,limit:l},target:v,varName:'port'}; },
+        kw:[{l:'while (',rx:/\bwhile\s*\(/},{l:'*=',rx:/\*=/}] }},
+    mining: { icon:'⛏️', name:'Minage Crypto',    cost:1200, rev:20,  for:['end','srv'],
+      challenge:{ desc:"Accumule threads de step en step jusqu'à dépasser limit", objective:"threads += step jusqu'à threads ≥ limit",
+        make:()=>{ const s=ri(2,8),l=ri(15,40); let t=0; while(t<l)t+=s; return {vars:{threads:0,step:s,limit:l},target:t,varName:'threads'}; },
+        kw:[{l:'while (',rx:/\bwhile\s*\(/},{l:'+=',rx:/\+=/}] }},
+    database: { icon:'🗄️', name:'Base de données',  cost:1500, rev:30,  for:['srv'],
+      challenge:{ desc:"Assigne port selon dbType avec des if/else if", objective:"port = port du moteur dbType",
+        make:()=>{ const types=[{n:'mysql',p:3306},{n:'postgres',p:5432},{n:'mongo',p:27017}]; const t=rp(types); return {vars:{port:0,dbType:t.n,mysql:3306,postgres:5432,mongo:27017},target:t.p,varName:'port'}; },
+        kw:[{l:'if (',rx:/\bif\s*\(/},{l:'===',rx:/===/}] }},
+    trading: { icon:'📈', name:'Bot de Trading',    cost:4000, rev:60,  for:['end','srv'],
+      challenge:{ desc:"Calcule interval = base × multiplier en ajoutant base en boucle", objective:"interval = base × multiplier",
+        make:()=>{ const b=rp([10,20,25,50]),m=ri(3,9); return {vars:{interval:0,base:b,multiplier:m},target:b*m,varName:'interval'}; },
+        kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'+=',rx:/\+=/}] }},
+    ai_srv:  { icon:'🤖', name:'IA en Production',  cost:8000, rev:120, for:['srv'],
+      challenge:{ desc:"Trouve le plus petit gpu_id tel que gpu_id² >= memory", objective:"gpu_id² ≥ memory",
+        make:()=>{ const mem=rp([4,9,16,25,36,49]); let g=0; while(g*g<mem)g++; return {vars:{gpu_id:0,memory:mem},target:g,varName:'gpu_id'}; },
+        kw:[{l:'while (',rx:/\bwhile\s*\(/},{l:'++',rx:/\+\+/}] }},
   };
 
   const CAT_LABEL = { end:'POSTE', srv:'SERVEUR', lan:'LAN', net:'RÉSEAU', sec:'SÉCURITÉ', wan:'WAN' };
@@ -728,7 +755,7 @@ function initCanvasSection() {
   let connFrom = null, connPos = null;
   let openMenuId = null;
   let ipcTargetId = null, apsTargetId = null;
-  let cchNodeId = null, cchAppKey = null, cchExpected = null;
+  let cchNodeId = null, cchAppKey = null, cchState = null; // cchState = {vars, target, varName}
   const NW = 160, GRID = 40, CSB_W = 220, CSB_H = 150;
 
   /* ── Helpers ────────────────────────────────────────────── */
@@ -1014,23 +1041,44 @@ function initCanvasSection() {
   function closeAppStore() { apsModal?.classList.remove('open'); apsTargetId = null; }
 
   /* ── Code Challenge ─────────────────────────────────────── */
+  function runSandbox(code, vars, varName) {
+    const decls = Object.entries(vars).map(([k,v]) => `let ${k} = ${JSON.stringify(v)};`).join('\n');
+    const keys  = Object.keys(vars);
+    try {
+      // Shadow browser globals for basic safety
+      const fn = new Function(
+        'window','document','fetch','XMLHttpRequest','alert','prompt','confirm','eval','Function',
+        `${decls}\n${code}\nreturn {${keys.join(',')}};`
+      );
+      const out = fn(undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined,undefined);
+      return { ok: true, value: out[varName] };
+    } catch(e) {
+      return { ok: false, error: e.message };
+    }
+  }
+
   function openCodeChallenge(nodeId, appKey) {
     const app = APP_DEFS[appKey];
     if (!app?.challenge) return;
     const ch = app.challenge;
     cchNodeId = nodeId; cchAppKey = appKey;
-    cchExpected = ch.pick
-      ? ch.pick[Math.floor(Math.random() * ch.pick.length)]
-      : ch.range[0] + Math.floor(Math.random() * (ch.range[1] - ch.range[0] + 1));
+    cchState  = ch.make();
 
     const modal = document.getElementById('code-challenge');
     if (!modal) return;
-    document.getElementById('cch-title').textContent  = `${app.icon} Installer — ${app.name}`;
-    document.getElementById('cch-desc').textContent   = ch.desc;
-    document.getElementById('cch-var-req').textContent = `${ch.varName} = ${cchExpected}`;
+    document.getElementById('cch-title').textContent     = `${app.icon} Installer — ${app.name}`;
+    document.getElementById('cch-desc').textContent      = ch.desc;
+    document.getElementById('cch-objective').textContent = `Objectif : ${ch.objective}`;
 
+    // Display injected variables
+    const varsEl = document.getElementById('cch-vars');
+    varsEl.innerHTML = Object.entries(cchState.vars)
+      .map(([k,v]) => `<span class="cch-var"><span class="cch-vname">${k}</span><span class="cch-veq"> = </span><span class="cch-vval">${JSON.stringify(v)}</span></span>`)
+      .join('');
+
+    // Display required constructs
     const kwEl = document.getElementById('cch-keywords');
-    kwEl.innerHTML = ch.keywords.map(k => `<code class="cch-kw">${k}</code>`).join('');
+    kwEl.innerHTML = ch.kw.map(k => `<code class="cch-kw">${k.l}</code>`).join('');
 
     const input = document.getElementById('cch-input');
     input.value = '';
@@ -1040,26 +1088,28 @@ function initCanvasSection() {
   }
 
   function submitCodeChallenge() {
-    const code = document.getElementById('cch-input').value;
-    const app  = APP_DEFS[cchAppKey];
-    const ch   = app.challenge;
+    const code  = document.getElementById('cch-input').value.trim();
+    const app   = APP_DEFS[cchAppKey];
+    const ch    = app.challenge;
+    const { vars, target, varName } = cchState;
     const errEl = document.getElementById('cch-err');
+    const inputEl = document.getElementById('cch-input');
+    const shake = msg => {
+      errEl.textContent = msg;
+      inputEl.classList.add('cch-shake');
+      setTimeout(() => inputEl.classList.remove('cch-shake'), 400);
+    };
 
-    const missing = ch.keywords.filter(kw => !code.includes(kw));
-    if (missing.length) {
-      errEl.textContent = `Mots-clés manquants : ${missing.join(', ')}`;
-      document.getElementById('cch-input').classList.add('cch-shake');
-      setTimeout(() => document.getElementById('cch-input').classList.remove('cch-shake'), 400);
-      return;
-    }
-    const varRx = new RegExp(`${ch.varName}\\s*=\\s*${cchExpected}(?:\\D|$)`);
-    if (!varRx.test(code)) {
-      errEl.textContent = `Variable incorrecte : ${ch.varName} doit valoir ${cchExpected}`;
-      document.getElementById('cch-input').classList.add('cch-shake');
-      setTimeout(() => document.getElementById('cch-input').classList.remove('cch-shake'), 400);
-      return;
-    }
+    // Check constructs via regex
+    const missing = ch.kw.filter(k => !k.rx.test(code));
+    if (missing.length) { shake(`Construit manquant : ${missing.map(k=>k.l).join(', ')}`); return; }
 
+    // Run code in sandbox
+    const result = runSandbox(code, vars, varName);
+    if (!result.ok) { shake(`Erreur : ${result.error}`); return; }
+    if (result.value !== target) { shake(`${varName} vaut ${result.value} — attendu ${target}`); return; }
+
+    // Success — install app
     const node = nodes.find(n => n.id === cchNodeId);
     if (node && argent >= app.cost) {
       argent -= app.cost;
@@ -1073,7 +1123,7 @@ function initCanvasSection() {
 
   function closeCodeChallenge() {
     document.getElementById('code-challenge')?.classList.remove('open');
-    cchNodeId = null; cchAppKey = null; cchExpected = null;
+    cchNodeId = null; cchAppKey = null; cchState = null;
   }
 
   const cchModal = document.getElementById('code-challenge');

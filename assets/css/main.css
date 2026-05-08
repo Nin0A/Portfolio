@@ -1958,15 +1958,33 @@ button {
   padding: 1px 6px;
 }
 
-.cch-var-req {
+/* Variables panel */
+.cch-vars {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cch-var {
+  font-family: monospace;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-2);
+  border: 1px solid var(--border-hover);
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+.cch-vname { color: #93c5fd; font-weight: 600; }
+.cch-veq   { color: var(--text-muted); }
+.cch-vval  { color: #4ade80; }
+
+/* Objective line */
+.cch-objective {
   font-family: monospace;
   font-size: 12px;
   font-weight: 600;
-  color: #4ade80;
-  background: rgba(74, 222, 128, 0.1);
-  border: 1px solid rgba(74, 222, 128, 0.2);
-  border-radius: 4px;
-  padding: 1px 8px;
+  color: #fbbf24;
 }
 
 .cch-input {

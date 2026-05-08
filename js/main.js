@@ -684,44 +684,44 @@ function initCanvasSection() {
 
   const APP_DEFS = {
     browser: { icon:'🌐', name:'Navigateur Web',    cost:50,   rev:1,   for:['end','srv'],
-      challenge:{ desc:"Multiplie timeout par factor en l'additionnant à lui-même dans une boucle", objective:"timeout = timeout × factor",
-        make:()=>{ const t=ri(5,20),f=ri(2,6); return {vars:{timeout:t,factor:f},target:t*f,varName:'timeout'}; },
+      challenge:{ desc:"Ajoute timeout à result dans une boucle de factor tours (result commence à 0)", objective:"result = timeout × factor",
+        make:()=>{ const t=ri(5,20),f=ri(2,6); return {vars:{result:0,timeout:t,factor:f},target:t*f,varName:'result'}; },
         kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'+=',rx:/\+=/}] }},
     email: { icon:'📧', name:'Client Email',        cost:150,  rev:3,   for:['end'],
-      challenge:{ desc:"Trouve le premier multiple de step strictement supérieur à port", objective:"port = 1er multiple de step > port",
-        make:()=>{ const s=rp([7,11,13,17]); const p=ri(20,80); let r=0; while(r<=p)r+=s; return {vars:{port:p,step:s},target:r,varName:'port'}; },
+      challenge:{ desc:"Part de port = 0, avance par step jusqu'à strictement dépasser limite", objective:"port = 1er multiple de step > limite",
+        make:()=>{ const s=rp([7,11,13,17]); const p=ri(20,80); let r=0; while(r<=p)r+=s; return {vars:{port:0,step:s,limite:p},target:r,varName:'port'}; },
         kw:[{l:'while (',rx:/\bwhile\s*\(/},{l:'+=',rx:/\+=/}] }},
     office: { icon:'💼', name:'Suite Bureautique',  cost:400,  rev:8,   for:['end'],
-      challenge:{ desc:"Calcule 2 puissance exponent en multipliant workers à chaque itération", objective:"workers = 2^exponent",
+      challenge:{ desc:"Multiplie workers par 2 à chaque tour de boucle, exponent fois (workers commence à 1)", objective:"workers = 2 ^ exponent",
         make:()=>{ const e=ri(2,5); return {vars:{workers:1,exponent:e},target:Math.pow(2,e),varName:'workers'}; },
         kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'*=',rx:/\*=/}] }},
     webapp: { icon:'🌍', name:'Serveur Web',         cost:500,  rev:15,  for:['srv'],
-      challenge:{ desc:"Assigne port selon le protocole : 'http'→80, 'https'→443, 'ws'→8080", objective:"port = valeur selon protocol",
+      challenge:{ desc:"Selon la valeur de protocol, assigne le bon numéro de port à la variable port", objective:"http → 80 · https → 443 · ws → 8080",
         make:()=>{ const t=rp([{n:'http',p:80},{n:'https',p:443},{n:'ws',p:8080}]); return {vars:{port:0,protocol:t.n},target:t.p,varName:'port'}; },
         kw:[{l:'if (',rx:/\bif\s*\(/},{l:'===',rx:/===/}] }},
     mining: { icon:'⛏️', name:'Minage Crypto',      cost:1200, rev:20,  for:['end','srv'],
-      challenge:{ desc:"Compte combien de multiples de divisor sont ≤ limit (utilise % pour vérifier)", objective:"threads = nombre de multiples de divisor ≤ limit",
+      challenge:{ desc:"Parcours les entiers de 1 à limit — si i est un multiple de divisor, incrémente threads", objective:"threads = nombre de multiples de divisor entre 1 et limit",
         make:()=>{ const d=rp([2,3,4,5,6]),l=ri(12,50); let c=0; for(let i=1;i<=l;i++) if(i%d===0)c++; return {vars:{threads:0,divisor:d,limit:l},target:c,varName:'threads'}; },
         kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'if (',rx:/\bif\s*\(/},{l:'%',rx:/%/}] }},
     database: { icon:'🗄️', name:'Base de données',  cost:1500, rev:30,  for:['srv'],
-      challenge:{ desc:"Additionne uniquement les nombres pairs de 0 à n inclus (utilise % pour filtrer)", objective:"port = somme des entiers pairs de 0 à n",
+      challenge:{ desc:"Additionne tous les entiers pairs de 0 à n inclus dans port (utilise % 2 pour tester la parité)", objective:"port = somme des pairs de 0 à n",
         make:()=>{ const n=ri(4,12)*2; let s=0; for(let i=0;i<=n;i++) if(i%2===0)s+=i; return {vars:{port:0,n},target:s,varName:'port'}; },
         kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'%',rx:/%/},{l:'+=',rx:/\+=/}] }},
     trading: { icon:'📈', name:'Bot de Trading',    cost:4000, rev:60,  for:['end','srv'],
-      challenge:{ desc:"Trouve la première puissance de 2 supérieure ou égale à threshold en doublant", objective:"interval = 1ère puissance de 2 ≥ threshold",
+      challenge:{ desc:"Double interval à chaque tour jusqu'à atteindre ou dépasser threshold (interval commence à 1)", objective:"interval = plus petite puissance de 2 ≥ threshold",
         make:()=>{ const t=rp([10,15,20,30,50,75,100]); let v=1; while(v<t)v*=2; return {vars:{interval:1,threshold:t},target:v,varName:'interval'}; },
         kw:[{l:'while (',rx:/\bwhile\s*\(/},{l:'*=',rx:/\*=/}] }},
     ai_srv:  { icon:'🤖', name:'IA en Production',  cost:8000, rev:120, for:['srv'],
-      challenge:{ desc:"Calcule la somme des carrés de 1 à n  —  1² + 2² + ... + n²", objective:"gpu_id = Σ i² pour i de 1 à n",
+      challenge:{ desc:"Calcule la somme des carrés de 1 à n : 1×1 + 2×2 + ... + n×n, stocke dans gpu_id", objective:"gpu_id = 1² + 2² + … + n²",
         make:()=>{ const n=ri(3,8); let s=0; for(let i=1;i<=n;i++)s+=i*i; return {vars:{gpu_id:0,n},target:s,varName:'gpu_id'}; },
         kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'+=',rx:/\+=/},{l:'i * i  ou  i**2',rx:/i\s*\*\s*i|i\s*\*\*\s*2/}] }},
     antivirus:{ icon:'🛡️', name:'Antivirus',         cost:600,  rev:0,   for:['end','srv'], isDefense:true, attackReduce:0.5,
-      challenge:{ desc:"Compte les nombres impairs de 1 à n et stocke dans threats (utilise % pour détecter)", objective:"threats = nombre d'impairs de 1 à n",
+      challenge:{ desc:"Parcours les entiers de 1 à n — si i est impair (reste % 2 différent de 0), incrémente threats", objective:"threats = nombre d'entiers impairs de 1 à n",
         make:()=>{ const n=ri(5,15)*2-1; let c=0; for(let i=1;i<=n;i++) if(i%2!==0)c++; return {vars:{threats:0,n},target:c,varName:'threats'}; },
         kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'if (',rx:/\bif\s*\(/},{l:'%',rx:/%/}] }},
     vpn:     { icon:'🔒', name:'VPN',                cost:2000, rev:5,   for:['end','srv'], isDefense:true, attackReduce:0.85,
-      challenge:{ desc:"Trouve le plus grand diviseur commun de a et b (algo d'Euclide avec while et %)", objective:"key = PGCD(a, b)",
-        make:()=>{ const g=rp([2,3,4,5,6,7]); const a=g*ri(3,9), b=g*ri(2,8); let x=a,y=b; while(y!==0){let t=y;y=x%y;x=t;} return {vars:{key:0,a,b},target:x,varName:'key'}; },
+      challenge:{ desc:"Décrémente key tant qu'il n'est pas divisible par divisor (tant que key % divisor !== 0)", objective:"key = plus grand multiple de divisor ≤ valeur initiale de key",
+        make:()=>{ const d=rp([3,4,5,6,7]); const a=ri(15,50); const r=a-a%d; return {vars:{key:a,divisor:d},target:r,varName:'key'}; },
         kw:[{l:'while (',rx:/\bwhile\s*\(/},{l:'%',rx:/%/}] }},
   };
 
@@ -1187,10 +1187,14 @@ function initCanvasSection() {
     kwEl.innerHTML = ch.kw.map(k => `<code class="cch-kw">${k.l}</code>`).join('');
 
     const input = document.getElementById('cch-input');
-    input.value = '';
+    const varNames = Object.keys(cchState.vars).join(', ');
+    input.value = `// Variables disponibles : ${varNames}\n`;
     document.getElementById('cch-err').textContent = '';
     modal.classList.add('open');
-    setTimeout(() => input.focus(), 80);
+    setTimeout(() => {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }, 80);
   }
 
   function submitCodeChallenge() {
@@ -1213,7 +1217,10 @@ function initCanvasSection() {
     // Run code in sandbox
     const result = runSandbox(code, vars, varName);
     if (!result.ok) { shake(`Erreur : ${result.error}`); return; }
-    if (result.value !== target) { shake(`${varName} vaut ${result.value} — attendu ${target}`); return; }
+    if (result.value !== target) {
+      shake(`${varName} = ${result.value} ✗  (attendu : ${target}) — Vérifie ta boucle et les bornes.`);
+      return;
+    }
 
     // Success — install app
     const node = nodes.find(n => n.id === cchNodeId);

@@ -1206,7 +1206,7 @@ function initCanvasSection() {
     for (let gy = oy-step; gy < H+step; gy += step) { ctx.moveTo(0,gy); ctx.lineTo(W,gy); }
     ctx.stroke();
 
-    // Edges
+    // Edges — double lane: download (blue) + upload (orange)
     edges.forEach(edge => {
       const fn = nodes.find(n => n.id === edge.from);
       const tn = nodes.find(n => n.id === edge.to);
@@ -1214,28 +1214,42 @@ function initCanvasSection() {
       const fp = outP(fn), tp = inP(tn);
       const cpx = Math.max(Math.abs(tp.x - fp.x) * 0.5, 50);
       const active = fn.online && tn.online;
-      const [r,g,b] = active ? [74,222,128] : DEFS[fn.type].col;
-      const baseAlpha = active ? 0.25 : 0.12;
-      const lineAlpha = active ? 0.9 : 0.35;
+      const off = 3; // perpendicular screen-space offset
+
+      const DL = [77, 166, 255];   // download — blue
+      const UL = [249, 115, 22];   // upload   — orange
+      const idle = DEFS[fn.type].col;
 
       ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(fp.x, fp.y);
-      ctx.bezierCurveTo(fp.x+cpx, fp.y, tp.x-cpx, tp.y, tp.x, tp.y);
-      ctx.strokeStyle = `rgba(${r},${g},${b},${baseAlpha})`;
-      ctx.lineWidth = 2; ctx.setLineDash([]);
-      ctx.stroke();
 
-      if (active) {
+      // Two lanes: download on top, upload on bottom
+      [
+        { col: active ? DL : idle, oy: -off, dir:  1 },
+        { col: active ? UL : idle, oy: +off, dir: -1 },
+      ].forEach(({ col, oy, dir }) => {
+        const [r,g,b] = col;
+
+        // Track (low-opacity solid)
         ctx.beginPath();
-        ctx.moveTo(fp.x, fp.y);
-        ctx.bezierCurveTo(fp.x+cpx, fp.y, tp.x-cpx, tp.y, tp.x, tp.y);
-        ctx.strokeStyle = `rgba(${r},${g},${b},${lineAlpha})`;
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([5, 13]);
-        ctx.lineDashOffset = -(animT * 38);
+        ctx.moveTo(fp.x, fp.y + oy);
+        ctx.bezierCurveTo(fp.x+cpx, fp.y+oy, tp.x-cpx, tp.y+oy, tp.x, tp.y+oy);
+        ctx.strokeStyle = `rgba(${r},${g},${b},${active ? 0.18 : 0.10})`;
+        ctx.lineWidth = 2; ctx.setLineDash([]);
         ctx.stroke();
-      }
+
+        // Animated flow dashes when active
+        if (active) {
+          ctx.beginPath();
+          ctx.moveTo(fp.x, fp.y + oy);
+          ctx.bezierCurveTo(fp.x+cpx, fp.y+oy, tp.x-cpx, tp.y+oy, tp.x, tp.y+oy);
+          ctx.strokeStyle = `rgba(${r},${g},${b},0.88)`;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([5, 13]);
+          ctx.lineDashOffset = -(animT * 38 * dir);
+          ctx.stroke();
+        }
+      });
+
       ctx.restore();
     });
 

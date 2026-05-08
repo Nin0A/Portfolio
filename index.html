@@ -425,6 +425,33 @@
         </div>
       </div>
 
+      <!-- Code challenge modal -->
+      <div id="code-challenge" class="ip-cfg">
+        <div class="ipc-inner cch-inner">
+          <div class="ipc-head">
+            <span id="cch-title">Installer</span>
+            <button id="cch-close">✕</button>
+          </div>
+          <p id="cch-desc" class="cch-desc"></p>
+          <div class="cch-requirements">
+            <div class="cch-req-row">
+              <span class="cch-req-label">Mots-clés requis</span>
+              <div id="cch-keywords" class="cch-keywords"></div>
+            </div>
+            <div class="cch-req-row">
+              <span class="cch-req-label">Variable à définir</span>
+              <code id="cch-var-req" class="cch-var-req"></code>
+            </div>
+          </div>
+          <textarea id="cch-input" class="cch-input" placeholder="// Écris ton code ici...&#10;// Ex: import browser&#10;//     timeout = 1000" spellcheck="false" autocomplete="off"></textarea>
+          <div id="cch-err" class="ipc-err"></div>
+          <div class="ipc-btns">
+            <button id="cch-cancel">Annuler</button>
+            <button id="cch-submit" class="ipc-apply-btn">Ctrl+Entrée pour exécuter</button>
+          </div>
+        </div>
+      </div>
+
       <span class="canvas-hint">Glisser pour déplacer · ○ pour connecter · ⋯ options · ⚙️ configurer IP</span>
     </div>
   </section>

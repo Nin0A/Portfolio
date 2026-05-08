@@ -119,7 +119,6 @@ body {
   font-size: 16px;
   line-height: 1.6;
   overflow-x: hidden;
-  cursor: none;
 }
 
 body.is-loading {
@@ -142,109 +141,10 @@ button {
   font-family: var(--font-sans);
   border: none;
   background: none;
-  cursor: none;
+  cursor: pointer;
 }
 
-/* ============================================================
-   CUSTOM CURSOR
-   ============================================================ */
-#cursor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  z-index: 9999;
-}
-
-#cursor-dot {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  background: var(--text);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  transition: width 0.2s var(--ease-expo), height 0.2s var(--ease-expo), opacity 0.2s, background 0.35s;
-}
-
-#cursor-ring {
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  border: 1.5px solid var(--text);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  transition: width 0.35s var(--ease-expo), height 0.35s var(--ease-expo),
-              opacity 0.35s, border-color 0.35s, background 0.35s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Label inside cursor ring — shown on project hover */
-#cursor-label {
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent-text);
-  opacity: 0;
-  transition: opacity 0.2s;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* Cursor trail dots */
-.cursor-trail {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--accent);
-  pointer-events: none;
-  opacity: 0;
-  margin: -2px 0 0 -2px;
-}
-
-/* Hover state — generic links/buttons */
-body.cursor-hover #cursor-dot {
-  width: 10px;
-  height: 10px;
-  opacity: 0.5;
-}
-
-body.cursor-hover #cursor-ring {
-  width: 60px;
-  height: 60px;
-}
-
-/* Project hover state — ring becomes accent bubble with VOIR label */
-body.cursor-project #cursor-ring {
-  width: 80px;
-  height: 80px;
-  background: var(--accent);
-  border-color: transparent;
-}
-
-body.cursor-project #cursor-label {
-  opacity: 1;
-}
-
-body.cursor-project #cursor-dot {
-  opacity: 0;
-}
-
-#cursor-dot { pointer-events: none; }
-#cursor-ring { pointer-events: none; }
-
-body.cursor-hidden #cursor-dot,
-body.cursor-hidden #cursor-ring,
-body.cursor-hidden .cursor-trail,
-body.cursor-canvas  #cursor-dot,
-body.cursor-canvas  #cursor-ring,
-body.cursor-canvas  .cursor-trail,
-body.is-loading .cursor-trail {
-  opacity: 0;
-}
+#cursor { display: none; }
 
 /* ============================================================
    GRAIN OVERLAY
@@ -2003,4 +1903,99 @@ body.is-loading .cursor-trail {
   .csc-reward     { font-size: 8px; }
 
   .canvas-hint { display: none; }
+}
+
+/* ── Code Challenge Modal ── */
+.cch-inner { width: 420px; max-width: calc(100vw - 40px); }
+
+.cch-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+}
+
+.cch-requirements {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cch-req-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cch-req-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 110px;
+}
+
+.cch-keywords {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.cch-kw {
+  font-family: monospace;
+  font-size: 11px;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.cch-var-req {
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  border-radius: 4px;
+  padding: 1px 8px;
+}
+
+.cch-input {
+  width: 100%;
+  min-height: 120px;
+  padding: 10px 12px;
+  background: #0d0d0d;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  outline: none;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.cch-input:focus { border-color: var(--accent); }
+
+.cch-input.cch-shake {
+  animation: cch-shake 0.35s ease;
+}
+
+@keyframes cch-shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
 }

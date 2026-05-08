@@ -24,33 +24,7 @@ function initGrain() {
 // Custom cursor + trail
 // ─────────────────────────────────────────────
 function initCursor() {
-  const dot  = document.getElementById('cursor-dot');
-  const ring = document.getElementById('cursor-ring');
-  let mx = 0, my = 0, rx = 0, ry = 0;
-
-  const label = document.createElement('span');
-  label.id = 'cursor-label';
-  ring.appendChild(label);
-
-  document.addEventListener('mousemove', e => {
-    mx = e.clientX; my = e.clientY;
-    gsap.set(dot, { x: mx, y: my });
-  });
-
-  (function animateRing() {
-    rx += (mx - rx) * 0.12;
-    ry += (my - ry) * 0.12;
-    gsap.set(ring, { x: rx, y: ry });
-    requestAnimationFrame(animateRing);
-  })();
-
-  document.addEventListener('mouseenter', () => document.body.classList.remove('cursor-hidden'));
-  document.addEventListener('mouseleave', () => document.body.classList.add('cursor-hidden'));
-
-  document.querySelectorAll('a, button').forEach(el => {
-    el.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-    el.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
-  });
+  // Custom cursor removed — using native browser cursor
 }
 
 // ─────────────────────────────────────────────
@@ -706,14 +680,14 @@ function initCanvasSection() {
 
   /* ── App definitions ─────────────────────────────────────── */
   const APP_DEFS = {
-    browser:  { icon:'🌐', name:'Navigateur Web',    cost:50,   rev:1,   for:['end','srv'] },
-    email:    { icon:'📧', name:'Client Email',      cost:150,  rev:3,   for:['end']       },
-    office:   { icon:'💼', name:'Suite Bureautique', cost:400,  rev:8,   for:['end']       },
-    webapp:   { icon:'🌍', name:'Serveur Web',       cost:500,  rev:15,  for:['srv']       },
-    mining:   { icon:'⛏️', name:'Minage Crypto',    cost:1200, rev:20,  for:['end','srv'] },
-    database: { icon:'🗄️', name:'Base de données',  cost:1500, rev:30,  for:['srv']       },
-    trading:  { icon:'📈', name:'Bot de Trading',    cost:4000, rev:60,  for:['end','srv'] },
-    ai_srv:   { icon:'🤖', name:'IA en Production',  cost:8000, rev:120, for:['srv']       },
+    browser:  { icon:'🌐', name:'Navigateur Web',    cost:50,   rev:1,   for:['end','srv'], challenge:{ desc:"Initialise le module navigateur",  keywords:['import','browser','start'],  varName:'timeout',  pick:[500,1000,2000,3000,5000] } },
+    email:    { icon:'📧', name:'Client Email',      cost:150,  rev:3,   for:['end'],       challenge:{ desc:"Configure le client SMTP",         keywords:['connect','smtp','auth'],     varName:'port',     pick:[25,465,587] } },
+    office:   { icon:'💼', name:'Suite Bureautique', cost:400,  rev:8,   for:['end'],       challenge:{ desc:"Lance la suite bureautique",        keywords:['load','office','init'],      varName:'workers',  range:[1,16] } },
+    webapp:   { icon:'🌍', name:'Serveur Web',       cost:500,  rev:15,  for:['srv'],       challenge:{ desc:"Démarre le serveur HTTP",           keywords:['server','listen','http'],    varName:'port',     pick:[80,443,8080,3000,8443] } },
+    mining:   { icon:'⛏️', name:'Minage Crypto',    cost:1200, rev:20,  for:['end','srv'], challenge:{ desc:"Lance le process de minage",        keywords:['mine','block','hash'],       varName:'threads',  range:[1,32] } },
+    database: { icon:'🗄️', name:'Base de données',  cost:1500, rev:30,  for:['srv'],       challenge:{ desc:"Initialise la base de données",     keywords:['db','connect','schema'],     varName:'port',     pick:[3306,5432,27017,1433] } },
+    trading:  { icon:'📈', name:'Bot de Trading',    cost:4000, rev:60,  for:['end','srv'], challenge:{ desc:"Configure le bot de trading",       keywords:['trade','market','api'],      varName:'interval', range:[10,999] } },
+    ai_srv:   { icon:'🤖', name:'IA en Production',  cost:8000, rev:120, for:['srv'],       challenge:{ desc:"Déploie le modèle d'IA",            keywords:['model','load','deploy'],     varName:'gpu_id',   range:[0,7] } },
   };
 
   const CAT_LABEL = { end:'POSTE', srv:'SERVEUR', lan:'LAN', net:'RÉSEAU', sec:'SÉCURITÉ', wan:'WAN' };
@@ -754,6 +728,7 @@ function initCanvasSection() {
   let connFrom = null, connPos = null;
   let openMenuId = null;
   let ipcTargetId = null, apsTargetId = null;
+  let cchNodeId = null, cchAppKey = null, cchExpected = null;
   const NW = 160, GRID = 40, CSB_W = 220, CSB_H = 150;
 
   /* ── Helpers ────────────────────────────────────────────── */
@@ -1029,23 +1004,89 @@ function initCanvasSection() {
         <span class="aps-icon">${app.icon}</span>
         <span class="csi-info"><b>${app.name}</b><small>+${app.rev} 💰/s${installed ? ' · installé' : ''}</small></span>
         <span class="aps-cost${installed ? ' done' : ''}">${installed ? '✓' : fmtN(app.cost)+'💰'}</span>`;
-      if (!installed) {
-        btn.addEventListener('click', () => {
-          if (argent < app.cost) return;
-          argent -= app.cost;
-          if (!node.apps) node.apps = [];
-          node.apps.push(key);
-          reRates(); checkChals(); renderShop();
-          refreshAppStore();
-        });
+      if (!installed && can) {
+        btn.addEventListener('click', () => openCodeChallenge(apsTargetId, key));
       }
-      btn.addEventListener('mouseenter', () => document.body.classList.add('cursor-hover'));
-      btn.addEventListener('mouseleave',  () => document.body.classList.remove('cursor-hover'));
       shopEl.appendChild(btn);
     });
   }
 
   function closeAppStore() { apsModal?.classList.remove('open'); apsTargetId = null; }
+
+  /* ── Code Challenge ─────────────────────────────────────── */
+  function openCodeChallenge(nodeId, appKey) {
+    const app = APP_DEFS[appKey];
+    if (!app?.challenge) return;
+    const ch = app.challenge;
+    cchNodeId = nodeId; cchAppKey = appKey;
+    cchExpected = ch.pick
+      ? ch.pick[Math.floor(Math.random() * ch.pick.length)]
+      : ch.range[0] + Math.floor(Math.random() * (ch.range[1] - ch.range[0] + 1));
+
+    const modal = document.getElementById('code-challenge');
+    if (!modal) return;
+    document.getElementById('cch-title').textContent  = `${app.icon} Installer — ${app.name}`;
+    document.getElementById('cch-desc').textContent   = ch.desc;
+    document.getElementById('cch-var-req').textContent = `${ch.varName} = ${cchExpected}`;
+
+    const kwEl = document.getElementById('cch-keywords');
+    kwEl.innerHTML = ch.keywords.map(k => `<code class="cch-kw">${k}</code>`).join('');
+
+    const input = document.getElementById('cch-input');
+    input.value = '';
+    document.getElementById('cch-err').textContent = '';
+    modal.classList.add('open');
+    setTimeout(() => input.focus(), 80);
+  }
+
+  function submitCodeChallenge() {
+    const code = document.getElementById('cch-input').value;
+    const app  = APP_DEFS[cchAppKey];
+    const ch   = app.challenge;
+    const errEl = document.getElementById('cch-err');
+
+    const missing = ch.keywords.filter(kw => !code.includes(kw));
+    if (missing.length) {
+      errEl.textContent = `Mots-clés manquants : ${missing.join(', ')}`;
+      document.getElementById('cch-input').classList.add('cch-shake');
+      setTimeout(() => document.getElementById('cch-input').classList.remove('cch-shake'), 400);
+      return;
+    }
+    const varRx = new RegExp(`${ch.varName}\\s*=\\s*${cchExpected}(?:\\D|$)`);
+    if (!varRx.test(code)) {
+      errEl.textContent = `Variable incorrecte : ${ch.varName} doit valoir ${cchExpected}`;
+      document.getElementById('cch-input').classList.add('cch-shake');
+      setTimeout(() => document.getElementById('cch-input').classList.remove('cch-shake'), 400);
+      return;
+    }
+
+    const node = nodes.find(n => n.id === cchNodeId);
+    if (node && argent >= app.cost) {
+      argent -= app.cost;
+      if (!node.apps) node.apps = [];
+      node.apps.push(cchAppKey);
+      reRates(); checkChals(); updateShopAffordability();
+      if (apsTargetId === cchNodeId) refreshAppStore();
+    }
+    closeCodeChallenge();
+  }
+
+  function closeCodeChallenge() {
+    document.getElementById('code-challenge')?.classList.remove('open');
+    cchNodeId = null; cchAppKey = null; cchExpected = null;
+  }
+
+  const cchModal = document.getElementById('code-challenge');
+  if (cchModal) {
+    document.getElementById('cch-close')?.addEventListener('click', closeCodeChallenge);
+    document.getElementById('cch-cancel')?.addEventListener('click', closeCodeChallenge);
+    document.getElementById('cch-submit')?.addEventListener('click', submitCodeChallenge);
+    cchModal.addEventListener('click', e => { if (e.target === cchModal) closeCodeChallenge(); });
+    document.getElementById('cch-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitCodeChallenge();
+      if (e.key === 'Escape') closeCodeChallenge();
+    });
+  }
 
   if (apsModal) {
     document.getElementById('aps-close')?.addEventListener('click', closeAppStore);

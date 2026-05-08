@@ -2017,3 +2017,49 @@ button {
   60%      { transform: translateX(-4px); }
   80%      { transform: translateX(4px); }
 }
+
+/* ── Help button ── */
+.cch-help-btn {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border-hover);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.cch-help-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Mini documentation panel ── */
+.cch-help {
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.cch-help-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.cch-help-block b {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.cch-help-block code {
+  display: block;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.7;
+  white-space: pre;
+}

@@ -430,8 +430,59 @@
         <div class="ipc-inner cch-inner">
           <div class="ipc-head">
             <span id="cch-title">Installer</span>
-            <button id="cch-close">✕</button>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button id="cch-help-btn" class="cch-help-btn">? Aide</button>
+              <button id="cch-close">✕</button>
+            </div>
           </div>
+
+          <!-- Mini documentation -->
+          <div id="cch-help" class="cch-help" hidden>
+            <div class="cch-help-grid">
+              <div class="cch-help-block">
+                <b>Variable</b>
+                <code>let x = 5</code>
+                <code>x = 10</code>
+              </div>
+              <div class="cch-help-block">
+                <b>Opérateurs</b>
+                <code>x += 3 &nbsp;// x = x + 3</code>
+                <code>x -= 2 &nbsp;// x = x - 2</code>
+                <code>x *= 4 &nbsp;// x = x × 4</code>
+                <code>x++ &nbsp;&nbsp;&nbsp;// x = x + 1</code>
+                <code>x % 3 &nbsp;&nbsp;// reste</code>
+              </div>
+              <div class="cch-help-block">
+                <b>Boucle for</b>
+                <code>for (let i = 0; i &lt; n; i++) {</code>
+                <code>&nbsp;&nbsp;x += 1</code>
+                <code>}</code>
+              </div>
+              <div class="cch-help-block">
+                <b>Boucle while</b>
+                <code>while (x &lt; 10) {</code>
+                <code>&nbsp;&nbsp;x += 2</code>
+                <code>}</code>
+              </div>
+              <div class="cch-help-block">
+                <b>Condition if</b>
+                <code>if (x === 5) {</code>
+                <code>&nbsp;&nbsp;y = 10</code>
+                <code>} else if (x === 3) {</code>
+                <code>&nbsp;&nbsp;y = 6</code>
+                <code>} else {</code>
+                <code>&nbsp;&nbsp;y = 0</code>
+                <code>}</code>
+              </div>
+              <div class="cch-help-block">
+                <b>Astuce Tab</b>
+                <code>Tab → 2 espaces</code>
+                <code>Ctrl+Entrée → exécuter</code>
+                <code>{ → indente auto</code>
+              </div>
+            </div>
+          </div>
+
           <p id="cch-desc" class="cch-desc"></p>
           <div class="cch-requirements">
             <div class="cch-req-row">

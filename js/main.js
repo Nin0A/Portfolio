@@ -684,37 +684,37 @@ function initCanvasSection() {
 
   const APP_DEFS = {
     browser: { icon:'🌐', name:'Navigateur Web',    cost:50,   rev:1,   for:['end','srv'],
-      challenge:{ desc:"Multiplie timeout par factor en bouclant — pas d'affectation directe", objective:"timeout = timeout × factor",
+      challenge:{ desc:"Multiplie timeout par factor en l'additionnant à lui-même dans une boucle", objective:"timeout = timeout × factor",
         make:()=>{ const t=ri(5,20),f=ri(2,6); return {vars:{timeout:t,factor:f},target:t*f,varName:'timeout'}; },
         kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'+=',rx:/\+=/}] }},
-    email: { icon:'📧', name:'Client Email',      cost:150,  rev:3,   for:['end'],
-      challenge:{ desc:"Incrémente port de step, répété limit fois", objective:"port = port + step × limit",
-        make:()=>{ const p=rp([25,110,143]),s=ri(5,20),l=ri(3,8); return {vars:{port:p,step:s,limit:l},target:p+s*l,varName:'port'}; },
-        kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'+=',rx:/\+=/}] }},
-    office: { icon:'💼', name:'Suite Bureautique', cost:400,  rev:8,   for:['end'],
-      challenge:{ desc:"Calcule workers = 2 puissance exponent en multipliant à chaque tour", objective:"workers = 2^exponent",
+    email: { icon:'📧', name:'Client Email',        cost:150,  rev:3,   for:['end'],
+      challenge:{ desc:"Trouve le premier multiple de step strictement supérieur à port", objective:"port = 1er multiple de step > port",
+        make:()=>{ const s=rp([7,11,13,17]); const p=ri(20,80); let r=0; while(r<=p)r+=s; return {vars:{port:p,step:s},target:r,varName:'port'}; },
+        kw:[{l:'while (',rx:/\bwhile\s*\(/},{l:'+=',rx:/\+=/}] }},
+    office: { icon:'💼', name:'Suite Bureautique',  cost:400,  rev:8,   for:['end'],
+      challenge:{ desc:"Calcule 2 puissance exponent en multipliant workers à chaque itération", objective:"workers = 2^exponent",
         make:()=>{ const e=ri(2,5); return {vars:{workers:1,exponent:e},target:Math.pow(2,e),varName:'workers'}; },
         kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'*=',rx:/\*=/}] }},
-    webapp: { icon:'🌍', name:'Serveur Web',       cost:500,  rev:15,  for:['srv'],
-      challenge:{ desc:"Double port tant qu'il est inférieur à limit", objective:"port doublé jusqu'à port ≥ limit",
-        make:()=>{ const p=rp([7,11,13,17,19]),l=ri(100,500); let v=p; while(v<l)v*=2; return {vars:{port:p,limit:l},target:v,varName:'port'}; },
-        kw:[{l:'while (',rx:/\bwhile\s*\(/},{l:'*=',rx:/\*=/}] }},
-    mining: { icon:'⛏️', name:'Minage Crypto',    cost:1200, rev:20,  for:['end','srv'],
-      challenge:{ desc:"Accumule threads de step en step jusqu'à dépasser limit", objective:"threads += step jusqu'à threads ≥ limit",
-        make:()=>{ const s=ri(2,8),l=ri(15,40); let t=0; while(t<l)t+=s; return {vars:{threads:0,step:s,limit:l},target:t,varName:'threads'}; },
-        kw:[{l:'while (',rx:/\bwhile\s*\(/},{l:'+=',rx:/\+=/}] }},
-    database: { icon:'🗄️', name:'Base de données',  cost:1500, rev:30,  for:['srv'],
-      challenge:{ desc:"Assigne port selon dbType avec des if/else if", objective:"port = port du moteur dbType",
-        make:()=>{ const types=[{n:'mysql',p:3306},{n:'postgres',p:5432},{n:'mongo',p:27017}]; const t=rp(types); return {vars:{port:0,dbType:t.n,mysql:3306,postgres:5432,mongo:27017},target:t.p,varName:'port'}; },
+    webapp: { icon:'🌍', name:'Serveur Web',         cost:500,  rev:15,  for:['srv'],
+      challenge:{ desc:"Assigne port selon le protocole : 'http'→80, 'https'→443, 'ws'→8080", objective:"port = valeur selon protocol",
+        make:()=>{ const t=rp([{n:'http',p:80},{n:'https',p:443},{n:'ws',p:8080}]); return {vars:{port:0,protocol:t.n},target:t.p,varName:'port'}; },
         kw:[{l:'if (',rx:/\bif\s*\(/},{l:'===',rx:/===/}] }},
+    mining: { icon:'⛏️', name:'Minage Crypto',      cost:1200, rev:20,  for:['end','srv'],
+      challenge:{ desc:"Compte combien de multiples de divisor sont ≤ limit (utilise % pour vérifier)", objective:"threads = nombre de multiples de divisor ≤ limit",
+        make:()=>{ const d=rp([2,3,4,5,6]),l=ri(12,50); let c=0; for(let i=1;i<=l;i++) if(i%d===0)c++; return {vars:{threads:0,divisor:d,limit:l},target:c,varName:'threads'}; },
+        kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'if (',rx:/\bif\s*\(/},{l:'%',rx:/%/}] }},
+    database: { icon:'🗄️', name:'Base de données',  cost:1500, rev:30,  for:['srv'],
+      challenge:{ desc:"Additionne uniquement les nombres pairs de 0 à n inclus (utilise % pour filtrer)", objective:"port = somme des entiers pairs de 0 à n",
+        make:()=>{ const n=ri(4,12)*2; let s=0; for(let i=0;i<=n;i++) if(i%2===0)s+=i; return {vars:{port:0,n},target:s,varName:'port'}; },
+        kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'%',rx:/%/},{l:'+=',rx:/\+=/}] }},
     trading: { icon:'📈', name:'Bot de Trading',    cost:4000, rev:60,  for:['end','srv'],
-      challenge:{ desc:"Calcule interval = base × multiplier en ajoutant base en boucle", objective:"interval = base × multiplier",
-        make:()=>{ const b=rp([10,20,25,50]),m=ri(3,9); return {vars:{interval:0,base:b,multiplier:m},target:b*m,varName:'interval'}; },
-        kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'+=',rx:/\+=/}] }},
+      challenge:{ desc:"Trouve la première puissance de 2 supérieure ou égale à threshold en doublant", objective:"interval = 1ère puissance de 2 ≥ threshold",
+        make:()=>{ const t=rp([10,15,20,30,50,75,100]); let v=1; while(v<t)v*=2; return {vars:{interval:1,threshold:t},target:v,varName:'interval'}; },
+        kw:[{l:'while (',rx:/\bwhile\s*\(/},{l:'*=',rx:/\*=/}] }},
     ai_srv:  { icon:'🤖', name:'IA en Production',  cost:8000, rev:120, for:['srv'],
-      challenge:{ desc:"Trouve le plus petit gpu_id tel que gpu_id² >= memory", objective:"gpu_id² ≥ memory",
-        make:()=>{ const mem=rp([4,9,16,25,36,49]); let g=0; while(g*g<mem)g++; return {vars:{gpu_id:0,memory:mem},target:g,varName:'gpu_id'}; },
-        kw:[{l:'while (',rx:/\bwhile\s*\(/},{l:'++',rx:/\+\+/}] }},
+      challenge:{ desc:"Calcule la somme des carrés de 1 à n  —  1² + 2² + ... + n²", objective:"gpu_id = Σ i² pour i de 1 à n",
+        make:()=>{ const n=ri(3,8); let s=0; for(let i=1;i<=n;i++)s+=i*i; return {vars:{gpu_id:0,n},target:s,varName:'gpu_id'}; },
+        kw:[{l:'for (',rx:/\bfor\s*\(/},{l:'+=',rx:/\+=/},{l:'i * i  ou  i**2',rx:/i\s*\*\s*i|i\s*\*\*\s*2/}] }},
   };
 
   const CAT_LABEL = { end:'POSTE', srv:'SERVEUR', lan:'LAN', net:'RÉSEAU', sec:'SÉCURITÉ', wan:'WAN' };
@@ -1132,10 +1132,50 @@ function initCanvasSection() {
     document.getElementById('cch-cancel')?.addEventListener('click', closeCodeChallenge);
     document.getElementById('cch-submit')?.addEventListener('click', submitCodeChallenge);
     cchModal.addEventListener('click', e => { if (e.target === cchModal) closeCodeChallenge(); });
-    document.getElementById('cch-input')?.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitCodeChallenge();
-      if (e.key === 'Escape') closeCodeChallenge();
+    document.getElementById('cch-help-btn')?.addEventListener('click', () => {
+      const h = document.getElementById('cch-help');
+      if (h) h.hidden = !h.hidden;
     });
+
+    const cchInput = document.getElementById('cch-input');
+    if (cchInput) {
+      cchInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submitCodeChallenge(); return; }
+        if (e.key === 'Escape') { closeCodeChallenge(); return; }
+
+        // Auto-indent on Enter
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const s = cchInput.selectionStart, val = cchInput.value;
+          const lineStart = val.lastIndexOf('\n', s - 1) + 1;
+          const indent = val.slice(lineStart, s).match(/^(\s*)/)[1];
+          const extra  = val.slice(lineStart, s).trimEnd().endsWith('{') ? '  ' : '';
+          cchInput.value = val.slice(0, s) + '\n' + indent + extra + val.slice(s);
+          cchInput.selectionStart = cchInput.selectionEnd = s + 1 + indent.length + extra.length;
+        }
+
+        // Tab → 2 spaces
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const s = cchInput.selectionStart, val = cchInput.value;
+          cchInput.value = val.slice(0, s) + '  ' + val.slice(s);
+          cchInput.selectionStart = cchInput.selectionEnd = s + 2;
+        }
+
+        // } → auto-dedent if line is only spaces
+        if (e.key === '}') {
+          const s = cchInput.selectionStart, val = cchInput.value;
+          const lineStart = val.lastIndexOf('\n', s - 1) + 1;
+          const lineContent = val.slice(lineStart, s);
+          if (/^\s{2,}$/.test(lineContent)) {
+            e.preventDefault();
+            const newIndent = lineContent.slice(0, lineContent.length - 2);
+            cchInput.value = val.slice(0, lineStart) + newIndent + '}' + val.slice(s);
+            cchInput.selectionStart = cchInput.selectionEnd = lineStart + newIndent.length + 1;
+          }
+        }
+      });
+    }
   }
 
   if (apsModal) {

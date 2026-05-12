@@ -453,6 +453,9 @@ button {
   overflow: hidden;
   padding-bottom: 0.06em;
 }
+.hero-title.is-distorted .hero-line-outer {
+  overflow: visible;
+}
 
 .hero-line {
   display: block;

@@ -82,6 +82,15 @@
     </div>
 
     <div class="hero-title-wrap">
+      <!-- SVG distortion filter for hover effect -->
+      <svg id="hero-distort-svg" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+        <defs>
+          <filter id="hero-distort-filter" x="-15%" y="-25%" width="130%" height="150%" color-interpolation-filters="sRGB">
+            <feTurbulence id="hero-turb" type="fractalNoise" baseFrequency="0 0" numOctaves="3" seed="8" result="noise"/>
+            <feDisplacementMap id="hero-disp" in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+          </filter>
+        </defs>
+      </svg>
       <h1 class="hero-title">
         <span class="hero-line-outer"><span class="hero-line"><em>Nino</em></span></span>
         <span class="hero-line-outer"><span class="hero-line">Arcelin</span></span>

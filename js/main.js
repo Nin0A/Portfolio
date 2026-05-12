@@ -1798,6 +1798,71 @@ function initCanvasSection() {
 }
 
 // ─────────────────────────────────────────────
+// Hero distortion effect (SVG feTurbulence on hover)
+// ─────────────────────────────────────────────
+function initHeroDistortion() {
+  const titleWrap = document.querySelector('.hero-title-wrap');
+  const title     = document.querySelector('.hero-title');
+  const turb      = document.getElementById('hero-turb');
+  const disp      = document.getElementById('hero-disp');
+  if (!titleWrap || !title || !turb || !disp) return;
+
+  let raf       = null;
+  let progress  = 0;   // current strength 0..1
+  let targetP   = 0;   // 0 = resting, 1 = fully distorted
+  let animTime  = 0;   // drives organic turbulence animation
+  let lastTs    = 0;
+  let mouseNorm = 0.5; // normalized mouse X across title
+
+  const easeInOut = x => x < 0.5 ? 2*x*x : 1 - Math.pow(-2*x + 2, 2) / 2;
+
+  function tick(ts) {
+    const dt = Math.min((ts - lastTs) / 1000, 0.05);
+    lastTs = ts;
+    animTime += dt;
+
+    const speed = targetP > 0 ? 3.2 : 5.0;
+    progress += (targetP - progress) * Math.min(1, speed * dt);
+    progress  = Math.max(0, Math.min(1, progress));
+
+    const e    = easeInOut(progress);
+    const scale = 55 * e;
+    // Organic frequency variation: slower oscillation as the distortion "breathes"
+    const freqX = (0.014 + Math.sin(animTime * 0.5) * 0.004 + (mouseNorm - 0.5) * 0.012) * e;
+    const freqY = (0.009 + Math.cos(animTime * 0.4) * 0.003) * e;
+
+    turb.setAttribute('baseFrequency', `${Math.max(0, freqX).toFixed(5)} ${Math.max(0, freqY).toFixed(5)}`);
+    disp.setAttribute('scale', scale.toFixed(2));
+    const active = e > 0.003;
+    title.style.filter = active ? 'url(#hero-distort-filter)' : '';
+    title.classList.toggle('is-distorted', active);
+
+    const done = targetP === 0 && progress < 0.003;
+    if (done) {
+      title.style.filter = '';
+      title.classList.remove('is-distorted');
+      raf = null;
+    } else {
+      raf = requestAnimationFrame(tick);
+    }
+  }
+
+  function startLoop() {
+    if (!raf) {
+      lastTs = performance.now();
+      raf = requestAnimationFrame(tick);
+    }
+  }
+
+  titleWrap.addEventListener('mouseenter', () => { targetP = 1; startLoop(); });
+  titleWrap.addEventListener('mouseleave', () => { targetP = 0; startLoop(); });
+  titleWrap.addEventListener('mousemove',  e => {
+    const r   = titleWrap.getBoundingClientRect();
+    mouseNorm = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  });
+}
+
+// ─────────────────────────────────────────────
 // Bootstrap
 // ─────────────────────────────────────────────
 async function init() {
@@ -1818,6 +1883,7 @@ async function init() {
   initProjectInteractions();
   initProjectPreview();
   initCanvasSection();
+  initHeroDistortion();
   initMagnetic();
   initContactForm();
   initAnchorScroll(lenis);

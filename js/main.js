@@ -1807,45 +1807,45 @@ function initHeroDistortion() {
 
   wrap.style.position = 'relative';
 
-  // WebGL canvas overlaid exactly on the title
   const cv = document.createElement('canvas');
-  cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;opacity:0';
+  cv.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0';
   wrap.appendChild(cv);
 
   const gl = cv.getContext('webgl', { alpha: true, premultipliedAlpha: false });
   if (!gl) return;
 
   // ── Shaders ─────────────────────────────────────────────────
-  // Vertex: fullscreen quad, UVs 0→1 matching HTML top-left origin
+  // Y-flip in vertex shader (no UNPACK_FLIP_Y_WEBGL):
+  //   v.y = 0 → screen top  (clip y=+1)
+  //   v.y = 1 → screen bottom (clip y=-1)
+  // This matches HTML convention so mouse coords need no flip.
   const VERT = `
     attribute vec2 a;
     varying vec2 v;
     void main() {
-      v = a * 0.5 + 0.5;
+      v = vec2(a.x * 0.5 + 0.5, 0.5 - a.y * 0.5);
       gl_Position = vec4(a, 0.0, 1.0);
     }`;
 
-  // Fragment: vortex = polar rotation + radial pull toward cursor
-  // uM is in GL UV space (y=0 bottom, y=1 top)
+  // Vortex: polar rotation + radial collapse toward cursor.
+  // Focused radius (0.12 in aspect-corrected UV) = roughly 1–2 letters wide.
   const FRAG = `
     precision highp float;
     uniform sampler2D uT;
-    uniform vec2  uM;
-    uniform float uS;
-    uniform float uAR;
+    uniform vec2  uM;     // cursor in UV (0=top-left, 1=bottom-right)
+    uniform float uS;     // strength 0..1
+    uniform float uAR;    // canvas aspect ratio w/h
     uniform float uTime;
     varying vec2 v;
     void main() {
       vec2 d = v - uM;
-      d.x *= uAR;                              // aspect-correct distance
+      d.x *= uAR;
       float dist = length(d);
-      float infl = pow(max(0.0, 1.0 - dist / 0.38), 1.3) * uS;
-      // Vortex angle: base rotation + slow time drift
-      float angle = infl * 4.5 + uTime * infl * 1.4;
-      float pull  = pow(infl, 1.5) * 0.72;    // radial collapse toward center
-      d.x /= uAR;                              // restore aspect
+      float infl = pow(max(0.0, 1.0 - dist / 0.12), 1.2) * uS;
+      float angle = infl * 6.0 + uTime * infl * 2.5;
+      float pull  = pow(infl, 1.3) * 0.92;
+      d.x /= uAR;
       float s = sin(angle), c = cos(angle);
-      // Rotate delta around cursor, then pull inward
       vec2 rd = vec2(c*d.x - s*d.y, s*d.x + c*d.y) * (1.0 - pull);
       gl_FragColor = texture2D(uT, clamp(uM + rd, 0.001, 0.999));
     }`;
@@ -1854,6 +1854,8 @@ function initHeroDistortion() {
     const sh = gl.createShader(type);
     gl.shaderSource(sh, src);
     gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS))
+      console.warn('shader error', gl.getShaderInfoLog(sh));
     return sh;
   };
   const prog = gl.createProgram();
@@ -1862,7 +1864,6 @@ function initHeroDistortion() {
   gl.linkProgram(prog);
   gl.useProgram(prog);
 
-  // Fullscreen triangle-strip quad
   const vb = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vb);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
@@ -1871,7 +1872,6 @@ function initHeroDistortion() {
   gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); // align texture Y with GL
 
   const U = {
     T:    gl.getUniformLocation(prog, 'uT'),
@@ -1882,16 +1882,21 @@ function initHeroDistortion() {
   };
 
   // ── Text texture ─────────────────────────────────────────────
-  // Draw each .hero-char at its exact DOM position onto an offscreen canvas,
-  // then upload as a WebGL texture — exact match to the live DOM text.
-  let tex = null;
+  // Each .hero-char is drawn at its exact DOM position via getBoundingClientRect.
+  // No UNPACK_FLIP_Y: texture y=0 = HTML top (matches vertex shader convention).
+  let tex = null, texW = 0, texH = 0;
 
   function buildTex() {
     const DPR = Math.min(window.devicePixelRatio || 1, 2);
-    const W = wrap.offsetWidth, H = wrap.offsetHeight;
+    const W   = wrap.offsetWidth;
+    const H   = wrap.offsetHeight;
     if (!W || !H) return;
+
+    texW = W; texH = H;
     cv.width  = W * DPR;
     cv.height = H * DPR;
+    cv.style.width  = W + 'px';
+    cv.style.height = H + 'px';
     gl.viewport(0, 0, cv.width, cv.height);
 
     const oc  = document.createElement('canvas');
@@ -1899,6 +1904,7 @@ function initHeroDistortion() {
     oc.height = H * DPR;
     const ctx = oc.getContext('2d');
     ctx.scale(DPR, DPR);
+    ctx.clearRect(0, 0, W, H);
 
     const wR  = wrap.getBoundingClientRect();
     const col = getComputedStyle(title).color;
@@ -1910,7 +1916,6 @@ function initHeroDistortion() {
       ctx.font         = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
       ctx.fillStyle    = col;
       ctx.textBaseline = 'top';
-      if ('letterSpacing' in ctx) ctx.letterSpacing = cs.letterSpacing;
       ctx.fillText(el.textContent, r.left - wR.left, r.top - wR.top);
       ctx.restore();
     });
@@ -1952,7 +1957,7 @@ function initHeroDistortion() {
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.uniform1i(U.T,    0);
-    gl.uniform2f(U.M,    mx, 1 - my);   // flip Y: HTML-top→GL-bottom
+    gl.uniform2f(U.M,    mx, my);   // no Y-flip: HTML and shader both use y=0 at top
     gl.uniform1f(U.S,    strength);
     gl.uniform1f(U.AR,   cv.width / cv.height);
     gl.uniform1f(U.Time, time);
@@ -1966,7 +1971,7 @@ function initHeroDistortion() {
   }
 
   wrap.addEventListener('mouseenter', e => {
-    buildTex();                          // capture while DOM text still visible
+    buildTex();
     title.style.opacity = '0';
     cv.style.opacity    = '1';
     targetS = 1;
@@ -1982,7 +1987,6 @@ function initHeroDistortion() {
     my = (e.clientY - r.top)  / r.height;
   });
 
-  // Rebuild texture on resize or theme change
   new ResizeObserver(() => { tex = null; }).observe(wrap);
   new MutationObserver(() => { tex = null; })
     .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });

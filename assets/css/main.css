@@ -453,26 +453,13 @@ button {
   overflow: hidden;
   padding-bottom: 0.06em;
 }
-.hero-title.is-distorted .hero-line-outer {
-  overflow: visible;
-  transform-style: preserve-3d;
-}
-.hero-title.is-distorted .hero-line {
-  transform-style: preserve-3d;
-}
 
 .hero-line {
   display: block;
   transform: translateY(110%);
 }
 
-/* Each char is an independent 3D object */
-.hero-char {
-  display: inline-block;
-  will-change: transform;
-  transform-style: preserve-3d;
-  transition: color 0.2s;
-}
+.hero-char { display: inline-block; }
 
 .hero-title em {
   font-family: var(--font-serif);

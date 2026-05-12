@@ -1801,104 +1801,191 @@ function initCanvasSection() {
 // Hero distortion effect (SVG feTurbulence on hover)
 // ─────────────────────────────────────────────
 function initHeroDistortion() {
-  const titleWrap = document.querySelector('.hero-title-wrap');
-  const title     = document.querySelector('.hero-title');
-  if (!titleWrap || !title) return;
+  const wrap  = document.querySelector('.hero-title-wrap');
+  const title = document.querySelector('.hero-title');
+  if (!wrap || !title) return;
 
-  const chars = [...title.querySelectorAll('.hero-char')];
-  if (!chars.length) return;
+  wrap.style.position = 'relative';
 
-  // Per-char state: [rx, ry, tz,  vrx, vry, vtz,  wavePhase]
-  const state = chars.map((_, i) => [0, 0, 0,  0, 0, 0,  Math.random() * Math.PI * 2 + i * 0.42]);
+  // WebGL canvas overlaid exactly on the title
+  const cv = document.createElement('canvas');
+  cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;opacity:0';
+  wrap.appendChild(cv);
 
-  let mx = -9999, my = -9999;
-  let hover = false, raf = null, lastTs = 0;
-  let hoverP = 0; // 0..1 — global hover progress for wave amplitude
+  const gl = cv.getContext('webgl', { alpha: true, premultipliedAlpha: false });
+  if (!gl) return;
 
-  const STIFF   = 180;  // spring stiffness
-  const DAMP    = 22;   // spring damping
-  const RADIUS  = 220;  // px — cursor influence radius
-  const MAX_RY  = 35;   // deg — max lateral tilt
-  const MAX_RX  = 20;   // deg — max vertical tilt
-  const MAX_TZ  = -90;  // px  — max push into screen
-  const WAVE_RY = 5;    // deg — idle wave amplitude (rotation)
-  const WAVE_TZ = 8;    // px  — idle wave amplitude (depth)
-  const WAVE_SPEED = 1.6;
+  // ── Shaders ─────────────────────────────────────────────────
+  // Vertex: fullscreen quad, UVs 0→1 matching HTML top-left origin
+  const VERT = `
+    attribute vec2 a;
+    varying vec2 v;
+    void main() {
+      v = a * 0.5 + 0.5;
+      gl_Position = vec4(a, 0.0, 1.0);
+    }`;
 
-  function tick(ts) {
-    const dt = Math.min((ts - lastTs) / 1000, 0.05);
-    lastTs = ts;
+  // Fragment: vortex = polar rotation + radial pull toward cursor
+  // uM is in GL UV space (y=0 bottom, y=1 top)
+  const FRAG = `
+    precision highp float;
+    uniform sampler2D uT;
+    uniform vec2  uM;
+    uniform float uS;
+    uniform float uAR;
+    uniform float uTime;
+    varying vec2 v;
+    void main() {
+      vec2 d = v - uM;
+      d.x *= uAR;                              // aspect-correct distance
+      float dist = length(d);
+      float infl = pow(max(0.0, 1.0 - dist / 0.38), 1.3) * uS;
+      // Vortex angle: base rotation + slow time drift
+      float angle = infl * 4.5 + uTime * infl * 1.4;
+      float pull  = pow(infl, 1.5) * 0.72;    // radial collapse toward center
+      d.x /= uAR;                              // restore aspect
+      float s = sin(angle), c = cos(angle);
+      // Rotate delta around cursor, then pull inward
+      vec2 rd = vec2(c*d.x - s*d.y, s*d.x + c*d.y) * (1.0 - pull);
+      gl_FragColor = texture2D(uT, clamp(uM + rd, 0.001, 0.999));
+    }`;
 
-    // Fade hover progress in/out
-    hoverP = Math.max(0, Math.min(1, hoverP + (hover ? 5 : -6) * dt));
+  const mkSh = (type, src) => {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    return sh;
+  };
+  const prog = gl.createProgram();
+  gl.attachShader(prog, mkSh(gl.VERTEX_SHADER,   VERT));
+  gl.attachShader(prog, mkSh(gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
 
-    let busy = hoverP > 0.005;
+  // Fullscreen triangle-strip quad
+  const vb = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const al = gl.getAttribLocation(prog, 'a');
+  gl.enableVertexAttribArray(al);
+  gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); // align texture Y with GL
 
-    chars.forEach((el, i) => {
-      const s = state[i];
+  const U = {
+    T:    gl.getUniformLocation(prog, 'uT'),
+    M:    gl.getUniformLocation(prog, 'uM'),
+    S:    gl.getUniformLocation(prog, 'uS'),
+    AR:   gl.getUniformLocation(prog, 'uAR'),
+    Time: gl.getUniformLocation(prog, 'uTime'),
+  };
 
-      // Get char center in viewport space (layout position, unaffected by transform)
-      const rect = el.getBoundingClientRect();
-      const cx = rect.left + rect.width  / 2;
-      const cy = rect.top  + rect.height / 2;
+  // ── Text texture ─────────────────────────────────────────────
+  // Draw each .hero-char at its exact DOM position onto an offscreen canvas,
+  // then upload as a WebGL texture — exact match to the live DOM text.
+  let tex = null;
 
-      // Cursor influence (only when hovering)
-      const dx   = mx - cx;
-      const dy   = my - cy;
-      const dist = Math.hypot(dx, dy);
-      const infl = hover ? Math.pow(Math.max(0, 1 - dist / RADIUS), 1.6) : 0;
+  function buildTex() {
+    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const W = wrap.offsetWidth, H = wrap.offsetHeight;
+    if (!W || !H) return;
+    cv.width  = W * DPR;
+    cv.height = H * DPR;
+    gl.viewport(0, 0, cv.width, cv.height);
 
-      // Continuous wave trembling (all chars, scaled by hoverP)
-      s[6] += dt * (WAVE_SPEED + i * 0.04);
-      const wRy = Math.sin(s[6])               * WAVE_RY * hoverP;
-      const wTz = Math.cos(s[6] * 0.7 + i)    * WAVE_TZ * hoverP;
+    const oc  = document.createElement('canvas');
+    oc.width  = W * DPR;
+    oc.height = H * DPR;
+    const ctx = oc.getContext('2d');
+    ctx.scale(DPR, DPR);
 
-      // Target transforms: cursor push + wave
-      const tRx =  (dy / RADIUS) * MAX_RX * infl + Math.cos(s[6] * 0.9) * 3 * hoverP;
-      const tRy = -(dx / RADIUS) * MAX_RY * infl + wRy;
-      const tTz =  MAX_TZ * infl + wTz;
+    const wR  = wrap.getBoundingClientRect();
+    const col = getComputedStyle(title).color;
 
-      // Spring physics (Verlet-style)
-      s[3] += ((tRx - s[0]) * STIFF - s[3] * DAMP) * dt;
-      s[4] += ((tRy - s[1]) * STIFF - s[4] * DAMP) * dt;
-      s[5] += ((tTz - s[2]) * STIFF - s[5] * DAMP) * dt;
-      s[0] += s[3] * dt;
-      s[1] += s[4] * dt;
-      s[2] += s[5] * dt;
-
-      el.style.transform = `perspective(500px) rotateX(${s[0].toFixed(2)}deg) rotateY(${s[1].toFixed(2)}deg) translateZ(${s[2].toFixed(2)}px)`;
-
-      if (Math.abs(s[3]) + Math.abs(s[4]) + Math.abs(s[5]) > 0.08) busy = true;
+    title.querySelectorAll('.hero-char').forEach(el => {
+      const r  = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      ctx.save();
+      ctx.font         = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      ctx.fillStyle    = col;
+      ctx.textBaseline = 'top';
+      if ('letterSpacing' in ctx) ctx.letterSpacing = cs.letterSpacing;
+      ctx.fillText(el.textContent, r.left - wR.left, r.top - wR.top);
+      ctx.restore();
     });
 
-    if (busy || hover) {
-      raf = requestAnimationFrame(tick);
-    } else {
-      chars.forEach(el => el.style.transform = '');
-      title.classList.remove('is-distorted');
+    if (tex) gl.deleteTexture(tex);
+    tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, oc);
+  }
+
+  // ── Render loop ───────────────────────────────────────────────
+  let raf = null, last = 0, time = 0;
+  let strength = 0, targetS = 0;
+  let mx = 0.5, my = 0.5;
+
+  function frame(ts) {
+    const dt = Math.min((ts - last) / 1000, 0.05);
+    last = ts;
+    time += dt;
+
+    strength += (targetS - strength) * Math.min(1, 8 * dt);
+
+    if (strength < 0.003 && targetS === 0) {
+      cv.style.opacity    = '0';
+      title.style.opacity = '';
       raf = null;
+      return;
     }
+
+    title.style.opacity = '0';
+    cv.style.opacity    = '1';
+    if (!tex) buildTex();
+
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.uniform1i(U.T,    0);
+    gl.uniform2f(U.M,    mx, 1 - my);   // flip Y: HTML-top→GL-bottom
+    gl.uniform1f(U.S,    strength);
+    gl.uniform1f(U.AR,   cv.width / cv.height);
+    gl.uniform1f(U.Time, time);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+    raf = requestAnimationFrame(frame);
   }
 
-  function start() {
-    if (!raf) { lastTs = performance.now(); raf = requestAnimationFrame(tick); }
+  function go() {
+    if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
   }
 
-  titleWrap.addEventListener('mouseenter', e => {
-    hover = true;
-    mx = e.clientX; my = e.clientY;
-    title.classList.add('is-distorted');
-    start();
+  wrap.addEventListener('mouseenter', e => {
+    buildTex();                          // capture while DOM text still visible
+    title.style.opacity = '0';
+    cv.style.opacity    = '1';
+    targetS = 1;
+    const r = wrap.getBoundingClientRect();
+    mx = (e.clientX - r.left) / r.width;
+    my = (e.clientY - r.top)  / r.height;
+    go();
   });
-  titleWrap.addEventListener('mouseleave', () => {
-    hover = false;
-    mx = -9999; my = -9999;
-    start();
+  wrap.addEventListener('mouseleave', () => { targetS = 0; go(); });
+  wrap.addEventListener('mousemove',  e => {
+    const r = wrap.getBoundingClientRect();
+    mx = (e.clientX - r.left) / r.width;
+    my = (e.clientY - r.top)  / r.height;
   });
-  titleWrap.addEventListener('mousemove', e => {
-    mx = e.clientX; my = e.clientY;
-    start();
-  });
+
+  // Rebuild texture on resize or theme change
+  new ResizeObserver(() => { tex = null; }).observe(wrap);
+  new MutationObserver(() => { tex = null; })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 }
 
 // ─────────────────────────────────────────────

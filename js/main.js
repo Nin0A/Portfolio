@@ -1805,191 +1805,77 @@ function initHeroDistortion() {
   const title = document.querySelector('.hero-title');
   if (!wrap || !title) return;
 
-  wrap.style.position = 'relative';
+  const chars = [...title.querySelectorAll('.hero-char')];
+  if (!chars.length) return;
 
-  const cv = document.createElement('canvas');
-  cv.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0';
-  wrap.appendChild(cv);
+  // Per-char spring state: [tx,ty, scale, rot, skx, sky,  vtx,vty,vsc,vrot,vskx,vsky]
+  const S = chars.map(() => [0,0, 1, 0, 0,0,  0,0,0,0,0,0]);
 
-  const gl = cv.getContext('webgl', { alpha: true, premultipliedAlpha: false });
-  if (!gl) return;
+  let mx = -9999, my = -9999, hover = false, raf = null, last = 0, hP = 0;
 
-  // ── Shaders ─────────────────────────────────────────────────
-  // Y-flip in vertex shader (no UNPACK_FLIP_Y_WEBGL):
-  //   v.y = 0 → screen top  (clip y=+1)
-  //   v.y = 1 → screen bottom (clip y=-1)
-  // This matches HTML convention so mouse coords need no flip.
-  const VERT = `
-    attribute vec2 a;
-    varying vec2 v;
-    void main() {
-      v = vec2(a.x * 0.5 + 0.5, 0.5 - a.y * 0.5);
-      gl_Position = vec4(a, 0.0, 1.0);
-    }`;
+  const K = 160, D = 20, R = 320; // spring stiffness/damping, influence radius
 
-  // Vortex: polar rotation + radial collapse toward cursor.
-  // Focused radius (0.12 in aspect-corrected UV) = roughly 1–2 letters wide.
-  const FRAG = `
-    precision highp float;
-    uniform sampler2D uT;
-    uniform vec2  uM;     // cursor in UV (0=top-left, 1=bottom-right)
-    uniform float uS;     // strength 0..1
-    uniform float uAR;    // canvas aspect ratio w/h
-    uniform float uTime;
-    varying vec2 v;
-    void main() {
-      vec2 d = v - uM;
-      d.x *= uAR;
-      float dist = length(d);
-      float infl = pow(max(0.0, 1.0 - dist / 0.12), 1.2) * uS;
-      float angle = infl * 6.0 + uTime * infl * 2.5;
-      float pull  = pow(infl, 1.3) * 0.92;
-      d.x /= uAR;
-      float s = sin(angle), c = cos(angle);
-      vec2 rd = vec2(c*d.x - s*d.y, s*d.x + c*d.y) * (1.0 - pull);
-      gl_FragColor = texture2D(uT, clamp(uM + rd, 0.001, 0.999));
-    }`;
-
-  const mkSh = (type, src) => {
-    const sh = gl.createShader(type);
-    gl.shaderSource(sh, src);
-    gl.compileShader(sh);
-    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS))
-      console.warn('shader error', gl.getShaderInfoLog(sh));
-    return sh;
-  };
-  const prog = gl.createProgram();
-  gl.attachShader(prog, mkSh(gl.VERTEX_SHADER,   VERT));
-  gl.attachShader(prog, mkSh(gl.FRAGMENT_SHADER, FRAG));
-  gl.linkProgram(prog);
-  gl.useProgram(prog);
-
-  const vb = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, vb);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
-  const al = gl.getAttribLocation(prog, 'a');
-  gl.enableVertexAttribArray(al);
-  gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-  const U = {
-    T:    gl.getUniformLocation(prog, 'uT'),
-    M:    gl.getUniformLocation(prog, 'uM'),
-    S:    gl.getUniformLocation(prog, 'uS'),
-    AR:   gl.getUniformLocation(prog, 'uAR'),
-    Time: gl.getUniformLocation(prog, 'uTime'),
-  };
-
-  // ── Text texture ─────────────────────────────────────────────
-  // Each .hero-char is drawn at its exact DOM position via getBoundingClientRect.
-  // No UNPACK_FLIP_Y: texture y=0 = HTML top (matches vertex shader convention).
-  let tex = null, texW = 0, texH = 0;
-
-  function buildTex() {
-    const DPR = Math.min(window.devicePixelRatio || 1, 2);
-    const W   = wrap.offsetWidth;
-    const H   = wrap.offsetHeight;
-    if (!W || !H) return;
-
-    texW = W; texH = H;
-    cv.width  = W * DPR;
-    cv.height = H * DPR;
-    cv.style.width  = W + 'px';
-    cv.style.height = H + 'px';
-    gl.viewport(0, 0, cv.width, cv.height);
-
-    const oc  = document.createElement('canvas');
-    oc.width  = W * DPR;
-    oc.height = H * DPR;
-    const ctx = oc.getContext('2d');
-    ctx.scale(DPR, DPR);
-    ctx.clearRect(0, 0, W, H);
-
-    const wR  = wrap.getBoundingClientRect();
-    const col = getComputedStyle(title).color;
-
-    title.querySelectorAll('.hero-char').forEach(el => {
-      const r  = el.getBoundingClientRect();
-      const cs = getComputedStyle(el);
-      ctx.save();
-      ctx.font         = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-      ctx.fillStyle    = col;
-      ctx.textBaseline = 'top';
-      ctx.fillText(el.textContent, r.left - wR.left, r.top - wR.top);
-      ctx.restore();
-    });
-
-    if (tex) gl.deleteTexture(tex);
-    tex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, oc);
+  function spring(cur, vel, tgt, dt) {
+    const v = vel + ((tgt - cur) * K - vel * D) * dt;
+    return [cur + v * dt, v];
   }
 
-  // ── Render loop ───────────────────────────────────────────────
-  let raf = null, last = 0, time = 0;
-  let strength = 0, targetS = 0;
-  let mx = 0.5, my = 0.5;
-
-  function frame(ts) {
+  function tick(ts) {
     const dt = Math.min((ts - last) / 1000, 0.05);
     last = ts;
-    time += dt;
+    hP = Math.max(0, Math.min(1, hP + (hover ? 5 : -6) * dt));
 
-    strength += (targetS - strength) * Math.min(1, 8 * dt);
+    let busy = hP > 0.005;
 
-    if (strength < 0.003 && targetS === 0) {
-      cv.style.opacity    = '0';
-      title.style.opacity = '';
+    chars.forEach((el, i) => {
+      const s = S[i];
+      const r   = el.getBoundingClientRect();
+      const cx  = r.left + r.width * 0.5;
+      const cy  = r.top  + r.height * 0.5;
+      const dx  = mx - cx, dy = my - cy;
+      const d   = Math.hypot(dx, dy) || 1;
+      const infl = hover ? Math.pow(Math.max(0, 1 - d / R), 1.6) * hP : 0;
+
+      // Targets — at max influence: letter collapses to cursor point
+      const tTx  = dx * infl * 0.97;
+      const tTy  = dy * infl * 0.97;
+      const tSc  = 1 - infl * 0.97;          // scale → 0.03
+      const tRot = infl * (360 * 2 + i * 15); // 2+ full turns, staggered per char
+      const tSkX = (dx / d) * infl * 55;      // shear toward cursor
+      const tSkY = (dy / d) * infl * 30;
+
+      [s[0],s[6]]  = spring(s[0], s[6],  tTx,  dt);
+      [s[1],s[7]]  = spring(s[1], s[7],  tTy,  dt);
+      [s[2],s[8]]  = spring(s[2], s[8],  tSc,  dt);
+      [s[3],s[9]]  = spring(s[3], s[9],  tRot, dt);
+      [s[4],s[10]] = spring(s[4], s[10], tSkX, dt);
+      [s[5],s[11]] = spring(s[5], s[11], tSkY, dt);
+
+      const sc = Math.max(0.001, s[2]);
+      el.style.transform =
+        `translate(${s[0].toFixed(2)}px,${s[1].toFixed(2)}px)` +
+        ` scale(${sc.toFixed(4)})` +
+        ` rotate(${s[3].toFixed(2)}deg)` +
+        ` skewX(${s[4].toFixed(2)}deg)` +
+        ` skewY(${s[5].toFixed(2)}deg)`;
+
+      const vel = Math.abs(s[6])+Math.abs(s[7])+Math.abs(s[8])+Math.abs(s[9]);
+      if (vel > 0.02) busy = true;
+    });
+
+    if (busy || hover) {
+      raf = requestAnimationFrame(tick);
+    } else {
+      chars.forEach(el => el.style.transform = '');
       raf = null;
-      return;
     }
-
-    title.style.opacity = '0';
-    cv.style.opacity    = '1';
-    if (!tex) buildTex();
-
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.uniform1i(U.T,    0);
-    gl.uniform2f(U.M,    mx, my);   // no Y-flip: HTML and shader both use y=0 at top
-    gl.uniform1f(U.S,    strength);
-    gl.uniform1f(U.AR,   cv.width / cv.height);
-    gl.uniform1f(U.Time, time);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-    raf = requestAnimationFrame(frame);
   }
 
-  function go() {
-    if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
-  }
+  function go() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } }
 
-  wrap.addEventListener('mouseenter', e => {
-    buildTex();
-    title.style.opacity = '0';
-    cv.style.opacity    = '1';
-    targetS = 1;
-    const r = wrap.getBoundingClientRect();
-    mx = (e.clientX - r.left) / r.width;
-    my = (e.clientY - r.top)  / r.height;
-    go();
-  });
-  wrap.addEventListener('mouseleave', () => { targetS = 0; go(); });
-  wrap.addEventListener('mousemove',  e => {
-    const r = wrap.getBoundingClientRect();
-    mx = (e.clientX - r.left) / r.width;
-    my = (e.clientY - r.top)  / r.height;
-  });
-
-  new ResizeObserver(() => { tex = null; }).observe(wrap);
-  new MutationObserver(() => { tex = null; })
-    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  wrap.addEventListener('mouseenter', e => { hover = true;  mx = e.clientX; my = e.clientY; go(); });
+  wrap.addEventListener('mouseleave', () => { hover = false; mx = -9999;     my = -9999;     go(); });
+  wrap.addEventListener('mousemove',  e => { mx = e.clientX; my = e.clientY; });
 }
 
 // ─────────────────────────────────────────────

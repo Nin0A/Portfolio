@@ -455,11 +455,23 @@ button {
 }
 .hero-title.is-distorted .hero-line-outer {
   overflow: visible;
+  transform-style: preserve-3d;
+}
+.hero-title.is-distorted .hero-line {
+  transform-style: preserve-3d;
 }
 
 .hero-line {
   display: block;
   transform: translateY(110%);
+}
+
+/* Each char is an independent 3D object */
+.hero-char {
+  display: inline-block;
+  will-change: transform;
+  transform-style: preserve-3d;
+  transition: color 0.2s;
 }
 
 .hero-title em {
@@ -468,6 +480,7 @@ button {
   font-weight: 400;
   letter-spacing: -0.02em;
   color: var(--text);
+  transform-style: preserve-3d;
 }
 
 .hero-bottom {

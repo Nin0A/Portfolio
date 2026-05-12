@@ -1803,62 +1803,101 @@ function initCanvasSection() {
 function initHeroDistortion() {
   const titleWrap = document.querySelector('.hero-title-wrap');
   const title     = document.querySelector('.hero-title');
-  const turb      = document.getElementById('hero-turb');
-  const disp      = document.getElementById('hero-disp');
-  if (!titleWrap || !title || !turb || !disp) return;
+  if (!titleWrap || !title) return;
 
-  let raf       = null;
-  let progress  = 0;   // current strength 0..1
-  let targetP   = 0;   // 0 = resting, 1 = fully distorted
-  let animTime  = 0;   // drives organic turbulence animation
-  let lastTs    = 0;
-  let mouseNorm = 0.5; // normalized mouse X across title
+  const chars = [...title.querySelectorAll('.hero-char')];
+  if (!chars.length) return;
 
-  const easeInOut = x => x < 0.5 ? 2*x*x : 1 - Math.pow(-2*x + 2, 2) / 2;
+  // Per-char state: [rx, ry, tz,  vrx, vry, vtz,  wavePhase]
+  const state = chars.map((_, i) => [0, 0, 0,  0, 0, 0,  Math.random() * Math.PI * 2 + i * 0.42]);
+
+  let mx = -9999, my = -9999;
+  let hover = false, raf = null, lastTs = 0;
+  let hoverP = 0; // 0..1 — global hover progress for wave amplitude
+
+  const STIFF   = 180;  // spring stiffness
+  const DAMP    = 22;   // spring damping
+  const RADIUS  = 220;  // px — cursor influence radius
+  const MAX_RY  = 35;   // deg — max lateral tilt
+  const MAX_RX  = 20;   // deg — max vertical tilt
+  const MAX_TZ  = -90;  // px  — max push into screen
+  const WAVE_RY = 5;    // deg — idle wave amplitude (rotation)
+  const WAVE_TZ = 8;    // px  — idle wave amplitude (depth)
+  const WAVE_SPEED = 1.6;
 
   function tick(ts) {
     const dt = Math.min((ts - lastTs) / 1000, 0.05);
     lastTs = ts;
-    animTime += dt;
 
-    const speed = targetP > 0 ? 3.2 : 5.0;
-    progress += (targetP - progress) * Math.min(1, speed * dt);
-    progress  = Math.max(0, Math.min(1, progress));
+    // Fade hover progress in/out
+    hoverP = Math.max(0, Math.min(1, hoverP + (hover ? 5 : -6) * dt));
 
-    const e    = easeInOut(progress);
-    const scale = 55 * e;
-    // Organic frequency variation: slower oscillation as the distortion "breathes"
-    const freqX = (0.014 + Math.sin(animTime * 0.5) * 0.004 + (mouseNorm - 0.5) * 0.012) * e;
-    const freqY = (0.009 + Math.cos(animTime * 0.4) * 0.003) * e;
+    let busy = hoverP > 0.005;
 
-    turb.setAttribute('baseFrequency', `${Math.max(0, freqX).toFixed(5)} ${Math.max(0, freqY).toFixed(5)}`);
-    disp.setAttribute('scale', scale.toFixed(2));
-    const active = e > 0.003;
-    title.style.filter = active ? 'url(#hero-distort-filter)' : '';
-    title.classList.toggle('is-distorted', active);
+    chars.forEach((el, i) => {
+      const s = state[i];
 
-    const done = targetP === 0 && progress < 0.003;
-    if (done) {
-      title.style.filter = '';
+      // Get char center in viewport space (layout position, unaffected by transform)
+      const rect = el.getBoundingClientRect();
+      const cx = rect.left + rect.width  / 2;
+      const cy = rect.top  + rect.height / 2;
+
+      // Cursor influence (only when hovering)
+      const dx   = mx - cx;
+      const dy   = my - cy;
+      const dist = Math.hypot(dx, dy);
+      const infl = hover ? Math.pow(Math.max(0, 1 - dist / RADIUS), 1.6) : 0;
+
+      // Continuous wave trembling (all chars, scaled by hoverP)
+      s[6] += dt * (WAVE_SPEED + i * 0.04);
+      const wRy = Math.sin(s[6])               * WAVE_RY * hoverP;
+      const wTz = Math.cos(s[6] * 0.7 + i)    * WAVE_TZ * hoverP;
+
+      // Target transforms: cursor push + wave
+      const tRx =  (dy / RADIUS) * MAX_RX * infl + Math.cos(s[6] * 0.9) * 3 * hoverP;
+      const tRy = -(dx / RADIUS) * MAX_RY * infl + wRy;
+      const tTz =  MAX_TZ * infl + wTz;
+
+      // Spring physics (Verlet-style)
+      s[3] += ((tRx - s[0]) * STIFF - s[3] * DAMP) * dt;
+      s[4] += ((tRy - s[1]) * STIFF - s[4] * DAMP) * dt;
+      s[5] += ((tTz - s[2]) * STIFF - s[5] * DAMP) * dt;
+      s[0] += s[3] * dt;
+      s[1] += s[4] * dt;
+      s[2] += s[5] * dt;
+
+      el.style.transform = `perspective(500px) rotateX(${s[0].toFixed(2)}deg) rotateY(${s[1].toFixed(2)}deg) translateZ(${s[2].toFixed(2)}px)`;
+
+      if (Math.abs(s[3]) + Math.abs(s[4]) + Math.abs(s[5]) > 0.08) busy = true;
+    });
+
+    if (busy || hover) {
+      raf = requestAnimationFrame(tick);
+    } else {
+      chars.forEach(el => el.style.transform = '');
       title.classList.remove('is-distorted');
       raf = null;
-    } else {
-      raf = requestAnimationFrame(tick);
     }
   }
 
-  function startLoop() {
-    if (!raf) {
-      lastTs = performance.now();
-      raf = requestAnimationFrame(tick);
-    }
+  function start() {
+    if (!raf) { lastTs = performance.now(); raf = requestAnimationFrame(tick); }
   }
 
-  titleWrap.addEventListener('mouseenter', () => { targetP = 1; startLoop(); });
-  titleWrap.addEventListener('mouseleave', () => { targetP = 0; startLoop(); });
-  titleWrap.addEventListener('mousemove',  e => {
-    const r   = titleWrap.getBoundingClientRect();
-    mouseNorm = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  titleWrap.addEventListener('mouseenter', e => {
+    hover = true;
+    mx = e.clientX; my = e.clientY;
+    title.classList.add('is-distorted');
+    start();
+  });
+  titleWrap.addEventListener('mouseleave', () => {
+    hover = false;
+    mx = -9999; my = -9999;
+    start();
+  });
+  titleWrap.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    start();
   });
 }
 

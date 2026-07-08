@@ -1560,6 +1560,34 @@ PASSION — photo grid==========================================================
   display: none;
 }
 
+.passion-text {
+  padding: 28px 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.passion-text-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+
+.passion-text p {
+  font-size: clamp(14px, 1.2vw, 16px);
+  line-height: 1.75;
+  color: var(--text-muted);
+}
+
+.passion-text p em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--text);
+  font-size: 1.05em;
+}
+
 .passion-photo--placeholder::before {
   content: '40k';
   position: absolute;

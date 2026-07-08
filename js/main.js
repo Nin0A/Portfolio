@@ -19,8 +19,8 @@ function initGrain() {
   const img = ctx.createImageData(256, 256);
   for (let i = 0; i < img.data.length; i += 4) {
     const v = Math.floor(Math.random() * 255);
-    img.data[i] = img.data[i+1] = img.data[i+2] = v;
-    img.data[i+3] = 255;
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+    img.data[i + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
   document.getElementById('grain').style.backgroundImage = `url(${canvas.toDataURL()})`;
@@ -116,7 +116,7 @@ function initThreeHero() {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
 
-  const scene  = new THREE.Scene();
+  const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.set(0, 0, 7);
 
@@ -137,39 +137,39 @@ function initThreeHero() {
     scene.add(mesh);
     return mesh;
   }
-  const icoA = makeIco(2.6, 1,  3.5,  0.8, -1, 0.08);
+  const icoA = makeIco(2.6, 1, 3.5, 0.8, -1, 0.08);
   const icoB = makeIco(1.4, 1, -4.5, -1.5, -2, 0.06);
-  const icoC = makeIco(0.5, 0, -1.5,  2.0,  1, 0.35);
+  const icoC = makeIco(0.5, 0, -1.5, 2.0, 1, 0.35);
 
   // ── Shader particles with GLSL noise flow field ───────────
-  const COUNT  = 1200;
+  const COUNT = 1200;
   const posArr = new Float32Array(COUNT * 3);
-  const sizes  = new Float32Array(COUNT);
+  const sizes = new Float32Array(COUNT);
   const phases = new Float32Array(COUNT);
   for (let i = 0; i < COUNT; i++) {
-    posArr[i*3]   = (Math.random() - 0.5) * 18;
-    posArr[i*3+1] = (Math.random() - 0.5) * 13;
-    posArr[i*3+2] = (Math.random() - 0.5) *  4 - 1;
-    sizes[i]  = Math.random() * 1.8 + 0.4;
+    posArr[i * 3] = (Math.random() - 0.5) * 18;
+    posArr[i * 3 + 1] = (Math.random() - 0.5) * 13;
+    posArr[i * 3 + 2] = (Math.random() - 0.5) * 4 - 1;
+    sizes[i] = Math.random() * 1.8 + 0.4;
     phases[i] = Math.random();
   }
   const pGeo = new THREE.BufferGeometry();
   pGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
-  pGeo.setAttribute('aSize',    new THREE.BufferAttribute(sizes, 1));
-  pGeo.setAttribute('aPhase',   new THREE.BufferAttribute(phases, 1));
+  pGeo.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
+  pGeo.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
 
   const pMat = new THREE.ShaderMaterial({
     uniforms: {
-      uTime:  { value: 0 },
+      uTime: { value: 0 },
       uMouse: { value: new THREE.Vector2(0, 9999) },
       uColor: { value: readAccent() },
-      uDPR:   { value: renderer.getPixelRatio() },
+      uDPR: { value: renderer.getPixelRatio() },
     },
-    vertexShader:   _PARTICLE_VERT,
+    vertexShader: _PARTICLE_VERT,
     fragmentShader: _PARTICLE_FRAG,
     transparent: true,
-    depthWrite:  false,
-    blending:    THREE.AdditiveBlending,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
   });
   scene.add(new THREE.Points(pGeo, pMat));
 
@@ -206,8 +206,8 @@ function initThreeHero() {
     pMat.uniforms.uTime.value = (performance.now() - t0) * 0.001;
 
     icoA.rotation.x += 0.0025; icoA.rotation.y += 0.004;
-    icoB.rotation.x -= 0.003;  icoB.rotation.y -= 0.002;
-    icoC.rotation.x += 0.006;  icoC.rotation.z += 0.004;
+    icoB.rotation.x -= 0.003; icoB.rotation.y -= 0.002;
+    icoC.rotation.x += 0.006; icoC.rotation.z += 0.004;
 
     camX += (targetMX * 0.55 - camX) * 0.04;
     camY += (targetMY * -0.35 - camY) * 0.04;
@@ -333,7 +333,7 @@ function initProjectInteractions() {
 // Ticker — GSAP rAF loop: seamless, no CSS-reset flicker, scroll-velocity aware
 // ─────────────────────────────────────────────
 function initTicker() {
-  const wrap  = document.querySelector('.hero-ticker');
+  const wrap = document.querySelector('.hero-ticker');
   const track = document.querySelector('.ticker-track');
   if (!track) return;
 
@@ -344,12 +344,12 @@ function initTicker() {
 
   window.addEventListener('scroll', () => {
     scrollV = window.scrollY - lastSY;
-    lastSY  = window.scrollY;
+    lastSY = window.scrollY;
   }, { passive: true });
 
   if (wrap) {
     wrap.addEventListener('mouseenter', () => { targetSpeed = 0.08; });
-    wrap.addEventListener('mouseleave',  () => { targetSpeed = 0.65; });
+    wrap.addEventListener('mouseleave', () => { targetSpeed = 0.65; });
   }
 
   // One frame delay so scrollWidth is accurate after paint
@@ -457,8 +457,8 @@ function initNavSplitText() {
       .getPropertyValue('--bg').trim().replace(/\s/g, '');
     if (/^#[0-9a-f]{6}/i.test(hex)) {
       return (0.299 * parseInt(hex.slice(1, 3), 16)
-            + 0.587 * parseInt(hex.slice(3, 5), 16)
-            + 0.114 * parseInt(hex.slice(5, 7), 16)) / 255;
+        + 0.587 * parseInt(hex.slice(3, 5), 16)
+        + 0.114 * parseInt(hex.slice(5, 7), 16)) / 255;
     }
     return 0;
   }
@@ -501,9 +501,9 @@ function initNavSplitText() {
 function initMagnetic() {
   document.querySelectorAll('.magnetic').forEach(el => {
     el.addEventListener('mousemove', e => {
-      const r  = el.getBoundingClientRect();
-      const dx = (e.clientX - r.left - r.width  / 2) * 0.28;
-      const dy = (e.clientY - r.top  - r.height / 2) * 0.28;
+      const r = el.getBoundingClientRect();
+      const dx = (e.clientX - r.left - r.width / 2) * 0.28;
+      const dy = (e.clientY - r.top - r.height / 2) * 0.28;
       gsap.to(el, { x: dx, y: dy, duration: 0.4, ease: 'power2.out' });
     });
     el.addEventListener('mouseleave', () => {
@@ -531,7 +531,7 @@ function initLenis() {
 // ─────────────────────────────────────────────
 function initPreloader() {
   return new Promise(resolve => {
-    const el  = document.getElementById('preloader');
+    const el = document.getElementById('preloader');
     const num = document.getElementById('preloader-num');
     const bar = document.querySelector('.preloader-bar');
     const dur = 2000, t0 = performance.now();
@@ -586,7 +586,8 @@ function initScrollAnimations() {
 
   // Section labels
   gsap.utils.toArray('.section-label').forEach(el => {
-    gsap.to(el, { opacity: 1, duration: 0.8,
+    gsap.to(el, {
+      opacity: 1, duration: 0.8,
       scrollTrigger: { trigger: el, start: 'top 88%' }
     });
   });
@@ -595,7 +596,8 @@ function initScrollAnimations() {
   gsap.utils.toArray('.reveal-up').forEach(el => {
     gsap.fromTo(el,
       { opacity: 0, y: 40 },
-      { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out',
+      {
+        opacity: 1, y: 0, duration: 0.9, ease: 'power3.out',
         scrollTrigger: { trigger: el, start: 'top 88%' }
       }
     );
@@ -603,7 +605,7 @@ function initScrollAnimations() {
 
   // Stats counter
   gsap.utils.toArray('.stat-item').forEach(item => {
-    const numEl  = item.querySelector('.stat-num');
+    const numEl = item.querySelector('.stat-num');
     const target = parseInt(numEl.dataset.target, 10);
     ScrollTrigger.create({
       trigger: item, start: 'top 80%', once: true,
@@ -624,8 +626,10 @@ function initScrollAnimations() {
       trigger: item, start: 'top 86%', once: true,
       onEnter() {
         gsap.to(item, { opacity: 1, duration: 0.6, delay: i * 0.07 });
-        gsap.to(bar,  { width: `${bar.dataset.width}%`, duration: 1.3,
-          delay: i * 0.07 + 0.15, ease: 'power3.out' });
+        gsap.to(bar, {
+          width: `${bar.dataset.width}%`, duration: 1.3,
+          delay: i * 0.07 + 0.15, ease: 'power3.out'
+        });
       }
     });
   });
@@ -634,7 +638,8 @@ function initScrollAnimations() {
   gsap.utils.toArray('.project-item').forEach((item, i) => {
     gsap.fromTo(item,
       { opacity: 0, x: -24 },
-      { opacity: 1, x: 0, duration: 0.7, delay: i * 0.09, ease: 'power3.out',
+      {
+        opacity: 1, x: 0, duration: 0.7, delay: i * 0.09, ease: 'power3.out',
         scrollTrigger: { trigger: item, start: 'top 88%' }
       }
     );
@@ -661,8 +666,8 @@ function initProjectWebGL() {
   renderer.setPixelRatio(1); // DPR 1 for perf — project bg doesn't need retina
   renderer.setSize(W, H);
 
-  const scene  = new THREE.Scene();
-  const camera = new THREE.OrthographicCamera(-W/2, W/2, H/2, -H/2, 0.1, 10);
+  const scene = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-W / 2, W / 2, H / 2, -H / 2, 0.1, 10);
   camera.position.z = 1;
 
   // Single snoise call keeps fragment shader cheap
@@ -698,13 +703,13 @@ function initProjectWebGL() {
 
   const mat = new THREE.ShaderMaterial({
     uniforms: {
-      uTex:   { value: null },
-      uDisp:  { value: 1.0 },
+      uTex: { value: null },
+      uDisp: { value: 1.0 },
       uAlpha: { value: 0.0 },
-      uTime:  { value: 0.0 },
-      uAR:    { value: 1.0 },
+      uTime: { value: 0.0 },
+      uAR: { value: 1.0 },
     },
-    vertexShader:   vert,
+    vertexShader: vert,
     fragmentShader: frag,
     transparent: true,
     depthWrite: false,
@@ -713,7 +718,7 @@ function initProjectWebGL() {
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
   scene.add(mesh);
 
-  const loader   = new THREE.TextureLoader();
+  const loader = new THREE.TextureLoader();
   const texCache = {};
   items.forEach(item => {
     const src = item.dataset.preview;
@@ -736,8 +741,8 @@ function initProjectWebGL() {
 
   function loop() {
     rafId = requestAnimationFrame(loop);
-    mat.uniforms.uTime.value  = (performance.now() - t0) * 0.001;
-    mat.uniforms.uDisp.value  += (targetDisp  - mat.uniforms.uDisp.value)  * 0.07;
+    mat.uniforms.uTime.value = (performance.now() - t0) * 0.001;
+    mat.uniforms.uDisp.value += (targetDisp - mat.uniforms.uDisp.value) * 0.07;
     mat.uniforms.uAlpha.value += (targetAlpha - mat.uniforms.uAlpha.value) * 0.09;
     if (targetAlpha < 0.005 && mat.uniforms.uAlpha.value < 0.005) {
       renderer.clear();
@@ -773,8 +778,8 @@ function initProjectWebGL() {
   window.addEventListener('resize', () => {
     W = window.innerWidth; H = window.innerHeight;
     renderer.setSize(W, H);
-    camera.left = -W/2; camera.right  =  W/2;
-    camera.top  =  H/2; camera.bottom = -H/2;
+    camera.left = -W / 2; camera.right = W / 2;
+    camera.top = H / 2; camera.bottom = -H / 2;
     camera.updateProjectionMatrix();
   }, { passive: true });
 }
@@ -801,7 +806,7 @@ function applyTheme(theme) {
 
   // Update Three.js colors + nav color
   if (threeScene) requestAnimationFrame(threeScene.updateColors);
-  if (_navUpdate)  requestAnimationFrame(_navUpdate);
+  if (_navUpdate) requestAnimationFrame(_navUpdate);
 }
 
 function initThemeSwitcher() {
@@ -817,7 +822,7 @@ function initThemeSwitcher() {
 // ─────────────────────────────────────────────
 function initContactForm() {
   const form = document.getElementById('contact-form');
-  const msg  = document.getElementById('form-success');
+  const msg = document.getElementById('form-success');
   form.addEventListener('submit', e => {
     e.preventDefault();
     msg.textContent = 'Message envoyé ! Je vous réponds rapidement.';
@@ -845,21 +850,21 @@ function initAnchorScroll(lenis) {
 // Parcours — horizontal pinned timeline
 // ─────────────────────────────────────────────
 function initTimeline(lenis) {
-  const section  = document.getElementById('parcours');
+  const section = document.getElementById('parcours');
   if (!section || typeof gsap === 'undefined') return;
 
-  const track    = section.querySelector('.tl-track');
+  const track = section.querySelector('.tl-track');
   const railFill = section.querySelector('.tl-rail-fill');
-  const yearNum  = section.querySelector('.tl-year-num');
-  const items    = [...section.querySelectorAll('.tl-item')];
-  const dots     = items.map(el => el.querySelector('.tl-dot'));
-  const cards    = items.map(el => el.querySelector('.tl-card'));
-  const tags     = items.map(el => el.querySelector('.tl-tag'));
+  const yearNum = section.querySelector('.tl-year-num');
+  const items = [...section.querySelectorAll('.tl-item')];
+  const dots = items.map(el => el.querySelector('.tl-dot'));
+  const cards = items.map(el => el.querySelector('.tl-card'));
+  const tags = items.map(el => el.querySelector('.tl-tag'));
   if (!track || !items.length) return;
 
   const yearStarts = items.map(el => parseInt(el.dataset.yearStart, 10) || 2019);
-  const DISP_MIN   = Math.min(...yearStarts) - 1; // 2018
-  const DISP_MAX   = Math.max(...yearStarts) + 1; // 2026
+  const DISP_MIN = Math.min(...yearStarts) - 1; // 2018
+  const DISP_MAX = Math.max(...yearStarts) + 1; // 2026
   const DISP_RANGE = DISP_MAX - DISP_MIN;         // 8
 
   // thresholds: card i appears when step === its year index
@@ -867,28 +872,30 @@ function initTimeline(lenis) {
 
   // Force hidden
   gsap.set(items, { opacity: 0, y: 32 });
-  gsap.set(dots,  { scale: 0 });
+  gsap.set(dots, { scale: 0 });
 
   // Mobile: simple stagger, no wheel capture
   if (window.innerWidth <= 768) {
     gsap.set(items, { clearProps: 'all' });
-    gsap.set(dots,  { clearProps: 'all' });
+    gsap.set(dots, { clearProps: 'all' });
     items.forEach((item, i) => {
       gsap.fromTo(item,
         { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+        {
+          opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
           scrollTrigger: { trigger: item, start: 'top 82%', once: true },
-          delay: i * 0.15 }
+          delay: i * 0.15
+        }
       );
     });
     return;
   }
 
   // ── State ────────────────────────────────────────────
-  const STEPS    = DISP_RANGE;          // 8 steps (one per year)
-  let   step     = 0;
-  let   active   = false;               // true = section has focus, wheel captured
-  const shown    = items.map(() => false);
+  const STEPS = DISP_RANGE;          // 8 steps (one per year)
+  let step = 0;
+  let active = false;               // true = section has focus, wheel captured
+  const shown = items.map(() => false);
 
   // ── Apply a step (0…STEPS) ────────────────────────────
   function applyStep(s, instant) {
@@ -915,23 +922,23 @@ function initTimeline(lenis) {
 
     items.forEach((item, i) => {
       const shouldShow = p >= thresholds[i];
-      const isCurrent  = i === lastShown;
+      const isCurrent = i === lastShown;
 
       // Dynamic "current event" styling — follows the last revealed card
       if (cards[i]) cards[i].classList.toggle('tl-card--current', isCurrent);
-      if (tags[i])  tags[i].classList.toggle('tl-tag--active',    isCurrent);
-      if (dots[i])  dots[i].classList.toggle('tl-dot--active',    isCurrent);
+      if (tags[i]) tags[i].classList.toggle('tl-tag--active', isCurrent);
+      if (dots[i]) dots[i].classList.toggle('tl-dot--active', isCurrent);
 
       if (shouldShow && !shown[i]) {
         shown[i] = true;
         gsap.killTweensOf([item, dots[i]]);
         gsap.to(dots[i], { scale: 1, duration: 0.35, ease: 'back.out(2.8)' });
-        gsap.to(item,    { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', delay: 0.06 });
+        gsap.to(item, { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', delay: 0.06 });
       } else if (!shouldShow && shown[i]) {
         shown[i] = false;
         gsap.killTweensOf([item, dots[i]]);
         gsap.to(dots[i], { scale: 0, duration: 0.25, ease: 'power2.in' });
-        gsap.to(item,    { opacity: 0, y: 32, duration: 0.35, ease: 'power2.in' });
+        gsap.to(item, { opacity: 0, y: 32, duration: 0.35, ease: 'power2.in' });
       }
     });
   }
@@ -939,19 +946,19 @@ function initTimeline(lenis) {
   // ── Wheel handler (capture phase, before Lenis) ───────
   // We compare window.scrollY to section.offsetTop — much more reliable than
   // getBoundingClientRect during a Lenis animation (which is mid-lerp and off).
-  let blocked  = false;
+  let blocked = false;
   let blockDir = 0;
   const SNAP_TOLERANCE = 150; // px — how close scrollY must be to section top
 
   function isCovering() {
     const scrollY = window.scrollY;
-    const st      = section.offsetTop;
+    const st = section.offsetTop;
     return scrollY >= st - SNAP_TOLERANCE && scrollY <= st + SNAP_TOLERANCE;
   }
 
   function onWheel(e) {
     const covering = isCovering();
-    const dir      = e.deltaY > 0 ? 1 : -1;
+    const dir = e.deltaY > 0 ? 1 : -1;
 
     if (blocked) {
       // Unblock if user reverses OR drifted out of the section zone
@@ -975,8 +982,8 @@ function initTimeline(lenis) {
     const next = step + dir;
 
     if (next < 0 || next > STEPS) {
-      active   = false;
-      blocked  = true;
+      active = false;
+      blocked = true;
       blockDir = dir;
       if (lenis) lenis.start();
       return;
@@ -1043,8 +1050,8 @@ async function init() {
   initCursor();
   splitHeroChars();
   initThemeSwitcher();
-  _navUpdate  = initNavSplitText();
-  threeScene  = initThreeHero();
+  _navUpdate = initNavSplitText();
+  threeScene = initThreeHero();
 
   await initPreloader();
 

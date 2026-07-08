@@ -747,41 +747,49 @@ function initTimeline(lenis) {
   }
 
   // ── Wheel handler (capture phase, before Lenis) ───────
-  // blocked = true after hitting a boundary; direction tracked so the user can
-  // immediately reverse without waiting for the page to scroll out of view.
-  let blocked   = false;
-  let blockDir  = 0;
+  // We compare window.scrollY to section.offsetTop — much more reliable than
+  // getBoundingClientRect during a Lenis animation (which is mid-lerp and off).
+  let blocked  = false;
+  let blockDir = 0;
+  const SNAP_TOLERANCE = 150; // px — how close scrollY must be to section top
+
+  function isCovering() {
+    const scrollY = window.scrollY;
+    const st      = section.offsetTop;
+    return scrollY >= st - SNAP_TOLERANCE && scrollY <= st + SNAP_TOLERANCE;
+  }
 
   function onWheel(e) {
-    const rect     = section.getBoundingClientRect();
-    const covering = rect.top <= 5 && rect.bottom >= window.innerHeight - 5;
+    const covering = isCovering();
     const dir      = e.deltaY > 0 ? 1 : -1;
 
-    // If we just released at a boundary, allow through — but unblock the
-    // moment the user reverses direction OR the section leaves the viewport.
     if (blocked) {
+      // Unblock if user reverses OR drifted out of the section zone
       if (dir !== blockDir || !covering) blocked = false;
       if (blocked) return;
     }
 
     if (!covering) {
-      // Section not in view — ensure Lenis is running and bail
       if (active) { active = false; if (lenis) lenis.start(); }
       return;
     }
 
-    // Section covers the viewport — take control
-    if (!active) { active = true; if (lenis) lenis.stop(); }
+    if (!active) {
+      // First capture: stop Lenis and snap exactly to section top so cards
+      // are fully in view (avoids a half-visible section on activation).
+      active = true;
+      if (lenis) lenis.stop();
+      window.scrollTo({ top: section.offsetTop });
+    }
 
     const next = step + dir;
 
     if (next < 0 || next > STEPS) {
-      // Boundary hit: hand scroll back to Lenis so the page moves away
       active   = false;
       blocked  = true;
       blockDir = dir;
       if (lenis) lenis.start();
-      return; // do NOT preventDefault — let Lenis process this event
+      return;
     }
 
     e.preventDefault();

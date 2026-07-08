@@ -696,12 +696,12 @@ function initTimeline() {
     return;
   }
 
-  const revealed = items.map(() => false);
+  const shown   = items.map(() => false);
   let   lastYear = DISP_MIN;
 
-  // Scroll distance: at least 2.5× viewport height so the year scrolls slowly
+  // Scroll distance: 1.6× viewport height — fast enough, slow enough
   const getTrackX    = () => -Math.max(1, track.scrollWidth - window.innerWidth);
-  const getScrollEnd = () => '+=' + Math.max(-getTrackX(), window.innerHeight * 2.5);
+  const getScrollEnd = () => '+=' + Math.max(-getTrackX(), window.innerHeight * 1.6);
 
   gsap.to(track, {
     x: getTrackX,
@@ -711,7 +711,7 @@ function initTimeline() {
       start: 'top top',
       end: getScrollEnd,
       pin: true,
-      scrub: 1.2,
+      scrub: 0.8,
       anticipatePin: 1,
       invalidateOnRefresh: true,
       onUpdate(self) {
@@ -720,18 +720,25 @@ function initTimeline() {
         // Rail fill
         if (railFill) railFill.style.transform = `scaleX(${p})`;
 
-        // Year counter (runs 2018 → 2026)
+        // Year counter (2018 → 2026)
         if (yearNum) {
           const y = Math.round(DISP_MIN + p * DISP_RANGE);
           if (y !== lastYear) { lastYear = y; yearNum.textContent = y; }
         }
 
-        // Reveal cards when counter hits their start year
+        // Bidirectional: reveal on forward scroll, hide on reverse
         items.forEach((item, i) => {
-          if (!revealed[i] && p >= thresholds[i]) {
-            revealed[i] = true;
-            gsap.to(dots[i], { scale: 1, duration: 0.4, ease: 'back.out(2.8)' });
-            gsap.to(item,    { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out', delay: 0.08 });
+          const shouldShow = p >= thresholds[i];
+          if (shouldShow && !shown[i]) {
+            shown[i] = true;
+            gsap.killTweensOf([item, dots[i]]);
+            gsap.to(dots[i], { scale: 1, duration: 0.35, ease: 'back.out(2.8)' });
+            gsap.to(item,    { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', delay: 0.06 });
+          } else if (!shouldShow && shown[i]) {
+            shown[i] = false;
+            gsap.killTweensOf([item, dots[i]]);
+            gsap.to(dots[i], { scale: 0, duration: 0.25, ease: 'power2.in' });
+            gsap.to(item,    { opacity: 0, y: 32, duration: 0.35, ease: 'power2.in' });
           }
         });
       },

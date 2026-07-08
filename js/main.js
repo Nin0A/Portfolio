@@ -142,7 +142,7 @@ function initThreeHero() {
   const icoC = makeIco(0.5, 0, -1.5,  2.0,  1, 0.35);
 
   // ── Shader particles with GLSL noise flow field ───────────
-  const COUNT  = 2500;
+  const COUNT  = 1200;
   const posArr = new Float32Array(COUNT * 3);
   const sizes  = new Float32Array(COUNT);
   const phases = new Float32Array(COUNT);
@@ -650,18 +650,22 @@ function initProjectWebGL() {
   const items = [...document.querySelectorAll('.project-item[data-preview]')];
   if (!items.length || window.innerWidth <= 768) return;
 
-  const loader = new THREE.TextureLoader();
-  const t0     = performance.now();
+  // Single renderer shared across all items — avoids N WebGL contexts
+  const canvas = document.createElement('canvas');
+  canvas.setAttribute('aria-hidden', 'true');
+  canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;display:block';
+  document.body.appendChild(canvas);
 
-  const vert = /* glsl */`
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `;
+  let W = window.innerWidth, H = window.innerHeight;
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+  renderer.setPixelRatio(1); // DPR 1 for perf — project bg doesn't need retina
+  renderer.setSize(W, H);
 
-  // uAR = (tex w/h) / (plane w/h) — cover mapping trims the shorter UV axis
+  const scene  = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-W/2, W/2, H/2, -H/2, 0.1, 10);
+  camera.position.z = 1;
+
+  // Single snoise call keeps fragment shader cheap
   const frag = /* glsl */`
     ${_NOISE_GLSL}
     uniform sampler2D uTex;
@@ -677,95 +681,102 @@ function initProjectWebGL() {
       } else {
         uv.x = 0.5 + (vUv.x - 0.5) / uAR;
       }
-      float n1 = snoise(vec3(uv * 3.2,       uTime * 0.18 + uDisp * 1.6));
-      float n2 = snoise(vec3(uv * 2.5 + 8.1, uTime * 0.18 + uDisp * 1.6 + 3.0));
-      vec2 d = vec2(n1, n2) * uDisp * 0.13;
+      float n = snoise(vec3(uv * 3.0, uTime * 0.15 + uDisp));
+      vec2 d = vec2(n, n * 0.65) * uDisp * 0.12;
       vec4 col = texture2D(uTex, clamp(uv + d, 0.0, 1.0));
       gl_FragColor = vec4(col.rgb * 0.42, col.a * uAlpha);
     }
   `;
 
-  items.forEach(item => {
-    let iW = item.offsetWidth;
-    let iH = item.offsetHeight;
-
-    const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-hidden', 'true');
-    canvas.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:0;display:block';
-    item.appendChild(canvas);
-
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setSize(iW, iH);
-
-    const scene  = new THREE.Scene();
-    const camera = new THREE.OrthographicCamera(-iW/2, iW/2, iH/2, -iH/2, 0.1, 10);
-    camera.position.z = 1;
-
-    const mat = new THREE.ShaderMaterial({
-      uniforms: {
-        uTex:   { value: null },
-        uDisp:  { value: 1.0 },
-        uAlpha: { value: 0.0 },
-        uTime:  { value: 0.0 },
-        uAR:    { value: 1.0 },
-      },
-      vertexShader:   vert,
-      fragmentShader: frag,
-      transparent: true,
-      depthWrite: false,
-    });
-
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
-    mesh.scale.set(iW, iH, 1);
-    scene.add(mesh);
-
-    const tex = loader.load(item.dataset.preview, t => {
-      const img = t.image;
-      if (img && img.width) {
-        mat.uniforms.uAR.value = (img.width / img.height) / (iW / iH);
-      }
-    });
-    tex.colorSpace = THREE.SRGBColorSpace;
-    mat.uniforms.uTex.value = tex;
-
-    let targetDisp = 1.0, targetAlpha = 0.0, rafId = null;
-
-    function loop() {
-      rafId = requestAnimationFrame(loop);
-      mat.uniforms.uTime.value  = (performance.now() - t0) * 0.001;
-      mat.uniforms.uDisp.value  += (targetDisp  - mat.uniforms.uDisp.value)  * 0.07;
-      mat.uniforms.uAlpha.value += (targetAlpha - mat.uniforms.uAlpha.value) * 0.09;
-      if (targetAlpha < 0.005 && mat.uniforms.uAlpha.value < 0.005) {
-        renderer.clear();
-        cancelAnimationFrame(rafId);
-        rafId = null;
-        return;
-      }
-      renderer.render(scene, camera);
+  const vert = /* glsl */`
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
+  `;
 
+  const mat = new THREE.ShaderMaterial({
+    uniforms: {
+      uTex:   { value: null },
+      uDisp:  { value: 1.0 },
+      uAlpha: { value: 0.0 },
+      uTime:  { value: 0.0 },
+      uAR:    { value: 1.0 },
+    },
+    vertexShader:   vert,
+    fragmentShader: frag,
+    transparent: true,
+    depthWrite: false,
+  });
+
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+  scene.add(mesh);
+
+  const loader   = new THREE.TextureLoader();
+  const texCache = {};
+  items.forEach(item => {
+    const src = item.dataset.preview;
+    if (src && !texCache[src]) {
+      const t = loader.load(src);
+      t.colorSpace = THREE.SRGBColorSpace;
+      texCache[src] = t;
+    }
+  });
+
+  let activeItem = null, targetDisp = 1.0, targetAlpha = 0.0, rafId = null;
+  const t0 = performance.now();
+
+  function syncMesh() {
+    if (!activeItem) return;
+    const r = activeItem.getBoundingClientRect();
+    mesh.position.set(r.left + r.width / 2 - W / 2, H / 2 - r.top - r.height / 2, 0);
+    mesh.scale.set(r.width, r.height, 1);
+  }
+
+  function loop() {
+    rafId = requestAnimationFrame(loop);
+    mat.uniforms.uTime.value  = (performance.now() - t0) * 0.001;
+    mat.uniforms.uDisp.value  += (targetDisp  - mat.uniforms.uDisp.value)  * 0.07;
+    mat.uniforms.uAlpha.value += (targetAlpha - mat.uniforms.uAlpha.value) * 0.09;
+    if (targetAlpha < 0.005 && mat.uniforms.uAlpha.value < 0.005) {
+      renderer.clear();
+      cancelAnimationFrame(rafId);
+      rafId = null;
+      return;
+    }
+    syncMesh();
+    renderer.clear();
+    renderer.render(scene, camera);
+  }
+
+  items.forEach(item => {
     item.addEventListener('mouseenter', () => {
+      activeItem = item;
+      const tex = texCache[item.dataset.preview];
+      if (tex) {
+        mat.uniforms.uTex.value = tex;
+        const img = tex.image;
+        if (img && img.width) {
+          const r = item.getBoundingClientRect();
+          mat.uniforms.uAR.value = (img.width / img.height) / (r.width / r.height);
+        }
+      }
       targetDisp = 0.0; targetAlpha = 1.0;
       if (!rafId) loop();
     });
     item.addEventListener('mouseleave', () => {
       targetDisp = 1.0; targetAlpha = 0.0;
     });
-
-    window.addEventListener('resize', () => {
-      iW = item.offsetWidth; iH = item.offsetHeight;
-      renderer.setSize(iW, iH);
-      camera.left = -iW/2; camera.right  =  iW/2;
-      camera.top  =  iH/2; camera.bottom = -iH/2;
-      camera.updateProjectionMatrix();
-      mesh.scale.set(iW, iH, 1);
-      const img = tex.image;
-      if (img && img.width) {
-        mat.uniforms.uAR.value = (img.width / img.height) / (iW / iH);
-      }
-    }, { passive: true });
   });
+
+  window.addEventListener('resize', () => {
+    W = window.innerWidth; H = window.innerHeight;
+    renderer.setSize(W, H);
+    camera.left = -W/2; camera.right  =  W/2;
+    camera.top  =  H/2; camera.bottom = -H/2;
+    camera.updateProjectionMatrix();
+  }, { passive: true });
 }
 
 // ─────────────────────────────────────────────

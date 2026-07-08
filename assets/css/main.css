@@ -745,29 +745,13 @@ button {
 /* ============================================================
    PROJECTS
    ============================================================ */
-#project-preview {
+#project-gl {
   position: fixed;
-  width: clamp(220px, 22vw, 340px);
-  aspect-ratio: 16 / 10;
-  border-radius: 4px;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 100;
-  opacity: 0;
-  transform: scale(0.94) rotate(-2deg);
-  transition: opacity 0.3s var(--ease-expo), transform 0.3s var(--ease-expo);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
-}
-
-#project-preview.is-visible {
-  opacity: 1;
-  transform: scale(1) rotate(0deg);
-}
-
-#preview-img {
+  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  pointer-events: none;
+  z-index: 100;
 }
 
 .projects-list {
@@ -1193,7 +1177,7 @@ button {
     display: none;
   }
 
-  #project-preview {
+  #project-gl {
     display: none;
   }
 

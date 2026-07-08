@@ -642,29 +642,125 @@ function initScrollAnimations() {
 }
 
 // ─────────────────────────────────────────────
-// Project hover preview (floating card)
+// Project hover preview — WebGL shader distortion
+// Plane in orthographic scene, simplex noise UV displacement:
+// enter → distortion 1→0 (image materialises), leave → 0→1 + alpha fade
 // ─────────────────────────────────────────────
-function initProjectPreview() {
-  const preview = document.getElementById('project-preview');
-  const imgEl   = document.getElementById('preview-img');
+function initProjectWebGL() {
+  const canvas = document.getElementById('project-gl');
+  if (!canvas) return;
+
+  let W = window.innerWidth, H = window.innerHeight;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(W, H);
+
+  const scene  = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-W/2, W/2, H/2, -H/2, 0.1, 10);
+  camera.position.z = 1;
+
+  const PLANE_W = Math.min(340, W * 0.22);
+  const PLANE_H = PLANE_W * (10 / 16);
+  const geo = new THREE.PlaneGeometry(PLANE_W, PLANE_H);
+
+  const vert = /* glsl */`
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+
+  const frag = /* glsl */`
+    ${_NOISE_GLSL}
+    uniform sampler2D uTex;
+    uniform float uDisp;
+    uniform float uAlpha;
+    uniform float uTime;
+    varying vec2 vUv;
+    void main() {
+      float n1 = snoise(vec3(vUv * 3.5, uTime * 0.18 + uDisp * 1.4));
+      float n2 = snoise(vec3(vUv * 2.8 + 7.3, uTime * 0.18 + uDisp * 1.4 + 3.1));
+      vec2 d = vec2(n1, n2) * uDisp * 0.14;
+      vec4 col = texture2D(uTex, clamp(vUv + d, 0.0, 1.0));
+      gl_FragColor = vec4(col.rgb, col.a * uAlpha);
+    }
+  `;
+
+  const mat = new THREE.ShaderMaterial({
+    uniforms: {
+      uTex:   { value: null },
+      uDisp:  { value: 1.0 },
+      uAlpha: { value: 0.0 },
+      uTime:  { value: 0.0 },
+    },
+    vertexShader:   vert,
+    fragmentShader: frag,
+    transparent: true,
+    depthWrite: false,
+  });
+
+  const mesh = new THREE.Mesh(geo, mat);
+  scene.add(mesh);
+
+  // Preload all project textures up-front
+  const loader   = new THREE.TextureLoader();
+  const texCache = {};
+  document.querySelectorAll('.project-item[data-preview]').forEach(item => {
+    const src = item.dataset.preview;
+    if (src && !texCache[src]) {
+      const t = loader.load(src);
+      t.colorSpace = THREE.SRGBColorSpace;
+      texCache[src] = t;
+    }
+  });
+
   let px = 0, py = 0, tx = 0, ty = 0;
+  let targetDisp = 1.0, targetAlpha = 0.0;
+  const t0 = performance.now();
 
-  (function animate() {
-    px += (tx - px) * 0.1;
-    py += (ty - py) * 0.1;
-    gsap.set(preview, { x: px, y: py });
-    requestAnimationFrame(animate);
-  })();
-
-  document.addEventListener('mousemove', e => { tx = e.clientX + 24; ty = e.clientY - 80; });
+  document.addEventListener('mousemove', e => {
+    // Plane top-left starts at (clientX + 24, clientY - 80); convert to ortho center
+    tx = (e.clientX + 24 + PLANE_W / 2) - W / 2;
+    ty = H / 2 - (e.clientY - 80 + PLANE_H / 2);
+  });
 
   document.querySelectorAll('.project-item[data-preview]').forEach(item => {
     item.addEventListener('mouseenter', () => {
-      imgEl.src = item.dataset.preview;
-      preview.classList.add('is-visible');
+      const tex = texCache[item.dataset.preview];
+      if (tex) mat.uniforms.uTex.value = tex;
+      targetDisp  = 0.0;
+      targetAlpha = 1.0;
     });
-    item.addEventListener('mouseleave', () => preview.classList.remove('is-visible'));
+    item.addEventListener('mouseleave', () => {
+      targetDisp  = 1.0;
+      targetAlpha = 0.0;
+    });
   });
+
+  window.addEventListener('resize', () => {
+    W = window.innerWidth; H = window.innerHeight;
+    renderer.setSize(W, H);
+    camera.left = -W/2; camera.right  =  W/2;
+    camera.top  =  H/2; camera.bottom = -H/2;
+    camera.updateProjectionMatrix();
+  });
+
+  (function animate() {
+    requestAnimationFrame(animate);
+    if (targetAlpha < 0.005 && mat.uniforms.uAlpha.value < 0.005) return;
+
+    mat.uniforms.uTime.value  = (performance.now() - t0) * 0.001;
+    mat.uniforms.uDisp.value  += (targetDisp  - mat.uniforms.uDisp.value)  * 0.085;
+    mat.uniforms.uAlpha.value += (targetAlpha - mat.uniforms.uAlpha.value) * 0.085;
+
+    px += (tx - px) * 0.1;
+    py += (ty - py) * 0.1;
+    mesh.position.set(px, py, 0);
+
+    renderer.render(scene, camera);
+  })();
 }
 
 // ─────────────────────────────────────────────
@@ -942,7 +1038,7 @@ async function init() {
   initParallax();
   initTicker();
   initProjectInteractions();
-  initProjectPreview();
+  initProjectWebGL();
   initTimeline(lenis);
   initPassion();
   initMagnetic();

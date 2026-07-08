@@ -653,35 +653,32 @@ function initAnchorScroll(lenis) {
 // ─────────────────────────────────────────────
 // Parcours — horizontal pinned timeline
 // ─────────────────────────────────────────────
-function initTimeline() {
+function initTimeline(lenis) {
   const section  = document.getElementById('parcours');
-  if (!section || typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+  if (!section || typeof gsap === 'undefined') return;
 
   const track    = section.querySelector('.tl-track');
   const railFill = section.querySelector('.tl-rail-fill');
   const yearNum  = section.querySelector('.tl-year-num');
+  const ball     = section.querySelector('.tl-cursor-ball');
   const items    = [...section.querySelectorAll('.tl-item')];
   const dots     = items.map(el => el.querySelector('.tl-dot'));
   if (!track || !items.length) return;
 
-  // Year display: start 1 year before first card, end 1 after last
-  // so the counter has a "run-up" before each card appears
-  const yearStarts    = items.map(el => parseInt(el.dataset.yearStart, 10) || 2019);
-  const DISP_MIN      = Math.min(...yearStarts) - 1;   // 2018
-  const DISP_MAX      = Math.max(...yearStarts) + 1;   // 2026
-  const DISP_RANGE    = DISP_MAX - DISP_MIN;           // 8
+  const yearStarts = items.map(el => parseInt(el.dataset.yearStart, 10) || 2019);
+  const DISP_MIN   = Math.min(...yearStarts) - 1; // 2018
+  const DISP_MAX   = Math.max(...yearStarts) + 1; // 2026
+  const DISP_RANGE = DISP_MAX - DISP_MIN;         // 8
 
-  // Each card threshold = moment the year counter hits its start year
+  // thresholds: card i appears when step === its year index
   const thresholds = yearStarts.map(y => (y - DISP_MIN) / DISP_RANGE);
-  // 2019 → (2019-2018)/8 = 0.125
-  // 2022 → (2022-2018)/8 = 0.5
-  // 2025 → (2025-2018)/8 = 0.875
 
-  // Force hidden via GSAP inline styles — beats any CSS
+  // Force hidden
   gsap.set(items, { opacity: 0, y: 32 });
   gsap.set(dots,  { scale: 0 });
+  if (ball) gsap.set(ball, { opacity: 0 });
 
-  // Mobile: vertical stagger, no pin
+  // Mobile: simple stagger, no wheel capture
   if (window.innerWidth <= 768) {
     gsap.set(items, { clearProps: 'all' });
     gsap.set(dots,  { clearProps: 'all' });
@@ -696,54 +693,96 @@ function initTimeline() {
     return;
   }
 
-  const shown   = items.map(() => false);
-  let   lastYear = DISP_MIN;
+  // ── State ────────────────────────────────────────────
+  const STEPS    = DISP_RANGE;          // 8 steps (one per year)
+  let   step     = 0;
+  let   active   = false;               // true = section has focus, wheel captured
+  const shown    = items.map(() => false);
 
-  // Scroll distance: 1.6× viewport height — fast enough, slow enough
-  const getTrackX    = () => -Math.max(1, track.scrollWidth - window.innerWidth);
-  const getScrollEnd = () => '+=' + Math.max(-getTrackX(), window.innerHeight * 1.6);
+  // ── Move the cursor ball to a card's dot ─────────────
+  function moveBall(idx) {
+    if (!ball || idx < 0) return;
+    const item = items[idx];
+    if (!item) return;
+    // offsetLeft of item within track + half the dot width (7px)
+    const x = item.offsetLeft + 7;
+    gsap.to(ball, { x, opacity: 1, duration: 0.45, ease: 'elastic.out(1, 0.65)' });
+  }
 
-  gsap.to(track, {
-    x: getTrackX,
-    ease: 'none',
-    scrollTrigger: {
-      trigger: section,
-      start: 'top top',
-      end: getScrollEnd,
-      pin: true,
-      scrub: 0.8,
-      anticipatePin: 1,
-      invalidateOnRefresh: true,
-      onUpdate(self) {
-        const p = self.progress;
+  // ── Apply a step (0…STEPS) ────────────────────────────
+  function applyStep(s, instant) {
+    const p = s / STEPS;
+    const dur = instant ? 0 : 0.45;
 
-        // Rail fill
-        if (railFill) railFill.style.transform = `scaleX(${p})`;
+    // Year counter
+    if (yearNum) yearNum.textContent = Math.round(DISP_MIN + p * DISP_RANGE);
 
-        // Year counter (2018 → 2026)
-        if (yearNum) {
-          const y = Math.round(DISP_MIN + p * DISP_RANGE);
-          if (y !== lastYear) { lastYear = y; yearNum.textContent = y; }
-        }
+    // Rail
+    if (railFill) gsap.to(railFill, { scaleX: p, duration: dur, ease: 'power2.out' });
 
-        // Bidirectional: reveal on forward scroll, hide on reverse
-        items.forEach((item, i) => {
-          const shouldShow = p >= thresholds[i];
-          if (shouldShow && !shown[i]) {
-            shown[i] = true;
-            gsap.killTweensOf([item, dots[i]]);
-            gsap.to(dots[i], { scale: 1, duration: 0.35, ease: 'back.out(2.8)' });
-            gsap.to(item,    { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', delay: 0.06 });
-          } else if (!shouldShow && shown[i]) {
-            shown[i] = false;
-            gsap.killTweensOf([item, dots[i]]);
-            gsap.to(dots[i], { scale: 0, duration: 0.25, ease: 'power2.in' });
-            gsap.to(item,    { opacity: 0, y: 32, duration: 0.35, ease: 'power2.in' });
-          }
-        });
-      },
-    },
-  });
+    // Track translate
+    const maxX = Math.max(1, track.scrollWidth - window.innerWidth);
+    gsap.to(track, { x: -p * maxX, duration: dur, ease: 'power2.out' });
+
+    // Cards + ball
+    let lastShown = -1;
+    items.forEach((item, i) => {
+      const shouldShow = p >= thresholds[i];
+      if (shouldShow) lastShown = i;
+      if (shouldShow && !shown[i]) {
+        shown[i] = true;
+        gsap.killTweensOf([item, dots[i]]);
+        gsap.to(dots[i], { scale: 1, duration: 0.35, ease: 'back.out(2.8)' });
+        gsap.to(item,    { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', delay: 0.06 });
+      } else if (!shouldShow && shown[i]) {
+        shown[i] = false;
+        gsap.killTweensOf([item, dots[i]]);
+        gsap.to(dots[i], { scale: 0, duration: 0.25, ease: 'power2.in' });
+        gsap.to(item,    { opacity: 0, y: 32, duration: 0.35, ease: 'power2.in' });
+      }
+    });
+    if (lastShown >= 0) moveBall(lastShown);
+    else if (ball) gsap.to(ball, { opacity: 0, duration: 0.2 });
+  }
+
+  // ── Wheel handler (capture phase, before Lenis) ───────
+  function onWheel(e) {
+    if (!active) return;
+    const dir = e.deltaY > 0 ? 1 : -1;
+    const next = step + dir;
+
+    // If at boundaries, release scroll to page
+    if (next < 0 || next > STEPS) {
+      active = false;
+      if (lenis) lenis.start();
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    step = next;
+    applyStep(step);
+  }
+  window.addEventListener('wheel', onWheel, { passive: false, capture: true });
+
+  // ── IntersectionObserver: activate when section fills viewport ──
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(ent => {
+      if (ent.isIntersecting && ent.intersectionRatio >= 0.6) {
+        active = true;
+        if (lenis) lenis.stop();
+      } else if (!ent.isIntersecting) {
+        active = false;
+        if (lenis) lenis.start();
+      }
+    });
+  }, { threshold: [0, 0.6, 1] });
+  io.observe(section);
+
+  // Init at step 0
+  applyStep(0, true);
 }
 
 // ─────────────────────────────────────────────
@@ -886,7 +925,7 @@ async function init() {
   initTicker();
   initProjectInteractions();
   initProjectPreview();
-  initTimeline();
+  initTimeline(lenis);
   initPassion();
   initHeroDistortion();
   initMagnetic();

@@ -1,7 +1,13 @@
 /* ============================================================
    PORTFOLIO — main.js
-   Stack: Three.js · GSAP ScrollTrigger · Lenis
+   Stack: Three.js · GSAP ScrollTrigger · Lenis  (bundled via Vite)
    ============================================================ */
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import Lenis from 'lenis'
+import * as THREE from 'three'
+
+gsap.registerPlugin(ScrollTrigger)
 
 // ─────────────────────────────────────────────
 // Grain canvas
@@ -28,15 +34,85 @@ function initCursor() {
 }
 
 // ─────────────────────────────────────────────
-// Three.js Hero — wireframe icosahedra + particles
+// Three.js Hero — wireframe icosahedra + 2 500 shader particles
 // ─────────────────────────────────────────────
 let threeScene = null;
 
+// Simplex noise (Ashima Arts, MIT) inlined in GLSL
+const _NOISE_GLSL = /* glsl */`
+  vec3 _m289v3(vec3 x){return x-floor(x*(1./289.))*289.;}
+  vec4 _m289v4(vec4 x){return x-floor(x*(1./289.))*289.;}
+  vec4 _perm(vec4 x){return _m289v4(((x*34.)+1.)*x);}
+  vec4 _tis(vec4 r){return 1.79284291400159-.85373472095314*r;}
+  float snoise(vec3 v){
+    const vec2 C=vec2(1./6.,1./3.);const vec4 D=vec4(0.,.5,1.,2.);
+    vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);
+    vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.-g;
+    vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);
+    vec3 x1=x0-i1+C.xxx;vec3 x2=x0-i2+C.yyy;vec3 x3=x0-D.yyy;
+    i=_m289v3(i);
+    vec4 p=_perm(_perm(_perm(
+      i.z+vec4(0.,i1.z,i2.z,1.))
+      +i.y+vec4(0.,i1.y,i2.y,1.))
+      +i.x+vec4(0.,i1.x,i2.x,1.));
+    float n_=.142857;vec3 ns=n_*D.wyz-D.xzx;
+    vec4 j=p-49.*floor(p*ns.z*ns.z);
+    vec4 x_=floor(j*ns.z);vec4 y_=floor(j-7.*x_);
+    vec4 x=x_*ns.x+ns.yyyy;vec4 y=y_*ns.x+ns.yyyy;vec4 h=1.-abs(x)-abs(y);
+    vec4 b0=vec4(x.xy,y.xy);vec4 b1=vec4(x.zw,y.zw);
+    vec4 s0=floor(b0)*2.+1.;vec4 s1=floor(b1)*2.+1.;vec4 sh=-step(h,vec4(0.));
+    vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+    vec3 p0=vec3(a0.xy,h.x);vec3 p1=vec3(a0.zw,h.y);
+    vec3 p2=vec3(a1.xy,h.z);vec3 p3=vec3(a1.zw,h.w);
+    vec4 norm=_tis(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+    p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+    vec4 m=max(.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.);m=m*m;
+    return 42.*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+  }
+`;
+
+const _PARTICLE_VERT = /* glsl */`
+  ${_NOISE_GLSL}
+  uniform float uTime;
+  uniform vec2  uMouse;
+  uniform float uDPR;
+  attribute float aSize;
+  attribute float aPhase;
+  varying float vAlpha;
+  void main(){
+    vec3 p=position;
+    float t=uTime*.12+aPhase*6.283;
+    float s=.28;
+    p.x+=snoise(vec3(p.x*s,      p.y*s,      t      ))*.65;
+    p.y+=snoise(vec3(p.x*s+17.3, p.y*s+31.7, t+1.5  ))*.65;
+    p.z+=snoise(vec3(p.x*s+43.1, p.y*s+67.9, t+3.0  ))*.4;
+    vec2 diff=p.xy-uMouse;
+    float dist=length(diff);
+    p.xy+=normalize(diff+.001)*smoothstep(2.4,0.,dist)*1.6;
+    float edge=length(p.xy/vec2(9.,6.5));
+    vAlpha=smoothstep(1.3,.3,edge)*.9;
+    vec4 mv=modelViewMatrix*vec4(p,1.);
+    gl_PointSize=aSize*uDPR*(52./-mv.z);
+    gl_Position=projectionMatrix*mv;
+  }
+`;
+
+const _PARTICLE_FRAG = /* glsl */`
+  uniform vec3 uColor;
+  varying float vAlpha;
+  void main(){
+    float d=length(gl_PointCoord-.5);
+    float a=smoothstep(.5,.06,d)*vAlpha;
+    if(a<.005)discard;
+    gl_FragColor=vec4(uColor,a);
+  }
+`;
+
 function initThreeHero() {
   const canvas = document.getElementById('hero-canvas');
-  if (!canvas || typeof THREE === 'undefined') return null;
+  if (!canvas) return null;
 
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -44,96 +120,99 @@ function initThreeHero() {
   const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.set(0, 0, 7);
 
-  // Read --accent CSS variable as Three.js Color
-  function accentColor() {
-    const raw = getComputedStyle(document.documentElement)
-      .getPropertyValue('--accent').trim();
+  function readAccent() {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
     try { return new THREE.Color(raw); } catch { return new THREE.Color('#4da6ff'); }
   }
 
-  // ── Large wireframe icosahedron (right side) ──────────────
-  const icoA = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(2.6, 1),
-    new THREE.MeshBasicMaterial({ color: accentColor(), wireframe: true, transparent: true, opacity: 0.08 })
-  );
-  icoA.position.set(3.5, 0.8, -1);
-  scene.add(icoA);
+  // ── Wireframe icosahedra ──────────────────────────────────
+  const icoMats = [];
+  function makeIco(radius, detail, x, y, z, opacity) {
+    const mat = new THREE.MeshBasicMaterial({
+      color: readAccent(), wireframe: true, transparent: true, opacity,
+    });
+    icoMats.push(mat);
+    const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(radius, detail), mat);
+    mesh.position.set(x, y, z);
+    scene.add(mesh);
+    return mesh;
+  }
+  const icoA = makeIco(2.6, 1,  3.5,  0.8, -1, 0.08);
+  const icoB = makeIco(1.4, 1, -4.5, -1.5, -2, 0.06);
+  const icoC = makeIco(0.5, 0, -1.5,  2.0,  1, 0.35);
 
-  // ── Small icosahedron (left side) ─────────────────────────
-  const icoB = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(1.4, 1),
-    new THREE.MeshBasicMaterial({ color: accentColor(), wireframe: true, transparent: true, opacity: 0.06 })
-  );
-  icoB.position.set(-4.5, -1.5, -2);
-  scene.add(icoB);
-
-  // ── Tiny icosahedron (floating accent) ────────────────────
-  const icoC = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.5, 0),
-    new THREE.MeshBasicMaterial({ color: accentColor(), wireframe: true, transparent: true, opacity: 0.35 })
-  );
-  icoC.position.set(-1.5, 2, 1);
-  scene.add(icoC);
-
-  // ── Floating particles ────────────────────────────────────
-  const COUNT = 90;
-  const pPos  = new Float32Array(COUNT * 3);
-  const pVel  = new Float32Array(COUNT * 3);
+  // ── Shader particles with GLSL noise flow field ───────────
+  const COUNT  = 2500;
+  const posArr = new Float32Array(COUNT * 3);
+  const sizes  = new Float32Array(COUNT);
+  const phases = new Float32Array(COUNT);
   for (let i = 0; i < COUNT; i++) {
-    pPos[i*3]   = (Math.random() - 0.5) * 18;
-    pPos[i*3+1] = (Math.random() - 0.5) * 12;
-    pPos[i*3+2] = (Math.random() - 0.5) *  5;
-    pVel[i*3]   = (Math.random() - 0.5) * 0.0025;
-    pVel[i*3+1] = (Math.random() - 0.5) * 0.0018;
+    posArr[i*3]   = (Math.random() - 0.5) * 18;
+    posArr[i*3+1] = (Math.random() - 0.5) * 13;
+    posArr[i*3+2] = (Math.random() - 0.5) *  4 - 1;
+    sizes[i]  = Math.random() * 1.8 + 0.4;
+    phases[i] = Math.random();
   }
   const pGeo = new THREE.BufferGeometry();
-  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-  const pMat = new THREE.PointsMaterial({ size: 0.04, color: accentColor(), transparent: true, opacity: 0.55 });
-  const pts  = new THREE.Points(pGeo, pMat);
-  scene.add(pts);
+  pGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+  pGeo.setAttribute('aSize',    new THREE.BufferAttribute(sizes, 1));
+  pGeo.setAttribute('aPhase',   new THREE.BufferAttribute(phases, 1));
 
-  // ── Mouse parallax ────────────────────────────────────────
-  let targetMX = 0, targetMY = 0, camX = 0, camY = 0;
+  const pMat = new THREE.ShaderMaterial({
+    uniforms: {
+      uTime:  { value: 0 },
+      uMouse: { value: new THREE.Vector2(0, 9999) },
+      uColor: { value: readAccent() },
+      uDPR:   { value: renderer.getPixelRatio() },
+    },
+    vertexShader:   _PARTICLE_VERT,
+    fragmentShader: _PARTICLE_FRAG,
+    transparent: true,
+    depthWrite:  false,
+    blending:    THREE.AdditiveBlending,
+  });
+  scene.add(new THREE.Points(pGeo, pMat));
+
+  // ── Mouse: parallax + particle repulsion ──────────────────
+  let targetMX = 0, targetMY = 0, camX = 0, camY = 0, scrollY = 0;
+
   document.addEventListener('mousemove', e => {
-    targetMX = (e.clientX / window.innerWidth  - 0.5) * 2;
-    targetMY = (e.clientY / window.innerHeight - 0.5) * 2;
+    const nx = e.clientX / window.innerWidth;
+    const ny = e.clientY / window.innerHeight;
+    targetMX = (nx - 0.5) * 2;
+    targetMY = (ny - 0.5) * 2;
+    // Convert to world-space for the particle repulsion uniform
+    const fovH = 2 * Math.tan(camera.fov * Math.PI / 360) * camera.position.z;
+    pMat.uniforms.uMouse.value.set(
+      (nx - 0.5) * fovH * camera.aspect,
+      -(ny - 0.5) * fovH,
+    );
   });
 
-  let scrollY = 0;
   window.addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive: true });
 
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    pMat.uniforms.uDPR.value = renderer.getPixelRatio();
   });
 
   // ── Render loop ───────────────────────────────────────────
+  const t0 = performance.now();
   (function animate() {
     requestAnimationFrame(animate);
+
+    pMat.uniforms.uTime.value = (performance.now() - t0) * 0.001;
 
     icoA.rotation.x += 0.0025; icoA.rotation.y += 0.004;
     icoB.rotation.x -= 0.003;  icoB.rotation.y -= 0.002;
     icoC.rotation.x += 0.006;  icoC.rotation.z += 0.004;
 
-    // Drift particles + wrap
-    const arr = pGeo.attributes.position.array;
-    for (let i = 0; i < COUNT; i++) {
-      arr[i*3]   += pVel[i*3];
-      arr[i*3+1] += pVel[i*3+1];
-      if (arr[i*3]    >  9) arr[i*3]    = -9;
-      if (arr[i*3]    < -9) arr[i*3]    =  9;
-      if (arr[i*3+1]  >  6) arr[i*3+1]  = -6;
-      if (arr[i*3+1]  < -6) arr[i*3+1]  =  6;
-    }
-    pGeo.attributes.position.needsUpdate = true;
-
-    // Smooth camera parallax
     camX += (targetMX * 0.55 - camX) * 0.04;
     camY += (targetMY * -0.35 - camY) * 0.04;
     camera.position.x = camX;
     camera.position.y = camY;
-    // Pull back slightly on scroll (zoom-out parallax)
     camera.position.z = 7 + scrollY * 0.004;
 
     renderer.render(scene, camera);
@@ -141,9 +220,9 @@ function initThreeHero() {
 
   // ── Update colors on theme change ─────────────────────────
   function updateColors() {
-    const c = accentColor();
-    [icoA, icoB, icoC].forEach(m => { m.material.color = c; });
-    pMat.color = c;
+    const c = readAccent();
+    icoMats.forEach(m => { m.color = c; });
+    pMat.uniforms.uColor.value.copy(c);
   }
 
   return { updateColors };

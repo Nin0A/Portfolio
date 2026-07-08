@@ -664,16 +664,24 @@ function initTimeline() {
   const dots     = items.map(el => el.querySelector('.tl-dot'));
   if (!track || !items.length) return;
 
-  // Year range driven by data-year-start attributes
-  const yearStarts = items.map(el => parseInt(el.dataset.yearStart, 10) || 2019);
-  const YEAR_MIN   = Math.min(...yearStarts);
-  const YEAR_MAX   = 2025;
+  // Year display: start 1 year before first card, end 1 after last
+  // so the counter has a "run-up" before each card appears
+  const yearStarts    = items.map(el => parseInt(el.dataset.yearStart, 10) || 2019);
+  const DISP_MIN      = Math.min(...yearStarts) - 1;   // 2018
+  const DISP_MAX      = Math.max(...yearStarts) + 1;   // 2026
+  const DISP_RANGE    = DISP_MAX - DISP_MIN;           // 8
 
-  // Explicitly hide everything with GSAP inline styles (beats any CSS specificity)
+  // Each card threshold = moment the year counter hits its start year
+  const thresholds = yearStarts.map(y => (y - DISP_MIN) / DISP_RANGE);
+  // 2019 → (2019-2018)/8 = 0.125
+  // 2022 → (2022-2018)/8 = 0.5
+  // 2025 → (2025-2018)/8 = 0.875
+
+  // Force hidden via GSAP inline styles — beats any CSS
   gsap.set(items, { opacity: 0, y: 32 });
   gsap.set(dots,  { scale: 0 });
 
-  // Mobile: simple stagger, no horizontal scroll
+  // Mobile: vertical stagger, no pin
   if (window.innerWidth <= 768) {
     gsap.set(items, { clearProps: 'all' });
     gsap.set(dots,  { clearProps: 'all' });
@@ -688,39 +696,37 @@ function initTimeline() {
     return;
   }
 
-  // Map each item's year to a scroll progress threshold
-  // so the card appears exactly when the counter reaches its start year
-  const range      = YEAR_MAX - YEAR_MIN;
-  const thresholds = yearStarts.map(y => Math.max(0, (y - YEAR_MIN) / range - 0.02));
-  const revealed   = items.map(() => false);
-  let   lastYear   = YEAR_MIN;
+  const revealed = items.map(() => false);
+  let   lastYear = DISP_MIN;
 
-  const getTravelWidth = () => Math.max(1, track.scrollWidth - window.innerWidth);
+  // Scroll distance: at least 2.5× viewport height so the year scrolls slowly
+  const getTrackX    = () => -Math.max(1, track.scrollWidth - window.innerWidth);
+  const getScrollEnd = () => '+=' + Math.max(-getTrackX(), window.innerHeight * 2.5);
 
   gsap.to(track, {
-    x: () => -getTravelWidth(),
+    x: getTrackX,
     ease: 'none',
     scrollTrigger: {
       trigger: section,
       start: 'top top',
-      end: () => '+=' + getTravelWidth(),
+      end: getScrollEnd,
       pin: true,
-      scrub: 1,
+      scrub: 1.2,
       anticipatePin: 1,
       invalidateOnRefresh: true,
       onUpdate(self) {
         const p = self.progress;
 
-        // ── Rail fill ──
+        // Rail fill
         if (railFill) railFill.style.transform = `scaleX(${p})`;
 
-        // ── Year counter ──
+        // Year counter (runs 2018 → 2026)
         if (yearNum) {
-          const y = Math.round(YEAR_MIN + p * range);
+          const y = Math.round(DISP_MIN + p * DISP_RANGE);
           if (y !== lastYear) { lastYear = y; yearNum.textContent = y; }
         }
 
-        // ── Reveal cards at their year threshold ──
+        // Reveal cards when counter hits their start year
         items.forEach((item, i) => {
           if (!revealed[i] && p >= thresholds[i]) {
             revealed[i] = true;

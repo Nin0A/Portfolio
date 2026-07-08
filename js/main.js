@@ -654,49 +654,63 @@ function initAnchorScroll(lenis) {
 // Parcours — horizontal pinned timeline
 // ─────────────────────────────────────────────
 function initTimeline() {
-  const section = document.getElementById('parcours');
+  const section  = document.getElementById('parcours');
   if (!section || typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
 
-  const spineFill = section.querySelector('.tl-spine-fill');
-  const items     = section.querySelectorAll('.tl-item');
-  if (!items.length) return;
+  const track    = section.querySelector('.tl-track');
+  const railFill = section.querySelector('.tl-rail-fill');
+  const items    = [...section.querySelectorAll('.tl-item')];
+  const dots     = items.map(el => el.querySelector('.tl-dot'));
+  if (!track || !items.length) return;
 
-  // Draw the spine as the section scrolls through
-  if (spineFill) {
-    gsap.to(spineFill, {
-      scaleY: 1,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: section,
-        start: 'top 60%',
-        end: 'bottom 70%',
-        scrub: 0.6,
-      },
+  // Mobile: simple stagger, no horizontal scroll
+  if (window.innerWidth <= 768) {
+    items.forEach((item, i) => {
+      gsap.fromTo(item,
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+          scrollTrigger: { trigger: item, start: 'top 82%', once: true },
+          delay: i * 0.15 }
+      );
     });
+    return;
   }
 
-  // Each item: dot pops in, then content slides in from the left
-  items.forEach((item, i) => {
-    const dot     = item.querySelector('.tl-dot');
-    const content = item.querySelector('.tl-content');
+  // Progress thresholds at which each card reveals (0 → 1)
+  // 3 items: appear at ~5%, ~38%, ~68% of total scroll
+  const thresholds = items.map((_, i) => i === 0 ? 0.04 : 0.12 + (i / items.length) * 0.7);
+  const revealed   = items.map(() => false);
 
-    const tl = gsap.timeline({
-      scrollTrigger: {
-        trigger: item,
-        start: 'top 78%',
-        toggleActions: 'play none none none',
+  // Lazy-measure: scrollWidth - innerWidth gives the horizontal travel distance
+  const getTravelWidth = () => Math.max(1, track.scrollWidth - window.innerWidth);
+
+  gsap.to(track, {
+    x: () => -getTravelWidth(),
+    ease: 'none',
+    scrollTrigger: {
+      trigger: section,
+      start: 'top top',
+      end: () => '+=' + getTravelWidth(),
+      pin: true,
+      scrub: 1,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+      onUpdate(self) {
+        // Fill the rail proportionally
+        if (railFill) railFill.style.transform = `scaleX(${self.progress})`;
+
+        // Reveal each card + dot when scroll crosses its threshold
+        items.forEach((item, i) => {
+          if (!revealed[i] && self.progress >= thresholds[i]) {
+            revealed[i] = true;
+            // Dot pops in with bounce
+            if (dots[i]) gsap.to(dots[i], { scale: 1, duration: 0.4, ease: 'back.out(2.8)' });
+            // Card rises up with a slight delay
+            gsap.to(item, { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out', delay: 0.08 });
+          }
+        });
       },
-    });
-
-    if (dot) {
-      tl.to(dot, { scale: 1, duration: 0.35, ease: 'back.out(2.5)' });
-    }
-    if (content) {
-      tl.to(content,
-        { opacity: 1, x: 0, duration: 0.55, ease: 'power3.out' },
-        '-=0.1'
-      );
-    }
+    },
   });
 }
 

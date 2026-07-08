@@ -1224,10 +1224,14 @@ button {
 
 
 /* ============================================================
-   PARCOURS — scroll-driven vertical timeline
+   PARCOURS — horizontal scroll-driven timeline
    ============================================================ */
+.section--parcours {
+  overflow: hidden;
+}
+
 .tl-header {
-  margin-bottom: 64px;
+  margin-bottom: 52px;
 }
 
 .tl-heading {
@@ -1235,98 +1239,99 @@ button {
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1;
+  margin-bottom: 10px;
 }
 
-/* Outer container holds the spine + all items */
-.tl-wrap {
+.tl-sub {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* ── Track (horizontally pinned) ── */
+.tl-track {
+  display: flex;
+  align-items: flex-end;
+  padding: 0 25vw 72px 0;
   position: relative;
-  padding-left: 48px;
+  will-change: transform;
+  gap: 0;
 }
 
-/* Vertical spine */
-.tl-spine {
+/* ── Connecting rail ── */
+.tl-rail {
   position: absolute;
-  left: 7px;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
+  bottom: 32px;
+  left: 0;
+  /* width grows with JS to match last dot */
+  width: 100%;
+  height: 1px;
   background: var(--border);
-  border-radius: 2px;
-  overflow: hidden;
+  pointer-events: none;
 }
 
-.tl-spine-fill {
+.tl-rail-fill {
   position: absolute;
   inset: 0;
   background: var(--accent);
-  transform: scaleY(0);
-  transform-origin: top center;
+  transform: scaleX(0);
+  transform-origin: left center;
+  will-change: transform;
 }
 
-/* Each row: dot anchor + content */
+/* ── Each step ── */
 .tl-item {
-  position: relative;
-  padding-bottom: 56px;
-}
-
-.tl-item:last-child {
-  padding-bottom: 0;
-}
-
-.tl-dot-wrap {
-  position: absolute;
-  left: -48px;
-  top: 6px;
+  flex: 0 0 480px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
+  flex-direction: column;
+  gap: 20px;
+  padding-right: 80px;
+  position: relative;
+  /* initial state — GSAP will animate these */
+  opacity: 0;
+  transform: translateY(28px);
 }
 
+/* ── Dot sits on the rail ── */
 .tl-dot {
   width: 14px;
   height: 14px;
   border-radius: 50%;
   border: 2px solid var(--border);
   background: var(--bg);
+  flex-shrink: 0;
+  /* initial state — GSAP pops this in */
   transform: scale(0);
-  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+  transition: border-color 0.3s, background 0.3s;
 }
 
 .tl-dot--active {
   border-color: var(--accent);
   background: var(--accent);
-  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.2);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.18);
 }
 
-.tl-content {
-  opacity: 0;
-  transform: translateX(-20px);
-}
-
+/* ── Year label ── */
 .tl-year {
-  display: block;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--accent);
-  margin-bottom: 12px;
 }
 
+/* ── Card ── */
 .tl-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px 28px;
+  border-radius: 14px;
+  padding: 28px;
+  flex: 1;
   transition: border-color 0.3s, box-shadow 0.3s;
-  max-width: 560px;
 }
 
 .tl-card:hover {
   border-color: rgba(var(--accent-rgb), 0.45);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.1);
 }
 
 .tl-card--current {
@@ -1344,7 +1349,7 @@ button {
   background: color-mix(in srgb, var(--text-muted) 12%, transparent);
   padding: 3px 8px;
   border-radius: 4px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .tl-tag--active {
@@ -1353,7 +1358,7 @@ button {
 }
 
 .tl-card-title {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   margin-bottom: 8px;
@@ -1366,18 +1371,39 @@ button {
   color: var(--text-muted);
 }
 
-@media (max-width: 480px) {
-  .tl-wrap {
-    padding-left: 36px;
+/* ── Mobile: vertical fallback ── */
+@media (max-width: 768px) {
+  .section--parcours {
+    overflow: visible;
   }
 
-  .tl-dot-wrap {
-    left: -36px;
+  .tl-track {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0 0 0 32px;
+    transform: none !important;
+    gap: 40px;
   }
+
+  .tl-item {
+    flex: none;
+    width: 100%;
+    padding-right: 0;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .tl-dot {
+    position: absolute;
+    left: -32px;
+    bottom: auto;
+    top: 4px;
+    transform: scale(1) !important;
+  }
+
+  .tl-rail { display: none; }
 }
 
-
-/* ============================================================
    PASSION — 3-column photo grid
    ============================================================ */
 .passion-header {

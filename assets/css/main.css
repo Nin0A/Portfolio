@@ -1224,45 +1224,75 @@ button {
 
 
 /* ============================================================
-   PARCOURS — horizontal scroll-driven timeline
+   PARCOURS — horizontal scroll timeline + year counter
    ============================================================ */
 .section--parcours {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   overflow: hidden;
+  padding-bottom: 0;
 }
 
-.tl-header {
-  margin-bottom: 52px;
+/* Top row: label + hint */
+.tl-top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
 }
 
-.tl-heading {
-  font-size: clamp(2rem, 5vw, 3.5rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  margin-bottom: 10px;
-}
-
-.tl-sub {
-  font-size: 0.9rem;
+.tl-hint {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--text-muted);
+  opacity: 0.5;
 }
 
-/* ── Track (horizontally pinned) ── */
+/* ── Big background year ── */
+.tl-year-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+.tl-year-num {
+  font-size: clamp(120px, 24vw, 300px);
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  line-height: 1;
+  color: var(--text);
+  opacity: 0.055;
+  transition: none; /* updated by JS, no CSS transition */
+}
+
+/* ── Horizontal track ── */
 .tl-track {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: flex-end;
-  padding: 0 25vw 72px 0;
-  position: relative;
+  padding-bottom: 80px;
+  padding-right: 30vw;
   will-change: transform;
-  gap: 0;
 }
 
-/* ── Connecting rail ── */
+/* ── Rail connecting dots ── */
 .tl-rail {
   position: absolute;
-  bottom: 32px;
+  bottom: 44px;
   left: 0;
-  /* width grows with JS to match last dot */
   width: 100%;
   height: 1px;
   background: var(--border);
@@ -1278,20 +1308,28 @@ button {
   will-change: transform;
 }
 
-/* ── Each step ── */
+/* ── Timeline item ── */
 .tl-item {
   flex: 0 0 480px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   padding-right: 80px;
   position: relative;
-  /* initial state — GSAP will animate these */
+  /* hidden until scroll triggers — GSAP also sets this inline */
   opacity: 0;
-  transform: translateY(28px);
+  transform: translateY(32px);
 }
 
-/* ── Dot sits on the rail ── */
+.tl-item-period {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ── Dot ── */
 .tl-dot {
   width: 14px;
   height: 14px;
@@ -1299,8 +1337,7 @@ button {
   border: 2px solid var(--border);
   background: var(--bg);
   flex-shrink: 0;
-  /* initial state — GSAP pops this in */
-  transform: scale(0);
+  transform: scale(0); /* GSAP animates to 1 */
   transition: border-color 0.3s, background 0.3s;
 }
 
@@ -1308,15 +1345,6 @@ button {
   border-color: var(--accent);
   background: var(--accent);
   box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.18);
-}
-
-/* ── Year label ── */
-.tl-year {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--accent);
 }
 
 /* ── Card ── */
@@ -1374,13 +1402,18 @@ button {
 /* ── Mobile: vertical fallback ── */
 @media (max-width: 768px) {
   .section--parcours {
+    min-height: unset;
     overflow: visible;
+    padding-bottom: var(--section-gap);
   }
+
+  .tl-year-bg { display: none; }
+  .tl-hint    { display: none; }
 
   .tl-track {
     flex-direction: column;
     align-items: stretch;
-    padding: 0 0 0 32px;
+    padding: 40px 0 0 36px;
     transform: none !important;
     gap: 40px;
   }
@@ -1395,8 +1428,7 @@ button {
 
   .tl-dot {
     position: absolute;
-    left: -32px;
-    bottom: auto;
+    left: -36px;
     top: 4px;
     transform: scale(1) !important;
   }

@@ -659,12 +659,24 @@ function initTimeline() {
 
   const track    = section.querySelector('.tl-track');
   const railFill = section.querySelector('.tl-rail-fill');
+  const yearNum  = section.querySelector('.tl-year-num');
   const items    = [...section.querySelectorAll('.tl-item')];
   const dots     = items.map(el => el.querySelector('.tl-dot'));
   if (!track || !items.length) return;
 
+  // Year range driven by data-year-start attributes
+  const yearStarts = items.map(el => parseInt(el.dataset.yearStart, 10) || 2019);
+  const YEAR_MIN   = Math.min(...yearStarts);
+  const YEAR_MAX   = 2025;
+
+  // Explicitly hide everything with GSAP inline styles (beats any CSS specificity)
+  gsap.set(items, { opacity: 0, y: 32 });
+  gsap.set(dots,  { scale: 0 });
+
   // Mobile: simple stagger, no horizontal scroll
   if (window.innerWidth <= 768) {
+    gsap.set(items, { clearProps: 'all' });
+    gsap.set(dots,  { clearProps: 'all' });
     items.forEach((item, i) => {
       gsap.fromTo(item,
         { opacity: 0, y: 30 },
@@ -676,12 +688,13 @@ function initTimeline() {
     return;
   }
 
-  // Progress thresholds at which each card reveals (0 → 1)
-  // 3 items: appear at ~5%, ~38%, ~68% of total scroll
-  const thresholds = items.map((_, i) => i === 0 ? 0.04 : 0.12 + (i / items.length) * 0.7);
+  // Map each item's year to a scroll progress threshold
+  // so the card appears exactly when the counter reaches its start year
+  const range      = YEAR_MAX - YEAR_MIN;
+  const thresholds = yearStarts.map(y => Math.max(0, (y - YEAR_MIN) / range - 0.02));
   const revealed   = items.map(() => false);
+  let   lastYear   = YEAR_MIN;
 
-  // Lazy-measure: scrollWidth - innerWidth gives the horizontal travel distance
   const getTravelWidth = () => Math.max(1, track.scrollWidth - window.innerWidth);
 
   gsap.to(track, {
@@ -696,17 +709,23 @@ function initTimeline() {
       anticipatePin: 1,
       invalidateOnRefresh: true,
       onUpdate(self) {
-        // Fill the rail proportionally
-        if (railFill) railFill.style.transform = `scaleX(${self.progress})`;
+        const p = self.progress;
 
-        // Reveal each card + dot when scroll crosses its threshold
+        // ── Rail fill ──
+        if (railFill) railFill.style.transform = `scaleX(${p})`;
+
+        // ── Year counter ──
+        if (yearNum) {
+          const y = Math.round(YEAR_MIN + p * range);
+          if (y !== lastYear) { lastYear = y; yearNum.textContent = y; }
+        }
+
+        // ── Reveal cards at their year threshold ──
         items.forEach((item, i) => {
-          if (!revealed[i] && self.progress >= thresholds[i]) {
+          if (!revealed[i] && p >= thresholds[i]) {
             revealed[i] = true;
-            // Dot pops in with bounce
-            if (dots[i]) gsap.to(dots[i], { scale: 1, duration: 0.4, ease: 'back.out(2.8)' });
-            // Card rises up with a slight delay
-            gsap.to(item, { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out', delay: 0.08 });
+            gsap.to(dots[i], { scale: 1, duration: 0.4, ease: 'back.out(2.8)' });
+            gsap.to(item,    { opacity: 1, y: 0, duration: 0.65, ease: 'power3.out', delay: 0.08 });
           }
         });
       },

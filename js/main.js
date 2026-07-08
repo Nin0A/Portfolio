@@ -662,31 +662,12 @@ function initTimeline() {
   const line  = section.querySelector('.tl-line-fill');
   if (!track || !items.length) return;
 
-  // Make all items visible immediately — horizontal scroll is the reveal
-  gsap.set(items, { opacity: 1, y: 0, scale: 1 });
-
-  // Stagger-animate cards when section enters viewport
-  gsap.fromTo(items,
-    { opacity: 0, y: 40 },
-    {
-      opacity: 1, y: 0,
-      stagger: 0.12,
-      duration: 0.7,
-      ease: 'power3.out',
-      scrollTrigger: {
-        trigger: section,
-        start: 'top 75%',
-        once: true,
-      }
-    }
-  );
-
-  // Horizontal pin — desktop only, lazy-measure after layout
   ScrollTrigger.matchMedia({
     '(min-width: 769px)': function () {
       const getWidth = () => track.scrollWidth - section.clientWidth;
 
-      gsap.to(track, {
+      // Create pin tween first so we can pass its ScrollTrigger to each card
+      const tween = gsap.to(track, {
         x: () => -getWidth(),
         ease: 'none',
         scrollTrigger: {
@@ -702,6 +683,38 @@ function initTimeline() {
           },
         },
       });
+
+      // Reveal cards one by one as each enters the viewport during horizontal scroll
+      items.forEach(item => {
+        gsap.fromTo(item,
+          { opacity: 0, y: 36 },
+          {
+            opacity: 1, y: 0,
+            duration: 0.65,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: item,
+              containerAnimation: tween.scrollTrigger,
+              start: 'left 82%',
+              toggleActions: 'play none none none',
+            },
+          }
+        );
+      });
+    },
+
+    '(max-width: 768px)': function () {
+      // Mobile: stagger as section scrolls into view
+      gsap.fromTo(items,
+        { opacity: 0, y: 40 },
+        {
+          opacity: 1, y: 0,
+          stagger: 0.18,
+          duration: 0.7,
+          ease: 'power3.out',
+          scrollTrigger: { trigger: section, start: 'top 78%', once: true },
+        }
+      );
     },
   });
 }

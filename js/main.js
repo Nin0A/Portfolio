@@ -657,65 +657,46 @@ function initTimeline() {
   const section = document.getElementById('parcours');
   if (!section || typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
 
-  const track = section.querySelector('.tl-track');
-  const items = section.querySelectorAll('.tl-item');
-  const line  = section.querySelector('.tl-line-fill');
-  if (!track || !items.length) return;
+  const spineFill = section.querySelector('.tl-spine-fill');
+  const items     = section.querySelectorAll('.tl-item');
+  if (!items.length) return;
 
-  ScrollTrigger.matchMedia({
-    '(min-width: 769px)': function () {
-      const getWidth = () => track.scrollWidth - section.clientWidth;
+  // Draw the spine as the section scrolls through
+  if (spineFill) {
+    gsap.to(spineFill, {
+      scaleY: 1,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: section,
+        start: 'top 60%',
+        end: 'bottom 70%',
+        scrub: 0.6,
+      },
+    });
+  }
 
-      // Create pin tween first so we can pass its ScrollTrigger to each card
-      const tween = gsap.to(track, {
-        x: () => -getWidth(),
-        ease: 'none',
-        scrollTrigger: {
-          trigger: section,
-          start: 'top top',
-          end: () => '+=' + getWidth(),
-          pin: true,
-          scrub: 1,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          onUpdate(self) {
-            if (line) line.style.transform = `scaleX(${self.progress})`;
-          },
-        },
-      });
+  // Each item: dot pops in, then content slides in from the left
+  items.forEach((item, i) => {
+    const dot     = item.querySelector('.tl-dot');
+    const content = item.querySelector('.tl-content');
 
-      // Reveal cards one by one as each enters the viewport during horizontal scroll
-      items.forEach(item => {
-        gsap.fromTo(item,
-          { opacity: 0, y: 36 },
-          {
-            opacity: 1, y: 0,
-            duration: 0.65,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: item,
-              containerAnimation: tween.scrollTrigger,
-              start: 'left 82%',
-              toggleActions: 'play none none none',
-            },
-          }
-        );
-      });
-    },
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: item,
+        start: 'top 78%',
+        toggleActions: 'play none none none',
+      },
+    });
 
-    '(max-width: 768px)': function () {
-      // Mobile: stagger as section scrolls into view
-      gsap.fromTo(items,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1, y: 0,
-          stagger: 0.18,
-          duration: 0.7,
-          ease: 'power3.out',
-          scrollTrigger: { trigger: section, start: 'top 78%', once: true },
-        }
+    if (dot) {
+      tl.to(dot, { scale: 1, duration: 0.35, ease: 'back.out(2.5)' });
+    }
+    if (content) {
+      tl.to(content,
+        { opacity: 1, x: 0, duration: 0.55, ease: 'power3.out' },
+        '-=0.1'
       );
-    },
+    }
   });
 }
 

@@ -1427,7 +1427,7 @@ button {
 
 .passion-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1.15fr;
   gap: 16px;
   align-items: start;
 }
@@ -1438,7 +1438,7 @@ button {
   gap: 16px;
 }
 
-.passion-col--mid {
+.passion-col--right {
   margin-top: -40px;
 }
 
@@ -1518,12 +1518,8 @@ button {
     gap: 12px;
   }
 
-  .passion-col--mid {
+  .passion-col--right {
     margin-top: 0;
-  }
-
-  .passion-col:last-child {
-    display: none;
   }
 
   .passion-col {
@@ -1535,9 +1531,5 @@ button {
 @media (max-width: 480px) {
   .passion-grid {
     grid-template-columns: 1fr;
-  }
-
-  .passion-col:last-child {
-    display: flex;
   }
 }

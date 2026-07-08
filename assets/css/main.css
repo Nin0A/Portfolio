@@ -1302,11 +1302,11 @@ button {
 
 .tl-rail-fill {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0; /* GSAP animates width to last revealed dot's x position */
   background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left center;
-  will-change: transform;
 }
 
 /* ── Timeline item ── */

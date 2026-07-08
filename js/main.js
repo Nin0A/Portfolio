@@ -707,16 +707,20 @@ function initTimeline(lenis) {
     // Year counter
     if (yearNum) yearNum.textContent = Math.round(DISP_MIN + p * DISP_RANGE);
 
-    // Rail fill
-    if (railFill) gsap.to(railFill, { scaleX: p, duration: dur, ease: 'power2.out' });
+    // Determine which card is "current" (last revealed) — needed for rail fill
+    let lastShown = -1;
+    items.forEach((_, i) => { if (p >= thresholds[i]) lastShown = i; });
+
+    // Rail fill: animate width to the center-x of the last revealed dot so
+    // the blue bar stops exactly on the dot, never past it.
+    if (railFill) {
+      const fillPx = lastShown >= 0 ? items[lastShown].offsetLeft + 7 : 0;
+      gsap.to(railFill, { width: fillPx, duration: dur, ease: 'power2.out' });
+    }
 
     // Track translate
     const maxX = Math.max(1, track.scrollWidth - window.innerWidth);
     gsap.to(track, { x: -p * maxX, duration: dur, ease: 'power2.out' });
-
-    // Determine which card is "current" (last revealed)
-    let lastShown = -1;
-    items.forEach((_, i) => { if (p >= thresholds[i]) lastShown = i; });
 
     items.forEach((item, i) => {
       const shouldShow = p >= thresholds[i];

@@ -1027,16 +1027,6 @@ function initPassion() {
         delay: i * 0.12,
       }
     );
-
-    const photos = col.querySelectorAll('.passion-photo');
-    photos.forEach((ph, j) => {
-      ph.addEventListener('mouseenter', () => {
-        gsap.to(ph, { scale: 1.03, duration: 0.4, ease: 'power2.out' });
-      });
-      ph.addEventListener('mouseleave', () => {
-        gsap.to(ph, { scale: 1, duration: 0.4, ease: 'power2.out' });
-      });
-    });
   });
 }
 

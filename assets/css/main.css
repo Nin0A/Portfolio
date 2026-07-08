@@ -1316,8 +1316,6 @@ button {
   position: relative;
   flex: 0 0 340px;
   padding: 0 48px 0 0;
-  opacity: 0;
-  transform: translateY(48px) scale(0.94);
 }
 
 .tl-dot {
@@ -1478,8 +1476,6 @@ button {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  opacity: 0;
-  transform: translateY(60px);
 }
 
 .passion-col--mid {

@@ -657,48 +657,52 @@ function initTimeline() {
   const section = document.getElementById('parcours');
   if (!section || typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
 
-  const track   = section.querySelector('.tl-track');
-  const items   = section.querySelectorAll('.tl-item');
-  const line    = section.querySelector('.tl-line-fill');
+  const track = section.querySelector('.tl-track');
+  const items = section.querySelectorAll('.tl-item');
+  const line  = section.querySelector('.tl-line-fill');
   if (!track || !items.length) return;
 
-  // Animate the progress line and each item as the user pins and scrubs
-  const totalWidth = track.scrollWidth - track.clientWidth;
+  // Make all items visible immediately — horizontal scroll is the reveal
+  gsap.set(items, { opacity: 1, y: 0, scale: 1 });
 
-  const pin = gsap.to(track, {
-    x: () => -totalWidth,
-    ease: 'none',
-    scrollTrigger: {
-      trigger: section,
-      start: 'top top',
-      end:   () => '+=' + (totalWidth + window.innerWidth * 0.3),
-      pin: true,
-      scrub: 1,
-      anticipatePin: 1,
-      invalidateOnRefresh: true,
-      onUpdate(self) {
-        if (line) line.style.transform = `scaleX(${self.progress})`;
-      },
-    },
-  });
-
-  // Stagger-reveal each card as it enters the viewport (horizontal scroll)
-  items.forEach((item, i) => {
-    gsap.fromTo(item,
-      { opacity: 0, y: 48, scale: 0.94 },
-      {
-        opacity: 1, y: 0, scale: 1,
-        duration: 0.6,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: item,
-          containerAnimation: pin,
-          start: 'left 90%',
-          toggleActions: 'play none none reverse',
-        },
-        delay: i * 0.05,
+  // Stagger-animate cards when section enters viewport
+  gsap.fromTo(items,
+    { opacity: 0, y: 40 },
+    {
+      opacity: 1, y: 0,
+      stagger: 0.12,
+      duration: 0.7,
+      ease: 'power3.out',
+      scrollTrigger: {
+        trigger: section,
+        start: 'top 75%',
+        once: true,
       }
-    );
+    }
+  );
+
+  // Horizontal pin — desktop only, lazy-measure after layout
+  ScrollTrigger.matchMedia({
+    '(min-width: 769px)': function () {
+      const getWidth = () => track.scrollWidth - section.clientWidth;
+
+      gsap.to(track, {
+        x: () => -getWidth(),
+        ease: 'none',
+        scrollTrigger: {
+          trigger: section,
+          start: 'top top',
+          end: () => '+=' + getWidth(),
+          pin: true,
+          scrub: 1,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onUpdate(self) {
+            if (line) line.style.transform = `scaleX(${self.progress})`;
+          },
+        },
+      });
+    },
   });
 }
 

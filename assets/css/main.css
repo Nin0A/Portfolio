@@ -1299,21 +1299,6 @@ button {
   pointer-events: none;
 }
 
-/* Moving cursor ball — JS animates `left` property */
-.tl-cursor-ball {
-  position: absolute;
-  bottom: 37px;
-  left: 0;
-  margin-left: -9px; /* center 18px ball; no transform so GSAP left works cleanly */
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 5px rgba(var(--accent-rgb), 0.18),
-              0 0 18px rgba(var(--accent-rgb), 0.4);
-  pointer-events: none;
-  z-index: 3;
-}
 
 .tl-rail-fill {
   position: absolute;

@@ -660,9 +660,10 @@ function initTimeline(lenis) {
   const track    = section.querySelector('.tl-track');
   const railFill = section.querySelector('.tl-rail-fill');
   const yearNum  = section.querySelector('.tl-year-num');
-  const ball     = section.querySelector('.tl-cursor-ball');
   const items    = [...section.querySelectorAll('.tl-item')];
   const dots     = items.map(el => el.querySelector('.tl-dot'));
+  const cards    = items.map(el => el.querySelector('.tl-card'));
+  const tags     = items.map(el => el.querySelector('.tl-tag'));
   if (!track || !items.length) return;
 
   const yearStarts = items.map(el => parseInt(el.dataset.yearStart, 10) || 2019);
@@ -676,7 +677,6 @@ function initTimeline(lenis) {
   // Force hidden
   gsap.set(items, { opacity: 0, y: 32 });
   gsap.set(dots,  { scale: 0 });
-  if (ball) gsap.set(ball, { opacity: 0 });
 
   // Mobile: simple stagger, no wheel capture
   if (window.innerWidth <= 768) {
@@ -699,17 +699,6 @@ function initTimeline(lenis) {
   let   active   = false;               // true = section has focus, wheel captured
   const shown    = items.map(() => false);
 
-  // ── Move the cursor ball to a card's dot ─────────────
-  function moveBall(idx) {
-    if (!ball || idx < 0) return;
-    const item = items[idx];
-    if (!item) return;
-    // dot is at left:0 within item → dot center = item.offsetLeft + 7
-    // ball is 18px wide with margin-left:-9px → to center on dot: left = dot center
-    const leftPos = item.offsetLeft + 7;
-    gsap.to(ball, { left: leftPos, opacity: 1, duration: 0.45, ease: 'elastic.out(1, 0.65)' });
-  }
-
   // ── Apply a step (0…STEPS) ────────────────────────────
   function applyStep(s, instant) {
     const p = s / STEPS;
@@ -718,18 +707,26 @@ function initTimeline(lenis) {
     // Year counter
     if (yearNum) yearNum.textContent = Math.round(DISP_MIN + p * DISP_RANGE);
 
-    // Rail
+    // Rail fill
     if (railFill) gsap.to(railFill, { scaleX: p, duration: dur, ease: 'power2.out' });
 
     // Track translate
     const maxX = Math.max(1, track.scrollWidth - window.innerWidth);
     gsap.to(track, { x: -p * maxX, duration: dur, ease: 'power2.out' });
 
-    // Cards + ball
+    // Determine which card is "current" (last revealed)
     let lastShown = -1;
+    items.forEach((_, i) => { if (p >= thresholds[i]) lastShown = i; });
+
     items.forEach((item, i) => {
       const shouldShow = p >= thresholds[i];
-      if (shouldShow) lastShown = i;
+      const isCurrent  = i === lastShown;
+
+      // Dynamic "current event" styling — follows the last revealed card
+      if (cards[i]) cards[i].classList.toggle('tl-card--current', isCurrent);
+      if (tags[i])  tags[i].classList.toggle('tl-tag--active',    isCurrent);
+      if (dots[i])  dots[i].classList.toggle('tl-dot--active',    isCurrent);
+
       if (shouldShow && !shown[i]) {
         shown[i] = true;
         gsap.killTweensOf([item, dots[i]]);
@@ -742,8 +739,6 @@ function initTimeline(lenis) {
         gsap.to(item,    { opacity: 0, y: 32, duration: 0.35, ease: 'power2.in' });
       }
     });
-    if (lastShown >= 0) moveBall(lastShown);
-    else if (ball) gsap.to(ball, { opacity: 0, duration: 0.2 });
   }
 
   // ── Wheel handler (capture phase, before Lenis) ───────

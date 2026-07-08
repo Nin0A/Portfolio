@@ -922,86 +922,6 @@ function initPassion() {
 }
 
 
-// ─────────────────────────────────────────────
-// Hero distortion effect (SVG feTurbulence on hover)
-// ─────────────────────────────────────────────
-function initHeroDistortion() {
-  const wrap  = document.querySelector('.hero-title-wrap');
-  const title = document.querySelector('.hero-title');
-  if (!wrap || !title) return;
-
-  const chars = [...title.querySelectorAll('.hero-char')];
-  if (!chars.length) return;
-
-  // Per-char spring state: [tx,ty, scale, rot, skx, sky,  vtx,vty,vsc,vrot,vskx,vsky]
-  const S = chars.map(() => [0,0, 1, 0, 0,0,  0,0,0,0,0,0]);
-
-  let mx = -9999, my = -9999, hover = false, raf = null, last = 0, hP = 0;
-
-  const K = 160, D = 20, R = 320; // spring stiffness/damping, influence radius
-
-  function spring(cur, vel, tgt, dt) {
-    const v = vel + ((tgt - cur) * K - vel * D) * dt;
-    return [cur + v * dt, v];
-  }
-
-  function tick(ts) {
-    const dt = Math.min((ts - last) / 1000, 0.05);
-    last = ts;
-    hP = Math.max(0, Math.min(1, hP + (hover ? 5 : -6) * dt));
-
-    let busy = hP > 0.005;
-
-    chars.forEach((el, i) => {
-      const s = S[i];
-      const r   = el.getBoundingClientRect();
-      const cx  = r.left + r.width * 0.5;
-      const cy  = r.top  + r.height * 0.5;
-      const dx  = mx - cx, dy = my - cy;
-      const d   = Math.hypot(dx, dy) || 1;
-      const infl = hover ? Math.pow(Math.max(0, 1 - d / R), 1.6) * hP : 0;
-
-      // Targets — at max influence: letter collapses to cursor point
-      const tTx  = dx * infl * 0.97;
-      const tTy  = dy * infl * 0.97;
-      const tSc  = 1 - infl * 0.97;          // scale → 0.03
-      const tRot = infl * (360 * 2 + i * 15); // 2+ full turns, staggered per char
-      const tSkX = (dx / d) * infl * 55;      // shear toward cursor
-      const tSkY = (dy / d) * infl * 30;
-
-      [s[0],s[6]]  = spring(s[0], s[6],  tTx,  dt);
-      [s[1],s[7]]  = spring(s[1], s[7],  tTy,  dt);
-      [s[2],s[8]]  = spring(s[2], s[8],  tSc,  dt);
-      [s[3],s[9]]  = spring(s[3], s[9],  tRot, dt);
-      [s[4],s[10]] = spring(s[4], s[10], tSkX, dt);
-      [s[5],s[11]] = spring(s[5], s[11], tSkY, dt);
-
-      const sc = Math.max(0.001, s[2]);
-      el.style.transform =
-        `translate(${s[0].toFixed(2)}px,${s[1].toFixed(2)}px)` +
-        ` scale(${sc.toFixed(4)})` +
-        ` rotate(${s[3].toFixed(2)}deg)` +
-        ` skewX(${s[4].toFixed(2)}deg)` +
-        ` skewY(${s[5].toFixed(2)}deg)`;
-
-      const vel = Math.abs(s[6])+Math.abs(s[7])+Math.abs(s[8])+Math.abs(s[9]);
-      if (vel > 0.02) busy = true;
-    });
-
-    if (busy || hover) {
-      raf = requestAnimationFrame(tick);
-    } else {
-      chars.forEach(el => el.style.transform = '');
-      raf = null;
-    }
-  }
-
-  function go() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } }
-
-  wrap.addEventListener('mouseenter', e => { hover = true;  mx = e.clientX; my = e.clientY; go(); });
-  wrap.addEventListener('mouseleave', () => { hover = false; mx = -9999;     my = -9999;     go(); });
-  wrap.addEventListener('mousemove',  e => { mx = e.clientX; my = e.clientY; });
-}
 
 // ─────────────────────────────────────────────
 // Bootstrap
@@ -1025,7 +945,6 @@ async function init() {
   initProjectPreview();
   initTimeline(lenis);
   initPassion();
-  initHeroDistortion();
   initMagnetic();
   initContactForm();
   initAnchorScroll(lenis);

@@ -704,9 +704,10 @@ function initTimeline(lenis) {
     if (!ball || idx < 0) return;
     const item = items[idx];
     if (!item) return;
-    // offsetLeft of item within track + half the dot width (7px)
-    const x = item.offsetLeft + 7;
-    gsap.to(ball, { x, opacity: 1, duration: 0.45, ease: 'elastic.out(1, 0.65)' });
+    // dot is at left:0 within item → dot center = item.offsetLeft + 7
+    // ball is 18px wide with margin-left:-9px → to center on dot: left = dot center
+    const leftPos = item.offsetLeft + 7;
+    gsap.to(ball, { left: leftPos, opacity: 1, duration: 0.45, ease: 'elastic.out(1, 0.65)' });
   }
 
   // ── Apply a step (0…STEPS) ────────────────────────────
@@ -746,16 +747,41 @@ function initTimeline(lenis) {
   }
 
   // ── Wheel handler (capture phase, before Lenis) ───────
+  // blocked = true after hitting a boundary; direction tracked so the user can
+  // immediately reverse without waiting for the page to scroll out of view.
+  let blocked   = false;
+  let blockDir  = 0;
+
   function onWheel(e) {
-    if (!active) return;
-    const dir = e.deltaY > 0 ? 1 : -1;
+    const rect     = section.getBoundingClientRect();
+    const covering = rect.top <= 5 && rect.bottom >= window.innerHeight - 5;
+    const dir      = e.deltaY > 0 ? 1 : -1;
+
+    // If we just released at a boundary, allow through — but unblock the
+    // moment the user reverses direction OR the section leaves the viewport.
+    if (blocked) {
+      if (dir !== blockDir || !covering) blocked = false;
+      if (blocked) return;
+    }
+
+    if (!covering) {
+      // Section not in view — ensure Lenis is running and bail
+      if (active) { active = false; if (lenis) lenis.start(); }
+      return;
+    }
+
+    // Section covers the viewport — take control
+    if (!active) { active = true; if (lenis) lenis.stop(); }
+
     const next = step + dir;
 
-    // If at boundaries, release scroll to page
     if (next < 0 || next > STEPS) {
-      active = false;
+      // Boundary hit: hand scroll back to Lenis so the page moves away
+      active   = false;
+      blocked  = true;
+      blockDir = dir;
       if (lenis) lenis.start();
-      return;
+      return; // do NOT preventDefault — let Lenis process this event
     }
 
     e.preventDefault();
@@ -766,20 +792,6 @@ function initTimeline(lenis) {
     applyStep(step);
   }
   window.addEventListener('wheel', onWheel, { passive: false, capture: true });
-
-  // ── IntersectionObserver: activate when section fills viewport ──
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(ent => {
-      if (ent.isIntersecting && ent.intersectionRatio >= 0.6) {
-        active = true;
-        if (lenis) lenis.stop();
-      } else if (!ent.isIntersecting) {
-        active = false;
-        if (lenis) lenis.start();
-      }
-    });
-  }, { threshold: [0, 0.6, 1] });
-  io.observe(section);
 
   // Init at step 0
   applyStep(0, true);

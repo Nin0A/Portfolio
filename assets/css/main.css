@@ -1299,18 +1299,18 @@ button {
   pointer-events: none;
 }
 
-/* Moving cursor ball — JS drives its x position */
+/* Moving cursor ball — JS animates `left` property */
 .tl-cursor-ball {
   position: absolute;
-  bottom: 37px; /* rail bottom(44) - half dot(7) = 37 */
+  bottom: 37px;
   left: 0;
+  margin-left: -9px; /* center 18px ball; no transform so GSAP left works cleanly */
   width: 18px;
   height: 18px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 0 5px rgba(var(--accent-rgb), 0.18),
               0 0 18px rgba(var(--accent-rgb), 0.4);
-  transform: translateX(-50%); /* center on dot */
   pointer-events: none;
   z-index: 3;
 }
@@ -1345,14 +1345,18 @@ button {
   color: var(--accent);
 }
 
-/* ── Dot ── */
+/* ── Dot — sits on the rail (absolutely positioned within .tl-item) ── */
 .tl-dot {
+  position: absolute;
+  /* item bottom = 80px above track outer bottom; rail at 44px → dot bottom at 37px
+     → from item bottom: 37 - 80 = -43px */
+  bottom: -43px;
+  left: 0;
   width: 14px;
   height: 14px;
   border-radius: 50%;
   border: 2px solid var(--border);
   background: var(--bg);
-  flex-shrink: 0;
   transform: scale(0); /* GSAP animates to 1 */
   transition: border-color 0.3s, background 0.3s;
 }

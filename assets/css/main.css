@@ -1505,10 +1505,6 @@ button {
   gap: 16px;
 }
 
-.passion-col--right {
-  margin-top: -40px;
-}
-
 .passion-photo {
   position: relative;
   border-radius: 10px;
@@ -1519,31 +1515,17 @@ button {
   will-change: transform;
 }
 
-<<<<<<< HEAD
-.passion-strip .passion-photo:nth-child(1) {
-  flex: 1.1;
+.passion-photo--lg {
+  aspect-ratio: 3 / 4;
 }
 
-.passion-strip .passion-photo:nth-child(2) {
-  flex: 1.4;
+.passion-photo--md {
+  aspect-ratio: 4 / 5;
 }
 
-.passion-strip .passion-photo:nth-child(3) {
-  flex: 0.85;
+.passion-photo--sm {
+  aspect-ratio: 4 / 3;
 }
-
-.passion-strip .passion-photo:nth-child(4) {
-  flex: 1.3;
-}
-
-.passion-strip .passion-photo:nth-child(5) {
-  flex: 0.95;
-}
-=======
-.passion-photo--lg { aspect-ratio: 3 / 4; }
-.passion-photo--md { aspect-ratio: 4 / 5; }
-.passion-photo--sm { aspect-ratio: 4 / 3; }
->>>>>>> 946e481ca1c207eb52badb2c14459ee7c5ff421c
 
 .passion-photo img {
   width: 100%;

@@ -582,7 +582,7 @@ button {
 
 .ticker-track {
   display: flex;
-  gap: 24px;
+  gap: 0;
   align-items: center;
   white-space: nowrap;
   animation: ticker 30s linear infinite;
@@ -595,6 +595,7 @@ button {
   letter-spacing: 0.04em;
   color: var(--text-muted);
   transition: color 0.2s;
+  padding-right: 24px;
 }
 
 .ticker-track span:hover {

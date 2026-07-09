@@ -888,6 +888,11 @@ button {
   font-size: clamp(13px, 1.2vw, 15px);
   color: var(--text-muted);
   max-width: 340px;
+
+  &:hover {
+    color: var(--accent);
+  }
+
 }
 
 .project-right {
@@ -1521,12 +1526,33 @@ button {
   aspect-ratio: 3 / 4;
 }
 
+.passion-photo--lg:nth-child(1) img {
+  object-position: center 90%;
+}
+
+
+.passion-photo--lg:nth-child(2) img {
+  object-position: center 90%;
+}
+
 .passion-photo--md {
   aspect-ratio: 4 / 5;
 }
 
+.passion-photo--md img {
+  object-position: center 100%;
+}
+
 .passion-photo--sm {
   aspect-ratio: 4 / 3;
+}
+
+.passion-photo--sm:nth-child(1) img {
+  object-position: center 80%;
+}
+
+.passion-photo--sm:nth-child(2) img {
+  object-position: center 70%;
 }
 
 .passion-photo img {

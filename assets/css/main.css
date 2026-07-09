@@ -620,7 +620,7 @@ button {
    ============================================================ */
 .section {
   padding: var(--section-gap) var(--pad-x);
-  border-top: 1px solid var(--border);
+  /* border-top: 1px solid var(--border); */
 }
 
 .section-label {
@@ -857,6 +857,7 @@ button {
   gap: clamp(16px, 3vw, 40px);
   position: relative;
   z-index: 1;
+  padding-left: 10px;
 }
 
 .project-num {
@@ -893,6 +894,8 @@ button {
   gap: clamp(20px, 3vw, 40px);
   position: relative;
   z-index: 1;
+  padding-right: 10px;
+
 }
 
 .project-tags {
@@ -1244,7 +1247,7 @@ button {
    ============================================================ */
 .section--parcours {
   position: relative;
-  min-height: 115vh;
+  min-height: 90vh;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;

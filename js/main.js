@@ -330,41 +330,15 @@ function initProjectInteractions() {
 }
 
 // ─────────────────────────────────────────────
-// Ticker — GSAP rAF loop: seamless, no CSS-reset flicker, scroll-velocity aware
+// Ticker — pure CSS animation, pause on hover
 // ─────────────────────────────────────────────
 function initTicker() {
   const wrap = document.querySelector('.hero-ticker');
   const track = document.querySelector('.ticker-track');
-  if (!track) return;
+  if (!track || !wrap) return;
 
-  track.style.animation = 'none';
-
-  let x = 0, lastSY = 0, scrollV = 0;
-  let targetSpeed = 0.65, curSpeed = 0.65;
-
-  window.addEventListener('scroll', () => {
-    scrollV = window.scrollY - lastSY;
-    lastSY = window.scrollY;
-  }, { passive: true });
-
-  if (wrap) {
-    wrap.addEventListener('mouseenter', () => { targetSpeed = 0.08; });
-    wrap.addEventListener('mouseleave', () => { targetSpeed = 0.65; });
-  }
-
-  // One frame delay so scrollWidth is accurate after paint
-  requestAnimationFrame(() => {
-    const halfW = track.scrollWidth / 2;
-    // `pos` accumulates freely; `pos % halfW` gives the seamless visual offset
-    // — no reset jump, no rounding artifact, sub-pixel accurate
-    gsap.ticker.add(() => {
-      curSpeed += (targetSpeed - curSpeed) * 0.06;
-      const speed = curSpeed + Math.abs(scrollV) * 0.055;
-      scrollV *= 0.87;
-      x -= speed;
-      gsap.set(track, { x: x % halfW }); // modulo keeps range (-halfW, 0]
-    });
-  });
+  wrap.addEventListener('mouseenter', () => { track.style.animationPlayState = 'paused'; });
+  wrap.addEventListener('mouseleave', () => { track.style.animationPlayState = 'running'; });
 }
 
 // ─────────────────────────────────────────────

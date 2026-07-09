@@ -13,6 +13,7 @@
   --accent-rgb: 77, 166, 255;
   --accent-text: #0b0b0b;
   --border: rgba(240, 236, 228, 0.07);
+
   --border-hover: rgba(240, 236, 228, 0.18);
   --grain-opacity: 0.042;
 
@@ -607,8 +608,13 @@ button {
 }
 
 @keyframes ticker {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-25%); }
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-25%);
+  }
 }
 
 /* ============================================================
@@ -890,7 +896,7 @@ button {
   gap: clamp(20px, 3vw, 40px);
   position: relative;
   z-index: 1;
-  padding-right: 10px;
+  padding-right: 20px;
 
 }
 
@@ -1357,7 +1363,7 @@ button {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid var(--border);
+  border: 2px solid var(--accent);
   background: var(--bg);
   transform: scale(0);
   /* GSAP animates to 1 */

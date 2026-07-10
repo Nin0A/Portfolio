@@ -255,8 +255,8 @@ button {
 .pl-o-wrap {
   position: relative;
   display: inline-block;
-  overflow: hidden;
   line-height: 1;
+  clip-path: inset(-50% 0 -15% 0);
 }
 
 .pl-o {
@@ -271,7 +271,8 @@ button {
   width: 100%;
 }
 
-.pl-o--script {
+.pl-o--script,
+.pl-o--script2 {
   font-family: 'Pinyon Script', cursive;
   font-weight: 400;
 }
@@ -280,6 +281,21 @@ button {
   font-family: 'Poppins', sans-serif;
   font-style: italic;
   font-weight: 700;
+}
+
+.pl-o--thin {
+  font-weight: 300;
+  letter-spacing: 0.05em;
+}
+
+.pl-o--upper {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.06em;
+}
+
+.pl-o--script2 {
+  font-style: italic;
 }
 
 #preloader-num {

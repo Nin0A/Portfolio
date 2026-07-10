@@ -158,8 +158,8 @@ button {
   position: fixed;
   top: 0;
   left: 0;
-  width: 110px;
-  height: 110px;
+  width: 80px;
+  height: 80px;
   border-radius: 10%;
   background: #fff;
   mix-blend-mode: difference;
@@ -848,7 +848,7 @@ button {
   padding: clamp(24px, 3.5vw, 40px) 0;
   opacity: 0;
   overflow: hidden;
-  transition: opacity 1s ease;
+  transition: opacity 2s ease;
   cursor: none;
 }
 
@@ -860,7 +860,7 @@ button {
   background: var(--accent);
   transform: scaleY(0);
   transform-origin: bottom;
-  transition: transform 1s var(--ease-expo);
+  transition: transform 2s var(--ease-expo);
   z-index: 0;
   pointer-events: none;
 }
@@ -979,7 +979,7 @@ button {
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-  transition: transform 0.45s var(--ease-expo), opacity 0.45s var(--ease-expo), color 0.3s ease;
+  transition: transform 2s var(--ease-expo), opacity 0.45s var(--ease-expo), color 1s ease;
 }
 
 .arrow-icon svg {
@@ -987,13 +987,29 @@ button {
   height: 100%;
 }
 
-.arrow-right  { transform: translate(0, 0);        opacity: 1; }
-.arrow-upright { transform: translate(-70%, 70%);  opacity: 0; }
+.arrow-right {
+  transform: translate(0, 0);
+  opacity: 1;
+}
 
-.project-item:hover .arrow-right   { transform: translate(70%, -70%); opacity: 0; }
-.project-item:hover .arrow-upright { transform: translate(0, 0);      opacity: 1; }
+.arrow-upright {
+  transform: translate(-70%, 70%);
+  opacity: 0;
+}
 
-.project-item:hover .arrow-icon { color: var(--accent-text); }
+.project-item:hover .arrow-right {
+  transform: translate(70%, 0%);
+  opacity: 0;
+}
+
+.project-item:hover .arrow-upright {
+  transform: translate(0, 0);
+  opacity: 1;
+}
+
+.project-item:hover .arrow-icon {
+  color: var(--accent-text);
+}
 
 /* Dim non-hovered rows */
 .projects-list:has(.project-item:hover) .project-item:not(:hover) {

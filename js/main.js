@@ -505,9 +505,10 @@ function initLenis() {
 // ─────────────────────────────────────────────
 function initPreloader() {
   return new Promise(resolve => {
-    const el    = document.getElementById('preloader');
-    const bar   = document.querySelector('.preloader-bar');
-    const chars = el.querySelectorAll('.pl-char');
+    const el     = document.getElementById('preloader');
+    const bar    = document.querySelector('.preloader-bar');
+    const num    = document.getElementById('preloader-num');
+    const chars  = el.querySelectorAll('.pl-char');
     const oItems = el.querySelectorAll('.pl-o');
 
     // Initial states
@@ -543,12 +544,13 @@ function initPreloader() {
 
     tl.to({}, { duration: 0.2 });
 
-    // Progress bar synced to timeline
+    // Progress bar + counter synced to timeline
     const totalMs = tl.totalDuration() * 1000 + 1100;
     const t0 = performance.now();
     (function step(now) {
       const p = Math.min((now - t0) / totalMs, 1);
       bar.style.width = `${p * 100}%`;
+      num.textContent = String(Math.floor(p * 100)).padStart(2, '0');
       if (p < 1) requestAnimationFrame(step);
     })(t0);
   });

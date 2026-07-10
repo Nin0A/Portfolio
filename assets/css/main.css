@@ -656,7 +656,7 @@ button {
 
 .section-label {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 10px;
   font-size: 12px;
   font-weight: 600;
@@ -670,7 +670,7 @@ button {
 .label-num {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 14px;
+  font-size: 32px;
   color: var(--accent);
 }
 
@@ -845,9 +845,7 @@ button {
   align-items: center;
   justify-content: space-between;
   padding: clamp(24px, 3.5vw, 40px) 0;
-  opacity: 0;
   overflow: hidden;
-  transition: opacity 2s ease;
   cursor: none;
 }
 
@@ -888,7 +886,7 @@ button {
   align-items: center;
   position: relative;
   z-index: 1;
-  padding-left: 10px;
+  padding-left: 40px;
 }
 
 
@@ -1358,6 +1356,11 @@ button {
   opacity: 0.5;
 }
 
+.arrow-icon-timeline {
+  color: var(--text-muted);
+  height: 1px;
+}
+
 /* ── Big background year ── */
 .tl-year-bg {
   position: absolute;
@@ -1674,12 +1677,11 @@ button {
 
 .passion-text {
   padding: 28px 0 0;
-  border-top: 1px solid var(--border);
 }
 
 .passion-text-label {
   display: block;
-  font-size: 10px;
+  font-size: 1.5em;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;

@@ -962,8 +962,9 @@ function initTimeline(lenis) {
           easing: t => 1 - Math.pow(1 - t, 3),
           onComplete: () => {
             scrollingToSection = false;
-            active = true;
             lenis.stop();
+            window.scrollTo(0, section.offsetTop);
+            active = true;
           }
         });
       }

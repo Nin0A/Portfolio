@@ -18,7 +18,7 @@
   --grain-opacity: 0.042;
 
   --font-sans: 'Space Grotesk', system-ui, sans-serif;
-  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-serif: 'Poppins', sans-serif;
 
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.87, 0, 0.13, 1);
@@ -502,7 +502,7 @@ button {
 }
 
 .hero-title {
-  font-size: clamp(70px, 14vw, 200px);
+  font-size: clamp(70px, 14vw, 210px);
   font-weight: 700;
   line-height: 0.88;
   letter-spacing: -0.04em;
@@ -527,7 +527,7 @@ button {
 .hero-title em {
   font-family: var(--font-serif);
   font-style: italic;
-  font-weight: 400;
+  font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--text);
   transform-style: preserve-3d;
@@ -1568,7 +1568,7 @@ button {
 }
 
 .passion-k {
-  font-family: 'Instrument Serif', serif;
+  font-family: var(--font-serif);
   font-style: italic;
 }
 
@@ -1709,7 +1709,7 @@ button {
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  font-family: 'Instrument Serif', serif;
+  font-family: var(--font-serif);
   font-style: italic;
   color: var(--text-muted);
   opacity: 0.3;

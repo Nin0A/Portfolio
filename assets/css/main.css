@@ -533,6 +533,13 @@ button {
   transform-style: preserve-3d;
 }
 
+.hero-name {
+  font-family: 'Great Vibes', cursive;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
 .hero-bottom {
   display: flex;
   align-items: flex-end;

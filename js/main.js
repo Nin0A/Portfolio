@@ -1007,6 +1007,41 @@ function initPassion() {
 
 
 // ─────────────────────────────────────────────
+// Project custom cursor — dual-layer clip-path split
+// ─────────────────────────────────────────────
+function initProjectCursor() {
+  const cursor = document.getElementById('project-cursor');
+  const clone  = document.getElementById('project-cursor-clone');
+  if (!cursor || !clone) return;
+
+  let mx = 0, my = 0, cx = 0, cy = 0;
+  let targetScale = 0, currentScale = 0;
+
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+  document.querySelectorAll('.project-item').forEach(item => {
+    item.addEventListener('mouseenter', () => {
+      targetScale = 1;
+      document.body.style.cursor = 'none';
+    });
+    item.addEventListener('mouseleave', () => {
+      targetScale = 0;
+      document.body.style.cursor = '';
+    });
+  });
+
+  (function tick() {
+    requestAnimationFrame(tick);
+    cx += (mx - cx) * 0.12;
+    cy += (my - cy) * 0.12;
+    currentScale += (targetScale - currentScale) * 0.1;
+    const t = `translate(${cx}px,${cy}px) translate(-50%,-50%) scale(${currentScale})`;
+    cursor.style.transform = t;
+    clone.style.transform = t;
+  })();
+}
+
+// ─────────────────────────────────────────────
 // Bootstrap
 // ─────────────────────────────────────────────
 async function init() {
@@ -1026,6 +1061,7 @@ async function init() {
   initTicker();
   initProjectInteractions();
   initProjectWebGL();
+  initProjectCursor();
   initTimeline(lenis);
   initPassion();
   initMagnetic();

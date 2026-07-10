@@ -962,16 +962,38 @@ button {
 }
 
 .project-arrow {
-  font-size: clamp(20px, 2.5vw, 28px);
-  color: var(--text-muted);
-  transition: color 0.3s ease, transform 0.3s var(--ease-expo);
-  display: inline-block;
+  position: relative;
+  width: clamp(22px, 2vw, 28px);
+  height: clamp(22px, 2vw, 28px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
-.project-item:hover .project-arrow {
-  color: var(--accent-text);
-  transform: translate(4px, -4px);
+.arrow-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.45s var(--ease-expo), opacity 0.45s var(--ease-expo), color 0.3s ease;
 }
+
+.arrow-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.arrow-right  { transform: translate(0, 0);        opacity: 1; }
+.arrow-upright { transform: translate(-70%, 70%);  opacity: 0; }
+
+.project-item:hover .arrow-right   { transform: translate(70%, -70%); opacity: 0; }
+.project-item:hover .arrow-upright { transform: translate(0, 0);      opacity: 1; }
+
+.project-item:hover .arrow-icon { color: var(--accent-text); }
 
 /* Dim non-hovered rows */
 .projects-list:has(.project-item:hover) .project-item:not(:hover) {

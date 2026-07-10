@@ -892,7 +892,13 @@ button {
 }
 
 .project-item:hover .project-desc {
+  color: var(--accent-text);
+}
+
+.project-item:hover .project-num,
+.project-item:hover .project-name {
   color: var(--accent);
+
 }
 
 .project-right {

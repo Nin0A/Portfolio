@@ -802,6 +802,16 @@ button {
    PROJECTS
    ============================================================ */
 
+#projects {
+  padding-inline: 0;
+}
+
+
+#projects>.section-label {
+
+  padding-left: var(--pad-x);
+}
+
 .projects-list {
   display: flex;
   flex-direction: column;
@@ -818,6 +828,7 @@ button {
   opacity: 0;
   overflow: hidden;
   transition: background 0.3s;
+  height: 15em;
 }
 
 /* Cursor-following radial spotlight */

@@ -1063,6 +1063,29 @@ function initProjectCursor() {
 }
 
 // ─────────────────────────────────────────────
+// About — photo parallax
+// ─────────────────────────────────────────────
+function initAboutParallax() {
+  const frame = document.querySelector('.about-photo-frame');
+  const inner = document.querySelector('.about-photo-inner');
+  if (!frame || !inner || typeof gsap === 'undefined') return;
+
+  gsap.fromTo(inner,
+    { yPercent: -10 },
+    {
+      yPercent: 10,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: frame,
+        start: 'top bottom',
+        end: 'bottom top',
+        scrub: 1
+      }
+    }
+  );
+}
+
+// ─────────────────────────────────────────────
 // Bootstrap
 // ─────────────────────────────────────────────
 async function init() {
@@ -1084,6 +1107,7 @@ async function init() {
   initProjectWebGL();
   initProjectCursor();
   initTimeline(lenis);
+  initAboutParallax();
   initPassion();
   initMagnetic();
   initContactForm();

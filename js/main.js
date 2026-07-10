@@ -922,6 +922,7 @@ function initTimeline(lenis) {
   // getBoundingClientRect during a Lenis animation (which is mid-lerp and off).
   let blocked = false;
   let blockDir = 0;
+  let scrollingToSection = false;
   const SNAP_TOLERANCE = 150; // px — how close scrollY must be to section top
 
   function isCovering() {
@@ -935,9 +936,16 @@ function initTimeline(lenis) {
     const dir = e.deltaY > 0 ? 1 : -1;
 
     if (blocked) {
-      // Unblock if user reverses OR drifted out of the section zone
       if (dir !== blockDir || !covering) blocked = false;
       if (blocked) return;
+    }
+
+    // Block wheel during the smooth approach scroll
+    if (scrollingToSection) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return;
     }
 
     if (!covering) {
@@ -946,11 +954,23 @@ function initTimeline(lenis) {
     }
 
     if (!active) {
-      // First capture: stop Lenis and snap exactly to section top so cards
-      // are fully in view (avoids a half-visible section on activation).
-      active = true;
-      if (lenis) lenis.stop();
-      window.scrollTo({ top: section.offsetTop });
+      // Smooth scroll to section top, then lock — no abrupt snap
+      scrollingToSection = true;
+      if (lenis) {
+        lenis.scrollTo(section.offsetTop, {
+          duration: 0.75,
+          easing: t => 1 - Math.pow(1 - t, 3),
+          onComplete: () => {
+            scrollingToSection = false;
+            active = true;
+            lenis.stop();
+          }
+        });
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return;
     }
 
     const next = step + dir;

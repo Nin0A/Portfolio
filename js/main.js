@@ -538,8 +538,8 @@ function initPreloader() {
     // O slot machine: each variant rises from below, previous exits upward
     oItems.forEach((item, i) => {
       if (i === 0) return;
-      tl.to(oItems[i - 1], { yPercent: -110, duration: 0.18, ease: 'power2.in' }, '+=0.1')
-        .fromTo(item, { yPercent: 110 }, { yPercent: 0, duration: 0.18, ease: 'power2.out' }, '<0.04');
+      tl.to(oItems[i - 1], { yPercent: -110, duration: 0.28, ease: 'power2.in' }, '+=0.18')
+        .to(item,           { yPercent: 0,    duration: 0.28, ease: 'power2.out' }, '<0.05');
     });
 
     tl.to({}, { duration: 0.2 });

@@ -161,7 +161,7 @@ button {
   width: 80px;
   height: 80px;
   border-radius: 10%;
-  background: #fff;
+  background: var(--bg);
   mix-blend-mode: difference;
   display: flex;
   align-items: center;

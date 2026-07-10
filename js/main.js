@@ -608,12 +608,13 @@ function initScrollAnimations() {
     });
   });
 
-  // Project items
+  // Project items — alternate slide from left/right
   gsap.utils.toArray('.project-item').forEach((item, i) => {
+    const dir = i % 2 === 0 ? -80 : 80;
     gsap.fromTo(item,
-      { opacity: 0, x: -24 },
+      { opacity: 0, x: dir },
       {
-        opacity: 1, x: 0, duration: 0.7, delay: i * 0.09, ease: 'power3.out',
+        opacity: 1, x: 0, duration: 0.85, delay: i * 0.07, ease: 'power3.out',
         scrollTrigger: { trigger: item, start: 'top 88%' }
       }
     );

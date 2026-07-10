@@ -1071,9 +1071,9 @@ function initAboutParallax() {
   if (!frame || !inner || typeof gsap === 'undefined') return;
 
   gsap.fromTo(inner,
-    { yPercent: -10 },
+    { yPercent: 10 },
     {
-      yPercent: 10,
+      yPercent: -10,
       ease: 'none',
       scrollTrigger: {
         trigger: frame,

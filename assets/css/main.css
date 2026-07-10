@@ -987,11 +987,11 @@ button {
   height: 100%;
 }
 
-.arrow-right  { transform: translate(0, 0);        opacity: 1; }
-.arrow-upright { transform: translate(-70%, 70%);  opacity: 0; }
+.arrow-right   { transform: translate(0, 0);       opacity: 1; }
+.arrow-upright { transform: translate(-70%, 70%); opacity: 0; }
 
-.project-item:hover .arrow-right   { transform: translate(70%, -70%); opacity: 0; }
-.project-item:hover .arrow-upright { transform: translate(0, 0);      opacity: 1; }
+.project-item:hover .arrow-right   { transform: translate(100%, 0);  opacity: 0; }
+.project-item:hover .arrow-upright { transform: translate(0, 0);     opacity: 1; }
 
 .project-item:hover .arrow-icon { color: var(--accent-text); }
 

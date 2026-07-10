@@ -892,6 +892,10 @@ button {
   padding-left: 10px;
 }
 
+.project-meta {
+  margin-left: clamp(24px, 8vw, 140px);
+}
+
 
 .project-num {
   font-family: var(--font-serif);

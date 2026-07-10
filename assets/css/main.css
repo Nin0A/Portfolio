@@ -255,9 +255,8 @@ button {
 .pl-o-wrap {
   position: relative;
   display: inline-block;
-  overflow: hidden;
   line-height: 1;
-  min-width: 1.1em;
+  clip-path: inset(0 -0.4em);
 }
 
 .pl-o {

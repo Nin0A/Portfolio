@@ -683,8 +683,8 @@ button {
    ============================================================ */
 .about-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(48px, 8vw, 120px);
+  grid-template-columns: 1fr 0.6fr;
+  gap: clamp(48px, 7vw, 100px);
   align-items: start;
 }
 
@@ -711,8 +711,42 @@ button {
 
 .about-stats {
   display: flex;
-  flex-direction: column;
-  gap: clamp(32px, 5vw, 56px);
+  flex-direction: row;
+  gap: clamp(32px, 5vw, 64px);
+  margin-top: clamp(40px, 5vw, 64px);
+  flex-wrap: wrap;
+}
+
+.about-photo-col {
+  position: sticky;
+  top: clamp(100px, 12vw, 140px);
+}
+
+.about-photo-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 3px;
+  aspect-ratio: 3 / 4;
+  background: var(--bg-3);
+}
+
+.about-photo-inner {
+  position: absolute;
+  inset: -20% 0;
+  will-change: transform;
+}
+
+.about-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Placeholder quand pas de photo */
+.about-photo-frame:not(:has(img[src])) .about-photo-inner,
+.about-photo-img[src="assets/img/photo.jpg"]:not([complete]) {
+  background: var(--bg-3);
 }
 
 .stat-item {
@@ -1277,6 +1311,15 @@ button {
 
   .about-grid {
     grid-template-columns: 1fr;
+  }
+
+  .about-photo-col {
+    position: static;
+    order: -1;
+  }
+
+  .about-photo-frame {
+    aspect-ratio: 4 / 3;
   }
 
   .about-stats {

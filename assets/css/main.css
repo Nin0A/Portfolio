@@ -257,6 +257,7 @@ button {
   display: inline-block;
   overflow: hidden;
   line-height: 1;
+  padding-right: 0.15em;
 }
 
 .pl-o {

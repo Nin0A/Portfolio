@@ -1034,10 +1034,14 @@ function initProjectCursor() {
   const cursor = document.getElementById('project-cursor');
   if (!cursor) return;
 
-  let mx = 0, my = 0, cx = 0, cy = 0;
+  let mx = 0, my = 0;
   let targetScale = 0, currentScale = 0;
 
-  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX;
+    my = e.clientY;
+    cursor.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%) scale(${currentScale})`;
+  });
 
   document.querySelectorAll('.project-item').forEach(item => {
     item.addEventListener('mouseenter', () => {
@@ -1052,10 +1056,8 @@ function initProjectCursor() {
 
   (function tick() {
     requestAnimationFrame(tick);
-    cx += (mx - cx) * 0.12;
-    cy += (my - cy) * 0.12;
     currentScale += (targetScale - currentScale) * 0.1;
-    cursor.style.transform = `translate(${cx}px,${cy}px) translate(-50%,-50%) scale(${currentScale})`;
+    cursor.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%) scale(${currentScale})`;
   })();
 }
 

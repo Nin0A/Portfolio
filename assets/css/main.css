@@ -892,10 +892,6 @@ button {
   padding-left: 10px;
 }
 
-.project-meta {
-  margin-left: clamp(24px, 8vw, 140px);
-}
-
 
 .project-num {
   font-family: var(--font-serif);
@@ -910,6 +906,7 @@ button {
   font-size: clamp(22px, 3.5vw, 48px);
   font-weight: 700;
   letter-spacing: -0.03em;
+  text-transform: uppercase;
   color: var(--text);
   line-height: 1;
   margin-bottom: 6px;
@@ -991,7 +988,6 @@ button {
   height: 100%;
 }
 
-<<<<<<< HEAD
 .arrow-right {
   transform: translate(0, 0);
   opacity: 1;
@@ -1001,13 +997,6 @@ button {
   transform: translate(-70%, 70%);
   opacity: 0;
 }
-=======
-.arrow-right   { transform: translate(0, 0);       opacity: 1; }
-.arrow-upright { transform: translate(-70%, 70%); opacity: 0; }
-
-.project-item:hover .arrow-right   { transform: translate(100%, 0);  opacity: 0; }
-.project-item:hover .arrow-upright { transform: translate(0, 0);     opacity: 1; }
->>>>>>> 8b8f368b9a879f0e6febfeecdcbb2b3e10cf6e3f
 
 .project-item:hover .arrow-right {
   transform: translate(70%, 0%);

@@ -343,10 +343,6 @@ button {
   transition: width 0.3s var(--ease-expo);
 }
 
-.nav-link:hover {
-  opacity: 0.65;
-}
-
 .nav-link:hover::after {
   width: 100%;
 }

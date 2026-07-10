@@ -505,25 +505,51 @@ function initLenis() {
 // ─────────────────────────────────────────────
 function initPreloader() {
   return new Promise(resolve => {
-    const el = document.getElementById('preloader');
-    const num = document.getElementById('preloader-num');
-    const bar = document.querySelector('.preloader-bar');
-    const dur = 2000, t0 = performance.now();
+    const el    = document.getElementById('preloader');
+    const bar   = document.querySelector('.preloader-bar');
+    const chars = el.querySelectorAll('.pl-char');
+    const oItems = el.querySelectorAll('.pl-o');
 
+    // Initial states
+    gsap.set(chars, { opacity: 0, y: 50 });
+    gsap.set([...oItems].slice(1), { yPercent: 110 });
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        gsap.to(el, {
+          yPercent: -100, duration: 0.9, ease: 'power4.inOut', delay: 0.15,
+          onComplete() {
+            el.style.display = 'none';
+            document.body.classList.remove('is-loading');
+            resolve();
+          }
+        });
+      }
+    });
+
+    // Letters appear one by one
+    tl.to(chars, {
+      opacity: 1, y: 0,
+      duration: 0.55, ease: 'power3.out',
+      stagger: 0.1
+    });
+
+    // O slot machine: each variant rises from below, previous exits upward
+    oItems.forEach((item, i) => {
+      if (i === 0) return;
+      tl.to(oItems[i - 1], { yPercent: -110, duration: 0.28, ease: 'power2.in' }, '+=0.18')
+        .to(item,           { yPercent: 0,    duration: 0.28, ease: 'power2.out' }, '<0.05');
+    });
+
+    tl.to({}, { duration: 0.2 });
+
+    // Progress bar synced to timeline
+    const totalMs = tl.totalDuration() * 1000 + 1100;
+    const t0 = performance.now();
     (function step(now) {
-      const p = Math.min((now - t0) / dur, 1);
-      num.textContent = String(Math.floor(p * 100)).padStart(2, '0');
+      const p = Math.min((now - t0) / totalMs, 1);
       bar.style.width = `${p * 100}%`;
-      if (p < 1) { requestAnimationFrame(step); return; }
-      num.textContent = '100';
-      gsap.to(el, {
-        yPercent: -100, duration: 0.9, ease: 'power4.inOut', delay: 0.2,
-        onComplete() {
-          el.style.display = 'none';
-          document.body.classList.remove('is-loading');
-          resolve();
-        }
-      });
+      if (p < 1) requestAnimationFrame(step);
     })(t0);
   });
 }

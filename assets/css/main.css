@@ -884,14 +884,18 @@ button {
 }
 
 .project-left {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: clamp(16px, 3vw, 40px);
   position: relative;
   z-index: 1;
   padding-left: 10px;
 }
 
+
+.project-meta {
+  margin-left: clamp(40px, 22vw, 320px);
+}
 
 .project-num {
   font-family: var(--font-serif);

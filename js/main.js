@@ -1011,6 +1011,7 @@ function initPassion() {
 // ─────────────────────────────────────────────
 function initProjectCursor() {
   const cursor = document.getElementById('project-cursor');
+  const label  = document.getElementById('project-cursor-label');
   if (!cursor) return;
 
   let mx = 0, my = 0, cx = 0, cy = 0;
@@ -1034,7 +1035,9 @@ function initProjectCursor() {
     cx += (mx - cx) * 0.12;
     cy += (my - cy) * 0.12;
     currentScale += (targetScale - currentScale) * 0.1;
-    cursor.style.transform = `translate(${cx}px,${cy}px) translate(-50%,-50%) scale(${currentScale})`;
+    const t = `translate(${cx}px,${cy}px) translate(-50%,-50%) scale(${currentScale})`;
+    cursor.style.transform = t;
+    if (label) label.style.transform = t;
   })();
 }
 

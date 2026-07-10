@@ -1007,83 +1007,12 @@ function initPassion() {
 
 
 // ─────────────────────────────────────────────
-// Project custom cursor — dual-layer clip-path split
+// Project custom cursor — mix-blend-mode: difference
 // ─────────────────────────────────────────────
 function initProjectCursor() {
   const cursor = document.getElementById('project-cursor');
-  const clone  = document.getElementById('project-cursor-clone');
-  if (!cursor || !clone) return;
+  if (!cursor) return;
 
-  // ── Create cursor-dark-clip in the existing SVG ──────────
-  const existingSvg = document.querySelector('body > svg[aria-hidden]');
-  if (!existingSvg) return;
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const defs = existingSvg.querySelector('defs');
-  const clipPath = document.createElementNS(svgNS, 'clipPath');
-  clipPath.id = 'cursor-dark-clip';
-  clipPath.setAttribute('clipPathUnits', 'userSpaceOnUse');
-  const clipRect = document.createElementNS(svgNS, 'rect');
-  clipRect.setAttribute('x', '0');
-  clipRect.setAttribute('y', '0');
-  clipRect.setAttribute('width', String(window.innerWidth));
-  clipRect.setAttribute('height', '0');
-  clipPath.appendChild(clipRect);
-  defs.appendChild(clipPath);
-  clone.style.clipPath = 'url(#cursor-dark-clip)';
-
-  // ── Helpers ──────────────────────────────────────────────
-  function sectionLuminance(el) {
-    let node = el;
-    while (node && node !== document.documentElement) {
-      const bg = getComputedStyle(node).backgroundColor;
-      const m = bg.match(/[\d.]+/g);
-      if (m && m.length >= 3 && parseFloat(m[3] ?? '1') > 0.05)
-        return (0.299 * +m[0] + 0.587 * +m[1] + 0.114 * +m[2]) / 255;
-      node = node.parentElement;
-    }
-    const hex = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-    if (/^#[0-9a-f]{6}/i.test(hex))
-      return (0.299 * parseInt(hex.slice(1,3),16) + 0.587 * parseInt(hex.slice(3,5),16) + 0.114 * parseInt(hex.slice(5,7),16)) / 255;
-    return 0;
-  }
-
-  function accentLuminance() {
-    const rgb = getComputedStyle(document.documentElement)
-      .getPropertyValue('--accent-rgb').split(',').map(Number);
-    return (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
-  }
-
-  const sections = Array.from(document.querySelectorAll('#hero, .section, #footer'));
-  let hoveredItem = null;
-
-  function updateClip() {
-    const H = window.innerHeight, W = window.innerWidth;
-    let y0 = Infinity, y1 = -Infinity;
-    const accentIsLight = hoveredItem && accentLuminance() > 0.45;
-
-    for (const sec of sections) {
-      if (accentIsLight && sec.contains(hoveredItem)) continue;
-      if (sectionLuminance(sec) > 0.55) continue;
-      const r = sec.getBoundingClientRect();
-      if (r.bottom <= 0 || r.top >= H) continue;
-      const top = Math.max(0, r.top), bot = Math.min(H, r.bottom);
-      if (bot > top) { y0 = Math.min(y0, top); y1 = Math.max(y1, bot); }
-    }
-
-    clipRect.setAttribute('width', String(W));
-    if (y1 > y0) {
-      clipRect.setAttribute('y', String(y0));
-      clipRect.setAttribute('height', String(y1 - y0));
-    } else {
-      clipRect.setAttribute('height', '0');
-    }
-  }
-
-  window.addEventListener('scroll', updateClip, { passive: true });
-  window.addEventListener('resize', updateClip, { passive: true });
-  updateClip();
-
-  // ── Mouse tracking ────────────────────────────────────────
   let mx = 0, my = 0, cx = 0, cy = 0;
   let targetScale = 0, currentScale = 0;
 
@@ -1092,15 +1021,11 @@ function initProjectCursor() {
   document.querySelectorAll('.project-item').forEach(item => {
     item.addEventListener('mouseenter', () => {
       targetScale = 1;
-      hoveredItem = item;
       document.body.style.cursor = 'none';
-      updateClip();
     });
     item.addEventListener('mouseleave', () => {
       targetScale = 0;
-      hoveredItem = null;
       document.body.style.cursor = '';
-      updateClip();
     });
   });
 
@@ -1109,9 +1034,7 @@ function initProjectCursor() {
     cx += (mx - cx) * 0.12;
     cy += (my - cy) * 0.12;
     currentScale += (targetScale - currentScale) * 0.1;
-    const t = `translate(${cx}px,${cy}px) translate(-50%,-50%) scale(${currentScale})`;
-    cursor.style.transform = t;
-    clone.style.transform = t;
+    cursor.style.transform = `translate(${cx}px,${cy}px) translate(-50%,-50%) scale(${currentScale})`;
   })();
 }
 

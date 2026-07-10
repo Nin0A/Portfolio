@@ -878,24 +878,22 @@ button {
   color: var(--text);
   line-height: 1;
   margin-bottom: 6px;
-  transition: color 0.3s;
+  transition: transform 0.35s var(--ease-expo);
 }
 
 .project-item:hover .project-name {
-  color: var(--accent);
-  text-shadow: 0 0 20px var(--bg), 0 0 40px var(--bg);
+  transform: translateX(8px);
 }
 
 .project-desc {
   font-size: clamp(13px, 1.2vw, 15px);
   color: var(--text-muted);
   max-width: 340px;
-  transition: color 0.3s ease;
+  transition: transform 0.35s var(--ease-expo);
 }
 
 .project-item:hover .project-desc {
-  color: var(--accent);
-  text-shadow: 0 0 20px var(--bg), 0 0 40px var(--bg);
+  transform: translateX(8px);
 }
 
 .project-right {
@@ -929,21 +927,28 @@ button {
 }
 
 .project-item:hover .project-tags span {
-  color: var(--accent);
-  border-color: rgba(var(--accent-rgb), 0.25);
-  background: rgba(var(--accent-rgb), 0.06);
+  border-color: var(--border-hover);
 }
 
 .project-arrow {
   font-size: clamp(20px, 2.5vw, 28px);
   color: var(--text-muted);
-  transition: color 0.2s, transform 0.3s var(--ease-expo);
+  transition: transform 0.3s var(--ease-expo);
   display: inline-block;
 }
 
 .project-item:hover .project-arrow {
-  color: var(--accent);
   transform: translate(4px, -4px);
+}
+
+/* Dim non-hovered rows */
+.projects-list:has(.project-item:hover) .project-item:not(:hover) {
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+
+.project-item {
+  transition: background 0.3s, opacity 0.3s ease;
 }
 
 /* ============================================================

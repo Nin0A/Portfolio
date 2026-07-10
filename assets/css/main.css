@@ -154,6 +154,41 @@ button {
   display: none;
 }
 
+#project-cursor,
+#project-cursor-clone {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 9999;
+  will-change: transform;
+}
+
+#project-cursor span,
+#project-cursor-clone span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+#project-cursor {
+  border: 1.5px solid #111111;
+  color: #111111;
+}
+
+#project-cursor-clone {
+  border: 1.5px solid #f0ece4;
+  color: #f0ece4;
+  clip-path: url(#nav-dark-clip);
+}
+
 /* ============================================================
    GRAIN OVERLAY
    ============================================================ */

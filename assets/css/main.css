@@ -160,7 +160,7 @@ button {
   left: 0;
   width: 110px;
   height: 110px;
-  border-radius: 50%;
+  border-radius: 10%;
   background: #fff;
   mix-blend-mode: difference;
   display: flex;
@@ -172,10 +172,11 @@ button {
 }
 
 #project-cursor span {
-  font-size: 10px;
+  font-size: 1em;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0, 1em;
   text-transform: uppercase;
+  text-align: center;
   color: #000;
 }
 
@@ -852,6 +853,7 @@ button {
   opacity: 0;
   overflow: hidden;
   transition: opacity 1s ease;
+  cursor: none;
 }
 
 /* Accent background that slides up on hover */

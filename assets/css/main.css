@@ -186,7 +186,6 @@ button {
 #project-cursor-clone {
   border: 1.5px solid #f0ece4;
   color: #f0ece4;
-  clip-path: url(#nav-dark-clip);
 }
 
 /* ============================================================

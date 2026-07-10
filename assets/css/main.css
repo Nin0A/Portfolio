@@ -810,33 +810,30 @@ button {
 .project-item {
   position: relative;
   z-index: 1;
-  /* form stacking context above the fixed WebGL canvas (z-index: 0) */
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: clamp(24px, 3.5vw, 40px) 0;
   opacity: 0;
   overflow: hidden;
-  transition: background 0.3s;
+  transition: opacity 0.3s ease;
 }
 
-/* Cursor-following radial spotlight */
-.project-item::after {
+/* Accent background that slides up on hover */
+.project-item::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 4px;
-  pointer-events: none;
+  background: var(--accent);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.4s var(--ease-expo);
   z-index: 0;
-  opacity: 0;
-  transition: opacity 0.35s;
-  background: radial-gradient(circle 300px at var(--sx, 50%) var(--sy, 50%),
-      rgba(var(--accent-rgb), 0.09),
-      transparent 70%);
+  pointer-events: none;
 }
 
-.project-item:hover::after {
-  opacity: 1;
+.project-item:hover::before {
+  transform: scaleY(1);
 }
 
 
@@ -869,6 +866,7 @@ button {
   font-size: clamp(12px, 1.2vw, 15px);
   color: var(--text-muted);
   min-width: 24px;
+  transition: color 0.3s ease;
 }
 
 .project-name {
@@ -878,22 +876,20 @@ button {
   color: var(--text);
   line-height: 1;
   margin-bottom: 6px;
-  transition: transform 0.35s var(--ease-expo);
-}
-
-.project-item:hover .project-name {
-  transform: translateX(8px);
+  transition: color 0.3s ease;
 }
 
 .project-desc {
   font-size: clamp(13px, 1.2vw, 15px);
   color: var(--text-muted);
   max-width: 340px;
-  transition: transform 0.35s var(--ease-expo);
+  transition: color 0.3s ease;
 }
 
+.project-item:hover .project-num,
+.project-item:hover .project-name,
 .project-item:hover .project-desc {
-  transform: translateX(8px);
+  color: var(--accent-text);
 }
 
 .project-right {
@@ -927,28 +923,26 @@ button {
 }
 
 .project-item:hover .project-tags span {
-  border-color: var(--border-hover);
+  color: var(--accent-text);
+  background: rgba(0, 0, 0, 0.12);
+  border-color: rgba(0, 0, 0, 0.15);
 }
 
 .project-arrow {
   font-size: clamp(20px, 2.5vw, 28px);
   color: var(--text-muted);
-  transition: transform 0.3s var(--ease-expo);
+  transition: color 0.3s ease, transform 0.3s var(--ease-expo);
   display: inline-block;
 }
 
 .project-item:hover .project-arrow {
+  color: var(--accent-text);
   transform: translate(4px, -4px);
 }
 
 /* Dim non-hovered rows */
 .projects-list:has(.project-item:hover) .project-item:not(:hover) {
-  opacity: 0.4;
-  transition: opacity 0.3s ease;
-}
-
-.project-item {
-  transition: background 0.3s, opacity 0.3s ease;
+  opacity: 0.5;
 }
 
 /* ============================================================

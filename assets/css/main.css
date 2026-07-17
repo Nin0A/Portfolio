@@ -1724,14 +1724,14 @@ button {
   background: transparent;
   border-right: 1px solid var(--border);
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 3px;
   padding: 3px;
+  align-content: start;
 }
 
 .drawer-img {
-  flex: 1;
   min-height: 160px;
   border-radius: 8px;
   overflow: hidden;
@@ -1739,8 +1739,8 @@ button {
 }
 
 .drawer-img--tall {
-  flex: 2;
-  min-height: 260px;
+  grid-column: 1 / -1;
+  min-height: 300px;
 }
 
 .drawer-img img {

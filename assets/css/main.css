@@ -1577,6 +1577,13 @@ button {
   transition: border-color 0.3s, box-shadow 0.3s;
 }
 
+.header-card {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  justify-content: space-between;
+}
+
 .tl-card:hover {
   border-color: rgba(var(--accent-rgb), 0.45);
   box-shadow: 0 10px 36px rgba(0, 0, 0, 0.1);
@@ -1597,7 +1604,6 @@ button {
   background: color-mix(in srgb, var(--text-muted) 12%, transparent);
   padding: 3px 8px;
   border-radius: 4px;
-  margin-bottom: 12px;
 }
 
 .tl-tag--active {
@@ -1629,7 +1635,6 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin-top: 12px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;

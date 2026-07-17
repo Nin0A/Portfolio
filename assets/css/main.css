@@ -1724,25 +1724,26 @@ button {
   background: transparent;
   border-right: 1px solid var(--border);
   overflow-y: auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3px;
-  padding: 3px;
-  align-content: center;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  scroll-snap-type: y mandatory;
 }
 
 .drawer-img {
   aspect-ratio: 9 / 19.5;
-  max-height: min(52vh, 380px);
   width: 100%;
+  max-height: calc(100vh - 48px);
+  flex-shrink: 0;
   border-radius: 16px;
   overflow: hidden;
   background: transparent;
+  scroll-snap-align: start;
 }
 
 .drawer-img--tall {
-  max-height: min(52vh, 380px);
+  aspect-ratio: 9 / 19.5;
 }
 
 .drawer-img img {

@@ -1614,14 +1614,31 @@ button {
 }
 
 .tl-card--fill {
-  background: linear-gradient(to right, #FFD600 50%, var(--surface) 50%);
-  background-size: 200% 100%;
-  background-position: 100% 0;
-  transition: background-position 0.9s cubic-bezier(0.77, 0, 0.175, 1);
+  position: relative;
+  overflow: hidden;
 }
 
-.tl-card--fill.is-filled {
-  background-position: 0% 0;
+.tl-card--fill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #FFD600;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.tl-card--fill.is-filled::before {
+  transform: scaleX(1);
+}
+
+.tl-card--fill .tl-tag,
+.tl-card--fill .tl-card-title,
+.tl-card--fill .tl-card-desc {
+  position: relative;
+  z-index: 1;
 }
 
 .tl-card-desc {

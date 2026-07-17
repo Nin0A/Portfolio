@@ -1123,6 +1123,7 @@ function initNearbyDrawer(lenis) {
   }
 
   openBtn.addEventListener('click', openDrawer);
+  openBtn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDrawer(); } });
   closeBtn?.addEventListener('click', closeDrawer);
   backdrop?.addEventListener('click', closeDrawer);
 

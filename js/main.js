@@ -920,15 +920,11 @@ function initTimeline(lenis) {
         gsap.killTweensOf([item, dots[i]]);
         gsap.to(dots[i], { scale: 1, duration: 0.35, ease: 'back.out(2.8)' });
         gsap.to(item, { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', delay: 0.06 });
-        const fillCard = item.querySelector('.tl-card--fill');
-        if (fillCard) setTimeout(() => fillCard.classList.add('is-filled'), 600);
       } else if (!shouldShow && shown[i]) {
         shown[i] = false;
         gsap.killTweensOf([item, dots[i]]);
         gsap.to(dots[i], { scale: 0, duration: 0.25, ease: 'power2.in' });
         gsap.to(item, { opacity: 0, y: 32, duration: 0.35, ease: 'power2.in' });
-        const fillCard = item.querySelector('.tl-card--fill');
-        if (fillCard) fillCard.classList.remove('is-filled');
       }
     });
   }
@@ -1101,6 +1097,40 @@ function initAboutParallax() {
 }
 
 // ─────────────────────────────────────────────
+// Nearby project drawer
+// ─────────────────────────────────────────────
+function initNearbyDrawer(lenis) {
+  const drawer = document.getElementById('nearby-drawer');
+  const openBtn = document.getElementById('nearby-open');
+  const closeBtn = document.getElementById('nearby-close');
+  const backdrop = drawer?.querySelector('.drawer-backdrop');
+  if (!drawer || !openBtn) return;
+
+  function openDrawer() {
+    drawer.classList.add('is-open');
+    drawer.setAttribute('aria-hidden', 'false');
+    openBtn.setAttribute('aria-expanded', 'true');
+    if (lenis) lenis.stop();
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove('is-open');
+    drawer.setAttribute('aria-hidden', 'true');
+    openBtn.setAttribute('aria-expanded', 'false');
+    if (lenis) lenis.start();
+    document.body.style.overflow = '';
+  }
+
+  openBtn.addEventListener('click', openDrawer);
+  closeBtn?.addEventListener('click', closeDrawer);
+  backdrop?.addEventListener('click', closeDrawer);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && drawer.classList.contains('is-open')) closeDrawer();
+  });
+}
+
 // Bootstrap
 // ─────────────────────────────────────────────
 async function init() {
@@ -1122,6 +1152,7 @@ async function init() {
   initProjectWebGL();
   initProjectCursor();
   initTimeline(lenis);
+  initNearbyDrawer(lenis);
   initAboutParallax();
   initPassion();
   initContactForm();

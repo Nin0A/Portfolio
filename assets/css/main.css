@@ -1613,32 +1613,229 @@ button {
   color: var(--text);
 }
 
-.tl-card--fill {
-  position: relative;
-  overflow: hidden;
+/* ── Timeline card CTA button ── */
+.tl-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 9px 18px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s, gap 0.25s, color 0.25s;
 }
 
-.tl-card--fill::before {
-  content: '';
-  position: absolute;
+.tl-card-cta:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  gap: 12px;
+}
+
+/* ── Project drawer ── */
+.project-drawer {
+  position: fixed;
   inset: 0;
-  background: #E57272;
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1);
-  z-index: 0;
+  z-index: 9000;
   pointer-events: none;
 }
 
-.tl-card--fill.is-filled::before {
-  transform: scaleX(1);
+.project-drawer.is-open {
+  pointer-events: all;
 }
 
-.tl-card--fill .tl-tag,
-.tl-card--fill .tl-card-title,
-.tl-card--fill .tl-card-desc {
-  position: relative;
-  z-index: 1;
+.drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  backdrop-filter: blur(4px);
+}
+
+.project-drawer.is-open .drawer-backdrop {
+  opacity: 1;
+}
+
+.drawer-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(520px, 92vw);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  transform: translateX(100%);
+  transition: transform 0.55s cubic-bezier(0.77, 0, 0.175, 1);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.project-drawer.is-open .drawer-panel {
+  transform: translateX(0);
+}
+
+.drawer-close {
+  position: sticky;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 20px 20px 0 auto;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.drawer-close:hover {
+  background: var(--bg-3);
+  border-color: var(--text-muted);
+}
+
+.drawer-inner {
+  padding: 0 clamp(24px, 5vw, 48px) 48px;
+}
+
+.drawer-header {
+  padding-top: 8px;
+  margin-bottom: 32px;
+}
+
+.drawer-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.drawer-title {
+  font-family: var(--font-serif);
+  font-size: clamp(40px, 8vw, 64px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.drawer-subtitle {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.drawer-image-wrap {
+  margin-bottom: 36px;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: var(--bg-3);
+}
+
+.drawer-image-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  border: 1.5px dashed var(--border);
+  border-radius: 12px;
+}
+
+.drawer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.drawer-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.drawer-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.drawer-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.drawer-tech {
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg-3);
+}
+
+.drawer-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.drawer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition: gap 0.2s, background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.drawer-btn--primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border: 1.5px solid var(--accent);
+}
+
+.drawer-btn--primary:hover {
+  gap: 12px;
+}
+
+.drawer-btn--ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+
+.drawer-btn--ghost:hover {
+  border-color: var(--text-muted);
+  background: var(--bg-3);
 }
 
 .tl-card-desc {

@@ -458,11 +458,15 @@
 
       <div class="tl-item" data-year-start="2025">
         <span class="tl-item-period">2025</span>
-        <div class="tl-card tl-card--fill">
+        <div class="tl-card">
           <span class="tl-tag">Projet perso</span>
           <h3 class="tl-card-title">Nearby</h3>
           <p class="tl-card-desc">Application de découverte d'événements et activités à proximité. Full-stack, de l'idée
             au déploiement.</p>
+          <button class="tl-card-cta" id="nearby-open" aria-expanded="false" aria-controls="nearby-drawer">
+            <span>Découvrir</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+          </button>
         </div>
         <div class="tl-dot" aria-hidden="true"></div>
       </div>
@@ -589,6 +593,56 @@
       <p>Développé avec passion</p>
     </div>
   </footer>
+
+  <!-- ── Nearby project drawer ── -->
+  <div id="nearby-drawer" class="project-drawer" aria-hidden="true" role="dialog" aria-label="Nearby — détail du projet">
+    <div class="drawer-backdrop"></div>
+    <div class="drawer-panel">
+      <button class="drawer-close" id="nearby-close" aria-label="Fermer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+
+      <div class="drawer-inner">
+        <div class="drawer-header">
+          <span class="drawer-tag">Projet perso · 2025</span>
+          <h2 class="drawer-title">Nearby</h2>
+          <p class="drawer-subtitle">Application de découverte d'événements et activités à proximité.</p>
+        </div>
+
+        <div class="drawer-image-wrap">
+          <div class="drawer-image-placeholder">
+            <span>Screenshot / Mockup</span>
+          </div>
+        </div>
+
+        <div class="drawer-body">
+          <div class="drawer-section">
+            <h3 class="drawer-section-title">Le projet</h3>
+            <p class="drawer-text">Nearby permet aux utilisateurs de découvrir des événements, concerts, expositions et activités autour d'eux en temps réel. De l'idée initiale jusqu'au déploiement en production, un projet full-stack mené seul.</p>
+          </div>
+
+          <div class="drawer-section">
+            <h3 class="drawer-section-title">Stack technique</h3>
+            <div class="drawer-stack">
+              <span class="drawer-tech">React Native</span>
+              <span class="drawer-tech">Node.js</span>
+              <span class="drawer-tech">PostgreSQL</span>
+              <span class="drawer-tech">API REST</span>
+              <span class="drawer-tech">Expo</span>
+            </div>
+          </div>
+
+          <div class="drawer-actions">
+            <a href="#" class="drawer-btn drawer-btn--primary">
+              <span>Voir le projet</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="8 7 17 7 17 16"/></svg>
+            </a>
+            <a href="#" class="drawer-btn drawer-btn--ghost">GitHub</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="/js/main.js"></script>
 </body>

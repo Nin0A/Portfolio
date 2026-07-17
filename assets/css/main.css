@@ -1734,13 +1734,15 @@ button {
 
 .drawer-img {
   aspect-ratio: 9 / 19.5;
+  max-height: min(52vh, 380px);
+  width: 100%;
   border-radius: 16px;
   overflow: hidden;
   background: transparent;
 }
 
 .drawer-img--tall {
-  aspect-ratio: 9 / 19.5;
+  max-height: min(52vh, 380px);
 }
 
 .drawer-img img {

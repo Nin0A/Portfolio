@@ -1897,8 +1897,13 @@ button {
     gap: 3px;
   }
 
-  .drawer-img { min-width: 120px; }
-  .drawer-img--tall { min-width: 120px; }
+  .drawer-img {
+    min-width: 120px;
+  }
+
+  .drawer-img--tall {
+    min-width: 120px;
+  }
 }
 
 .tl-card-desc {

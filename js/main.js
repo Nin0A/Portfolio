@@ -1130,6 +1130,38 @@ function initNearbyDrawer(lenis) {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && drawer.classList.contains('is-open')) closeDrawer();
   });
+
+  // Carousel
+  const track = drawer.querySelector('.drawer-carousel-track');
+  const slides = drawer.querySelectorAll('.drawer-slide');
+  const prevBtn = drawer.querySelector('.carousel-btn--prev');
+  const nextBtn = drawer.querySelector('.carousel-btn--next');
+  const currentEl = drawer.querySelector('.carousel-current');
+  const totalEl = drawer.querySelector('.carousel-total');
+  if (!track || !slides.length) return;
+
+  let idx = 0;
+  const total = slides.length;
+  if (totalEl) totalEl.textContent = total;
+
+  function goTo(n) {
+    idx = Math.max(0, Math.min(n, total - 1));
+    track.style.transform = `translateX(${-idx * 100}%)`;
+    if (currentEl) currentEl.textContent = idx + 1;
+    if (prevBtn) prevBtn.disabled = idx === 0;
+    if (nextBtn) nextBtn.disabled = idx === total - 1;
+  }
+
+  prevBtn?.addEventListener('click', () => goTo(idx - 1));
+  nextBtn?.addEventListener('click', () => goTo(idx + 1));
+
+  document.addEventListener('keydown', e => {
+    if (!drawer.classList.contains('is-open')) return;
+    if (e.key === 'ArrowLeft') goTo(idx - 1);
+    if (e.key === 'ArrowRight') goTo(idx + 1);
+  });
+
+  goTo(0);
 }
 
 // Bootstrap

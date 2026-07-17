@@ -618,16 +618,29 @@
       <!-- Two-column layout -->
       <div class="drawer-layout">
 
-        <!-- LEFT — image gallery -->
+        <!-- LEFT — image carousel -->
         <div class="drawer-gallery">
-          <div class="drawer-img drawer-img--tall">
-            <img src="/assets/img/projects/nearby/nearby1.jpg" alt="">
+          <div class="drawer-carousel">
+            <div class="drawer-carousel-track">
+              <div class="drawer-slide">
+                <img src="/assets/img/projects/nearby/nearby1.jpg" alt="Nearby screenshot 1">
+              </div>
+              <div class="drawer-slide">
+                <img src="/assets/img/projects/nearby/nearby3.jpg" alt="Nearby screenshot 2">
+              </div>
+              <div class="drawer-slide">
+                <img src="/assets/img/projects/nearby/nearby2.jpg" alt="Nearby screenshot 3">
+              </div>
+            </div>
           </div>
-          <div class="drawer-img">
-            <img src="/assets/img/projects/nearby/nearby3.jpg" alt="">
-          </div>
-          <div class="drawer-img">
-            <img src="/assets/img/projects/nearby/nearby2.jpg" alt="">
+          <div class="drawer-carousel-nav">
+            <button class="carousel-btn carousel-btn--prev" aria-label="Image précédente">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <span class="carousel-counter"><span class="carousel-current">1</span> / <span class="carousel-total">3</span></span>
+            <button class="carousel-btn carousel-btn--next" aria-label="Image suivante">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
         </div>
 

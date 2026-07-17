@@ -1613,6 +1613,20 @@ button {
   color: var(--text);
 }
 
+.tl-title--fill {
+  background: linear-gradient(to right, #FFD600 50%, var(--text) 50%);
+  background-size: 200% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: background-position 0.9s cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.tl-title--fill.is-filled {
+  background-position: 0% 0;
+}
+
 .tl-card-desc {
   font-size: 0.875rem;
   line-height: 1.65;

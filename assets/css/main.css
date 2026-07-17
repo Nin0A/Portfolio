@@ -1673,7 +1673,7 @@ button {
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(900px, 92vw);
+  width: 100vw;
   background: var(--bg-2);
   border-left: 1px solid var(--border);
   transform: translateX(100%);
@@ -1714,14 +1714,14 @@ button {
 /* Two-column layout */
 .drawer-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 2fr 1fr;
   height: 100%;
   overflow: hidden;
 }
 
 /* LEFT — gallery */
 .drawer-gallery {
-  background: var(--bg-3);
+  background: transparent;
   border-right: 1px solid var(--border);
   overflow-y: auto;
   display: flex;

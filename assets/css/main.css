@@ -1265,6 +1265,7 @@ button {
 
 .btn-arrow {
   font-size: 18px;
+  color: #fff;
   transition: transform 0.2s var(--ease-expo);
 }
 

@@ -920,15 +920,15 @@ function initTimeline(lenis) {
         gsap.killTweensOf([item, dots[i]]);
         gsap.to(dots[i], { scale: 1, duration: 0.35, ease: 'back.out(2.8)' });
         gsap.to(item, { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', delay: 0.06 });
-        const fillTitle = item.querySelector('.tl-title--fill');
-        if (fillTitle) setTimeout(() => fillTitle.classList.add('is-filled'), 600);
+        const fillCard = item.querySelector('.tl-card--fill');
+        if (fillCard) setTimeout(() => fillCard.classList.add('is-filled'), 600);
       } else if (!shouldShow && shown[i]) {
         shown[i] = false;
         gsap.killTweensOf([item, dots[i]]);
         gsap.to(dots[i], { scale: 0, duration: 0.25, ease: 'power2.in' });
         gsap.to(item, { opacity: 0, y: 32, duration: 0.35, ease: 'power2.in' });
-        const fillTitle = item.querySelector('.tl-title--fill');
-        if (fillTitle) fillTitle.classList.remove('is-filled');
+        const fillCard = item.querySelector('.tl-card--fill');
+        if (fillCard) fillCard.classList.remove('is-filled');
       }
     });
   }

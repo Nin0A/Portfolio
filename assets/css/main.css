@@ -177,7 +177,7 @@ button {
   letter-spacing: 0, 1em;
   text-transform: uppercase;
   text-align: center;
-  color: #000;
+  color: var(--accent);
 }
 
 /* ============================================================
@@ -257,7 +257,7 @@ button {
   display: inline-block;
   overflow: hidden;
   line-height: 1;
-  padding-right: 0.15em;
+  padding-right: 0.25em;
 }
 
 .pl-o {

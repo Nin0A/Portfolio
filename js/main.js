@@ -470,23 +470,6 @@ function initNavSplitText() {
 }
 
 // ─────────────────────────────────────────────
-// Magnetic buttons
-// ─────────────────────────────────────────────
-function initMagnetic() {
-  document.querySelectorAll('.magnetic').forEach(el => {
-    el.addEventListener('mousemove', e => {
-      const r = el.getBoundingClientRect();
-      const dx = (e.clientX - r.left - r.width / 2) * 0.28;
-      const dy = (e.clientY - r.top - r.height / 2) * 0.28;
-      gsap.to(el, { x: dx, y: dy, duration: 0.4, ease: 'power2.out' });
-    });
-    el.addEventListener('mouseleave', () => {
-      gsap.to(el, { x: 0, y: 0, duration: 0.7, ease: 'elastic.out(1, 0.5)' });
-    });
-  });
-}
-
-// ─────────────────────────────────────────────
 // Smooth scroll (Lenis)
 // ─────────────────────────────────────────────
 function initLenis() {
@@ -505,10 +488,10 @@ function initLenis() {
 // ─────────────────────────────────────────────
 function initPreloader() {
   return new Promise(resolve => {
-    const el     = document.getElementById('preloader');
-    const bar    = document.querySelector('.preloader-bar');
-    const num    = document.getElementById('preloader-num');
-    const chars  = el.querySelectorAll('.pl-char');
+    const el = document.getElementById('preloader');
+    const bar = document.querySelector('.preloader-bar');
+    const num = document.getElementById('preloader-num');
+    const chars = el.querySelectorAll('.pl-char');
     const oItems = el.querySelectorAll('.pl-o');
 
     // Initial states
@@ -539,7 +522,7 @@ function initPreloader() {
     oItems.forEach((item, i) => {
       if (i === 0) return;
       tl.to(oItems[i - 1], { yPercent: -110, duration: 0.28, ease: 'power2.in' }, '+=0.18')
-        .to(item,           { yPercent: 0,    duration: 0.28, ease: 'power2.out' }, '<0.05');
+        .to(item, { yPercent: 0, duration: 0.28, ease: 'power2.out' }, '<0.05');
     });
 
     tl.to({}, { duration: 0.2 });
@@ -1085,7 +1068,7 @@ function initProjectCursor() {
 
   (function tick() {
     requestAnimationFrame(tick);
-    currentScale += (targetScale - currentScale) * 0.1;
+    currentScale += (targetScale - currentScale) * 0.3;
     cursor.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%) scale(${currentScale})`;
   })();
 }
@@ -1137,7 +1120,6 @@ async function init() {
   initTimeline(lenis);
   initAboutParallax();
   initPassion();
-  initMagnetic();
   initContactForm();
   initAnchorScroll(lenis);
 }

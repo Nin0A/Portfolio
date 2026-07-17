@@ -1622,7 +1622,7 @@ button {
   content: '';
   position: absolute;
   inset: 0;
-  background: #FFD600;
+  background: #E57272;
   transform: scaleX(0);
   transform-origin: left center;
   transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1);

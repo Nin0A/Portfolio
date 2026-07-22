@@ -1097,71 +1097,23 @@ function initAboutParallax() {
 }
 
 // ─────────────────────────────────────────────
-// Nearby project drawer
+// Page transition — slide right
 // ─────────────────────────────────────────────
-function initNearbyDrawer(lenis) {
-  const drawer = document.getElementById('nearby-drawer');
-  const openBtn = document.getElementById('nearby-open');
-  const closeBtn = document.getElementById('nearby-close');
-  const backdrop = drawer?.querySelector('.drawer-backdrop');
-  if (!drawer || !openBtn) return;
+function initPageTransitions() {
+  const overlay = document.createElement('div');
+  overlay.className = 'page-transition';
+  document.body.appendChild(overlay);
 
-  function openDrawer() {
-    drawer.classList.add('is-open');
-    drawer.setAttribute('aria-hidden', 'false');
-    openBtn.setAttribute('aria-expanded', 'true');
-    if (lenis) lenis.stop();
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeDrawer() {
-    drawer.classList.remove('is-open');
-    drawer.setAttribute('aria-hidden', 'true');
-    openBtn.setAttribute('aria-expanded', 'false');
-    if (lenis) lenis.start();
-    document.body.style.overflow = '';
-  }
-
-  openBtn.addEventListener('click', openDrawer);
-  openBtn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDrawer(); } });
-  closeBtn?.addEventListener('click', closeDrawer);
-  backdrop?.addEventListener('click', closeDrawer);
-
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && drawer.classList.contains('is-open')) closeDrawer();
+  document.querySelectorAll('a.project-item--nearby').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const href = link.getAttribute('href');
+      overlay.classList.add('slide-in');
+      overlay.addEventListener('transitionend', () => {
+        window.location.href = href;
+      }, { once: true });
+    });
   });
-
-  // Carousel
-  const track = drawer.querySelector('.drawer-carousel-track');
-  const slides = drawer.querySelectorAll('.drawer-slide');
-  const prevBtn = drawer.querySelector('.carousel-btn--prev');
-  const nextBtn = drawer.querySelector('.carousel-btn--next');
-  const currentEl = drawer.querySelector('.carousel-current');
-  const totalEl = drawer.querySelector('.carousel-total');
-  if (!track || !slides.length) return;
-
-  let idx = 0;
-  const total = slides.length;
-  if (totalEl) totalEl.textContent = total;
-
-  function goTo(n) {
-    idx = Math.max(0, Math.min(n, total - 1));
-    track.style.transform = `translateX(${-idx * 100}%)`;
-    if (currentEl) currentEl.textContent = idx + 1;
-    if (prevBtn) prevBtn.disabled = idx === 0;
-    if (nextBtn) nextBtn.disabled = idx === total - 1;
-  }
-
-  prevBtn?.addEventListener('click', () => goTo(idx - 1));
-  nextBtn?.addEventListener('click', () => goTo(idx + 1));
-
-  document.addEventListener('keydown', e => {
-    if (!drawer.classList.contains('is-open')) return;
-    if (e.key === 'ArrowLeft') goTo(idx - 1);
-    if (e.key === 'ArrowRight') goTo(idx + 1);
-  });
-
-  goTo(0);
 }
 
 // Bootstrap
@@ -1185,7 +1137,7 @@ async function init() {
   initProjectWebGL();
   initProjectCursor();
   initTimeline(lenis);
-  initNearbyDrawer(lenis);
+  initPageTransitions();
   initAboutParallax();
   initPassion();
   initContactForm();

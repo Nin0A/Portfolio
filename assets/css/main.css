@@ -1045,8 +1045,8 @@ button {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  background: var(--bg-3);
+  color: var(--bg);
+  background: var(--text);
   border: 1px solid var(--border);
   padding: 5px 10px;
   border-radius: 100px;
@@ -1054,9 +1054,9 @@ button {
 }
 
 .project-item:hover .project-tags span {
-  color: var(--accent-text);
-  background: rgba(0, 0, 0, 0.12);
-  border-color: rgba(0, 0, 0, 0.15);
+  color: var(--text);
+  background: rgb(255, 255, 255);
+  border-color: rgba(0, 0, 0, 0.603);
 }
 
 .project-arrow {
@@ -1625,14 +1625,15 @@ button {
   background: var(--nearby-color);
   cursor: pointer;
   transition: background 0.25s ease;
+  cursor: none;
 }
 
 .project-item--nearby::before {
-  background: #f07e7c;
+  background: var(--bg);
 }
 
 .project-item--nearby:hover {
-  background: #f07e7c;
+  background: var(--bg);
 }
 
 .project-item--nearby .project-num,
@@ -1647,7 +1648,7 @@ button {
 .project-item--nearby:hover .project-name,
 .project-item--nearby:hover .project-desc,
 .project-item--nearby:hover .arrow-icon {
-  color: #fff;
+  color: #E75F5D;
 }
 
 .project-item--nearby .project-line {
@@ -1658,6 +1659,13 @@ button {
   border-color: rgba(255, 255, 255, 0.35);
   color: #fff;
   background: rgba(255, 255, 255, 0.15);
+}
+
+
+.project-item--nearby:hover .project-tags span {
+  border-color: #e75f5d80;
+  color: #E75F5D;
+  background: #e75f5d07;
 }
 
 /* ── Nearby in-page overlay ── */

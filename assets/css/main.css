@@ -1663,10 +1663,9 @@ button {
 .drawer-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.55);
   opacity: 0;
-  transition: opacity 0.4s ease;
-  backdrop-filter: blur(6px);
+  transition: opacity 0.35s ease;
 }
 
 .project-drawer.is-open .drawer-backdrop {
@@ -1681,15 +1680,16 @@ button {
   width: 100vw;
   background: transparent;
   border-left: none;
-  transform: translateX(100%);
-  transition: transform 0.6s cubic-bezier(0.77, 0, 0.175, 1);
+  transform: translate3d(100%, 0, 0);
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  will-change: transform;
 }
 
 .project-drawer.is-open .drawer-panel {
-  transform: translateX(0);
+  transform: translate3d(0, 0, 0);
 }
 
 .drawer-close {
@@ -1732,9 +1732,9 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
-  padding: 32px 24px;
+  padding: 32px 0;
   overflow: hidden;
+  position: relative;
 }
 
 .drawer-carousel {
@@ -1744,13 +1744,15 @@ button {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  position: relative;
 }
 
 .drawer-carousel-track {
   display: flex;
   width: 100%;
   height: 100%;
-  transition: transform 0.45s cubic-bezier(0.77, 0, 0.175, 1);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
 }
 
 .drawer-slide {
@@ -1764,7 +1766,7 @@ button {
 .drawer-slide img,
 .drawer-slide .drawer-img-placeholder {
   aspect-ratio: 9 / 19.5;
-  max-height: calc(100vh - 160px);
+  max-height: calc(100vh - 120px);
   width: auto;
   border-radius: 20px;
   object-fit: cover;
@@ -1773,7 +1775,7 @@ button {
 
 .drawer-img-placeholder {
   aspect-ratio: 9 / 19.5;
-  max-height: calc(100vh - 160px);
+  max-height: calc(100vh - 120px);
   width: 100%;
   max-width: 220px;
   display: flex;
@@ -1785,45 +1787,59 @@ button {
   border-radius: 20px;
 }
 
-/* Carousel nav */
+/* Carousel arrows — overlaid on image sides */
 .drawer-carousel-nav {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex-shrink: 0;
+  justify-content: space-between;
+  padding: 0 16px;
+  pointer-events: none;
+  z-index: 2;
 }
 
 .carousel-btn {
+  pointer-events: all;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  border: 1.5px solid var(--border);
-  background: transparent;
-  color: var(--text);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.35);
+  color: #fff;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  transition: background 0.2s, border-color 0.2s;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .carousel-btn:hover {
-  background: var(--bg-3);
-  border-color: var(--text-muted);
+  background: rgba(0,0,0,0.6);
+  border-color: rgba(255,255,255,0.4);
 }
 
 .carousel-btn:disabled {
-  opacity: 0.3;
+  opacity: 0.25;
   cursor: default;
 }
 
 .carousel-counter {
-  font-size: 13px;
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-  min-width: 40px;
-  text-align: center;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.06em;
+  background: rgba(0,0,0,0.35);
+  padding: 4px 12px;
+  border-radius: 100px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 /* RIGHT — content */

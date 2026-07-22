@@ -1651,10 +1651,6 @@ button {
   color: #E75F5D;
 }
 
-.project-item--nearby .project-line {
-  background: rgba(255, 255, 255, 0.2);
-}
-
 .project-item--nearby .project-tags span {
   border-color: rgba(255, 255, 255, 0.35);
   color: #fff;

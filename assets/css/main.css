@@ -1619,33 +1619,45 @@ button {
   color: var(--text);
 }
 
-/* ── Nearby project item — contrasting color ── */
+/* ── Nearby project item — solid red background ── */
 .project-item--nearby {
   --nearby-color: #E75F5D;
-  background: rgba(231, 95, 93, 0.08);
+  background: var(--nearby-color);
   cursor: pointer;
+  transition: background 0.25s ease;
+}
+
+.project-item--nearby::before {
+  background: #f07e7c;
 }
 
 .project-item--nearby:hover {
-  background: rgba(231, 95, 93, 0.15);
+  background: #f07e7c;
 }
 
-.project-item--nearby .project-num {
-  color: var(--nearby-color);
+.project-item--nearby .project-num,
+.project-item--nearby .project-name,
+.project-item--nearby .project-desc,
+.project-item--nearby .arrow-icon {
+  color: rgba(255, 255, 255, 0.85);
+  transition: color 0.25s ease;
 }
 
-.project-item--nearby:hover .project-name {
-  color: var(--nearby-color);
-}
-
+.project-item--nearby:hover .project-num,
+.project-item--nearby:hover .project-name,
+.project-item--nearby:hover .project-desc,
 .project-item--nearby:hover .arrow-icon {
-  color: var(--nearby-color);
+  color: #fff;
+}
+
+.project-item--nearby .project-line {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .project-item--nearby .project-tags span {
-  border-color: rgba(231, 95, 93, 0.35);
-  color: var(--nearby-color);
-  background: rgba(231, 95, 93, 0.12);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 /* ── Nearby in-page overlay ── */
@@ -1655,11 +1667,12 @@ button {
   z-index: 8000;
   background: var(--bg);
   transform: translate3d(100%, 0, 0);
-  transition: transform 0.55s cubic-bezier(0.77, 0, 0.175, 1);
   will-change: transform;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  /* no transition — driven by JS for two-phase sweep */
+  transition: none;
 }
 
 .np-overlay.is-open {
@@ -1672,9 +1685,14 @@ button {
   overscroll-behavior: contain;
 }
 
-.page-transition.slide-out {
-  transform: translateX(100%);
-  transition: transform 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+/* ── Nearby transition sweep ── */
+#np-sweep {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: #E75F5D;
+  transform: translateX(-100%);
+  pointer-events: none;
 }
 
 

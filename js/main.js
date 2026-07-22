@@ -1060,12 +1060,12 @@ function initProjectCursor() {
     item.addEventListener('mouseenter', () => {
       targetScale = 1;
       document.body.style.cursor = 'none';
-      if (isNearby) cursor.classList.add('is-nearby');
+      cursor.classList.toggle('is-nearby', isNearby);
     });
     item.addEventListener('mouseleave', () => {
       targetScale = 0;
       document.body.style.cursor = '';
-      if (isNearby) cursor.classList.remove('is-nearby');
+      cursor.classList.remove('is-nearby');
     });
   });
 

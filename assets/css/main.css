@@ -169,6 +169,7 @@ button {
   pointer-events: none;
   z-index: 9999;
   will-change: transform;
+  transition: background 0.25s ease;
 }
 
 #project-cursor span {
@@ -178,13 +179,12 @@ button {
   text-transform: uppercase;
   text-align: center;
   color: var(--accent);
-  transition: color 0.2s ease;
+  transition: color 0.25s ease;
 }
 
 #project-cursor.is-nearby {
   background: #fff;
   mix-blend-mode: normal;
-  transition: background 0.2s ease;
 }
 
 #project-cursor.is-nearby span {

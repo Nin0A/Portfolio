@@ -1622,6 +1622,12 @@ button {
 /* ── Nearby project item — contrasting color ── */
 .project-item--nearby {
   --nearby-color: #E75F5D;
+  background: rgba(231, 95, 93, 0.08);
+  cursor: pointer;
+}
+
+.project-item--nearby:hover {
+  background: rgba(231, 95, 93, 0.15);
 }
 
 .project-item--nearby .project-num {
@@ -1639,22 +1645,31 @@ button {
 .project-item--nearby .project-tags span {
   border-color: rgba(231, 95, 93, 0.35);
   color: var(--nearby-color);
-  background: rgba(231, 95, 93, 0.08);
+  background: rgba(231, 95, 93, 0.12);
 }
 
-/* ── Page transition overlay ── */
-.page-transition {
+/* ── Nearby in-page overlay ── */
+.np-overlay {
   position: fixed;
   inset: 0;
-  background: #E75F5D;
-  z-index: 99999;
-  transform: translateX(-100%);
-  pointer-events: none;
+  z-index: 8000;
+  background: var(--bg);
+  transform: translate3d(100%, 0, 0);
+  transition: transform 0.55s cubic-bezier(0.77, 0, 0.175, 1);
+  will-change: transform;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.page-transition.slide-in {
-  transform: translateX(0);
-  transition: transform 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+.np-overlay.is-open {
+  transform: translate3d(0, 0, 0);
+}
+
+.np-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .page-transition.slide-out {

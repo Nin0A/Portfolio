@@ -18,10 +18,6 @@
 
 /* ── Nav ── */
 .np-nav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
   height: 64px;
   display: flex;
   align-items: center;
@@ -29,7 +25,16 @@
   padding: 0 clamp(20px, 5vw, 60px);
   background: var(--bg);
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
   z-index: 100;
+}
+
+/* standalone nearby.html: fixed nav */
+body > .np-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 
 .np-back {
@@ -41,6 +46,11 @@
   color: var(--text-muted);
   text-decoration: none;
   transition: color 0.2s, gap 0.2s;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .np-back:hover {

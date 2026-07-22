@@ -17,6 +17,7 @@
   <link rel="icon" type="image/png" href="assets/img/icon/portfolio-icon.png">
   <link rel="apple-touch-icon" href="assets/img/icon/portfolio-icon.png">
   <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/nearby.css">
   <script>
     (function () {
       const t = localStorage.getItem('portfolio-theme');
@@ -399,7 +400,7 @@
         <div class="project-line"></div>
       </a>
 
-      <a href="nearby.html" class="project-item project-item--nearby reveal-project">
+      <div class="project-item project-item--nearby reveal-project" id="nearby-trigger" role="button" tabindex="0">
         <div class="project-left">
           <span class="project-num">(05)</span>
           <div class="project-meta">
@@ -424,7 +425,7 @@
               </svg></span></span>
         </div>
         <div class="project-line"></div>
-      </a>
+      </div>
 
     </div>
   </section>
@@ -619,6 +620,113 @@
       <p>Développé avec passion</p>
     </div>
   </footer>
+
+  <!-- ── Nearby project page overlay ── -->
+  <div id="nearby-page" class="np-overlay" aria-hidden="true">
+
+    <nav class="np-nav">
+      <button class="np-back" id="nearby-back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="19 12 5 12"/><polyline points="11 18 5 12 11 6"/></svg>
+        Retour
+      </button>
+      <span class="np-nav-title">Nearby</span>
+      <a href="https://www.getnearby.tech/clients" target="_blank" rel="noopener noreferrer" class="np-nav-link">
+        Voir le site
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="8 7 17 7 17 16"/></svg>
+      </a>
+    </nav>
+
+    <div class="np-scroll">
+
+      <section class="np-hero">
+        <div class="np-hero-inner">
+          <div class="np-hero-meta">
+            <span class="np-tag">Projet perso</span>
+            <span class="np-year">2025</span>
+          </div>
+          <h1 class="np-hero-title">Nearby</h1>
+          <p class="np-hero-sub">Application mobile de découverte d'événements<br>et activités à proximité.</p>
+        </div>
+        <div class="np-hero-mockup">
+          <div class="np-mockup-wrap">
+            <img src="assets/img/projects/nearby/nearby1.jpg" alt="Nearby screenshot" class="np-mockup-img np-mockup-img--main">
+            <img src="assets/img/projects/nearby/nearby2.jpg" alt="Nearby screenshot 2" class="np-mockup-img np-mockup-img--behind">
+          </div>
+        </div>
+      </section>
+
+      <section class="np-section np-overview">
+        <div class="np-container">
+          <div class="np-overview-grid">
+            <div class="np-overview-text">
+              <span class="np-label">Le projet</span>
+              <p class="np-lead">Nearby est une application mobile qui permet aux utilisateurs de découvrir des événements, concerts, expositions et activités autour d'eux en temps réel.</p>
+              <p class="np-body">Partant du constat qu'il est souvent difficile de savoir ce qui se passe près de chez soi, j'ai voulu créer une expérience simple et fluide pour ne plus passer à côté des bons moments. Du concept initial jusqu'au déploiement en production, ce projet a été mené entièrement seul.</p>
+            </div>
+            <div class="np-overview-stats">
+              <div class="np-stat"><span class="np-stat-num">100%</span><span class="np-stat-label">Solo</span></div>
+              <div class="np-stat"><span class="np-stat-num">2025</span><span class="np-stat-label">Année</span></div>
+              <div class="np-stat"><span class="np-stat-num">iOS & Android</span><span class="np-stat-label">Plateformes</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="np-section np-problem">
+        <div class="np-container">
+          <span class="np-label">Le problème</span>
+          <blockquote class="np-quote">"On rate souvent des événements intéressants simplement parce qu'on ne savait pas qu'ils existaient."</blockquote>
+          <p class="np-body">Les informations sont éparpillées entre des dizaines de sources. Nearby centralise tout ça et le filtre intelligemment par localisation et préférences.</p>
+        </div>
+      </section>
+
+      <section class="np-section np-gallery">
+        <div class="np-container"><span class="np-label">Aperçu</span></div>
+        <div class="np-screens">
+          <div class="np-screen"><img src="assets/img/projects/nearby/nearby1.jpg" alt="Écran d'accueil Nearby"></div>
+          <div class="np-screen"><img src="assets/img/projects/nearby/nearby2.jpg" alt="Carte des événements"></div>
+          <div class="np-screen"><img src="assets/img/projects/nearby/nearby3.jpg" alt="Détail d'un événement"></div>
+        </div>
+      </section>
+
+      <section class="np-section np-process">
+        <div class="np-container">
+          <span class="np-label">La démarche</span>
+          <div class="np-steps">
+            <div class="np-step"><span class="np-step-num">01</span><h3 class="np-step-title">Recherche & conception</h3><p class="np-step-text">Analyse des solutions existantes, wireframes et maquettes UI avant de toucher une ligne de code.</p></div>
+            <div class="np-step"><span class="np-step-num">02</span><h3 class="np-step-title">Architecture technique</h3><p class="np-step-text">React Native + Expo pour le cross-platform, Node.js pour l'API REST, PostgreSQL pour la persistance.</p></div>
+            <div class="np-step"><span class="np-step-num">03</span><h3 class="np-step-title">Développement itératif</h3><p class="np-step-text">Cycles courts, tests utilisateurs informels, ajustements UX constants. Priorité à la fluidité.</p></div>
+            <div class="np-step"><span class="np-step-num">04</span><h3 class="np-step-title">Déploiement</h3><p class="np-step-text">API sur VPS, builds iOS et Android via EAS Build, site vitrine sur getnearby.tech.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="np-section np-stack-section">
+        <div class="np-container">
+          <span class="np-label">Stack technique</span>
+          <div class="np-stack">
+            <div class="np-tech-card"><span class="np-tech-name">React Native</span><span class="np-tech-role">Interface mobile</span></div>
+            <div class="np-tech-card"><span class="np-tech-name">Expo</span><span class="np-tech-role">Build & déploiement</span></div>
+            <div class="np-tech-card"><span class="np-tech-name">Node.js</span><span class="np-tech-role">API REST</span></div>
+            <div class="np-tech-card"><span class="np-tech-name">PostgreSQL</span><span class="np-tech-role">Base de données</span></div>
+            <div class="np-tech-card"><span class="np-tech-name">Expo Location</span><span class="np-tech-role">Géolocalisation</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="np-section np-cta">
+        <div class="np-container">
+          <h2 class="np-cta-title">Voir Nearby en action</h2>
+          <div class="np-cta-actions">
+            <a href="https://www.getnearby.tech/clients" target="_blank" rel="noopener noreferrer" class="np-btn np-btn--primary">
+              Site web <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="8 7 17 7 17 16"/></svg>
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
 
   <script type="module" src="/js/main.js"></script>
 </body>

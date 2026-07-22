@@ -1097,22 +1097,34 @@ function initAboutParallax() {
 }
 
 // ─────────────────────────────────────────────
-// Page transition — slide right
+// Nearby in-page overlay
 // ─────────────────────────────────────────────
-function initPageTransitions() {
-  const overlay = document.createElement('div');
-  overlay.className = 'page-transition';
-  document.body.appendChild(overlay);
+function initPageTransitions(lenis) {
+  const overlay = document.getElementById('nearby-page');
+  const trigger = document.getElementById('nearby-trigger');
+  const backBtn = document.getElementById('nearby-back');
+  if (!overlay || !trigger) return;
 
-  document.querySelectorAll('a.project-item--nearby').forEach(link => {
-    link.addEventListener('click', e => {
-      e.preventDefault();
-      const href = link.getAttribute('href');
-      overlay.classList.add('slide-in');
-      overlay.addEventListener('transitionend', () => {
-        window.location.href = href;
-      }, { once: true });
-    });
+  function openOverlay() {
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    overlay.querySelector('.np-scroll')?.scrollTo(0, 0);
+    if (lenis) lenis.stop();
+  }
+
+  function closeOverlay() {
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    if (lenis) lenis.start();
+  }
+
+  trigger.addEventListener('click', openOverlay);
+  trigger.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openOverlay(); }
+  });
+  backBtn?.addEventListener('click', closeOverlay);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.classList.contains('is-open')) closeOverlay();
   });
 }
 
@@ -1137,7 +1149,7 @@ async function init() {
   initProjectWebGL();
   initProjectCursor();
   initTimeline(lenis);
-  initPageTransitions();
+  initPageTransitions(lenis);
   initAboutParallax();
   initPassion();
   initContactForm();

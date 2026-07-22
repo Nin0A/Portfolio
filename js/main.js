@@ -1132,7 +1132,7 @@ function initPageTransitions(lenis) {
       overlay.classList.add('is-open');
       overlay.setAttribute('aria-hidden', 'false');
       overlay.querySelector('.np-scroll')?.scrollTo(0, 0);
-      document.body.style.overflow = 'hidden';
+      document.documentElement.classList.add('nearby-open');
       if (lenis) lenis.stop();
       sweepOut();
     });
@@ -1142,7 +1142,7 @@ function initPageTransitions(lenis) {
     sweepIn(() => {
       overlay.classList.remove('is-open');
       overlay.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
+      document.documentElement.classList.remove('nearby-open');
       if (lenis) lenis.start();
       sweepOut();
     });

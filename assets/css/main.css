@@ -1693,6 +1693,12 @@ button {
   overscroll-behavior: contain;
 }
 
+/* Hide main page scrollbar when nearby overlay is open */
+html.nearby-open,
+html.nearby-open body {
+  overflow: hidden;
+}
+
 /* ── Nearby transition sweep ── */
 #np-sweep {
   position: fixed;

@@ -1056,13 +1056,16 @@ function initProjectCursor() {
   });
 
   document.querySelectorAll('.project-item').forEach(item => {
+    const isNearby = item.id === 'nearby-trigger';
     item.addEventListener('mouseenter', () => {
       targetScale = 1;
       document.body.style.cursor = 'none';
+      if (isNearby) cursor.classList.add('is-nearby');
     });
     item.addEventListener('mouseleave', () => {
       targetScale = 0;
       document.body.style.cursor = '';
+      if (isNearby) cursor.classList.remove('is-nearby');
     });
   });
 

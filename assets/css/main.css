@@ -178,6 +178,17 @@ button {
   text-transform: uppercase;
   text-align: center;
   color: var(--accent);
+  transition: color 0.2s ease;
+}
+
+#project-cursor.is-nearby {
+  background: #fff;
+  mix-blend-mode: normal;
+  transition: background 0.2s ease;
+}
+
+#project-cursor.is-nearby span {
+  color: #E75F5D;
 }
 
 /* ============================================================

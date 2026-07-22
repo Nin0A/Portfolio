@@ -1619,49 +1619,51 @@ button {
   color: var(--text);
 }
 
-/* ── Nearby project item — solid red background ── */
+/* ── Nearby project item — red accent, red fill on hover ── */
 .project-item--nearby {
   --nearby-color: #E75F5D;
-  background: var(--nearby-color);
-  cursor: pointer;
-  transition: background 0.25s ease;
-  cursor: none;
 }
 
 .project-item--nearby::before {
-  background: var(--bg);
-}
-
-.project-item--nearby:hover {
-  background: var(--bg);
+  background: var(--nearby-color);
 }
 
 .project-item--nearby .project-num,
-.project-item--nearby .project-name,
-.project-item--nearby .project-desc,
 .project-item--nearby .arrow-icon {
-  color: rgba(255, 255, 255, 0.85);
-  transition: color 0.25s ease;
+  color: var(--nearby-color);
+}
+
+.project-item--nearby .arrow-icon {
+  transition: transform 2s var(--ease-expo), opacity 0.45s var(--ease-expo), color 0.3s ease;
+}
+
+.project-item--nearby .project-tags span {
+  border-color: rgba(231, 95, 93, 0.35);
+  color: var(--nearby-color);
+  background: rgba(231, 95, 93, 0.08);
 }
 
 .project-item--nearby:hover .project-num,
 .project-item--nearby:hover .project-name,
 .project-item--nearby:hover .project-desc,
 .project-item--nearby:hover .arrow-icon {
-  color: #E75F5D;
+  color: #fff;
 }
 
 .project-item--nearby .project-tags span {
+  border-color: rgba(231, 95, 93, 0.35);
+  color: var(--nearby-color);
+  background: rgba(231, 95, 93, 0.08);
+}
+
+.project-item--nearby:hover .project-tags span {
   border-color: rgba(255, 255, 255, 0.35);
   color: #fff;
   background: rgba(255, 255, 255, 0.15);
 }
 
-
-.project-item--nearby:hover .project-tags span {
-  border-color: #e75f5d80;
-  color: #E75F5D;
-  background: #e75f5d07;
+.project-item--nearby .project-line {
+  background: rgba(231, 95, 93, 0.25);
 }
 
 /* ── Nearby in-page overlay ── */

@@ -184,7 +184,7 @@ button {
 
 #project-cursor.is-nearby {
   background: #fff;
-  mix-blend-mode: normal;
+  mix-blend-mode: difference;
 }
 
 #project-cursor.is-nearby span {

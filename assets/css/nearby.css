@@ -30,7 +30,7 @@
 }
 
 /* standalone nearby.html: fixed nav */
-body > .np-nav {
+body>.np-nav {
   position: fixed;
   top: 0;
   left: 0;
@@ -180,7 +180,7 @@ body > .np-nav {
 .np-mockup-img {
   border-radius: 28px;
   display: block;
-  box-shadow: 0 40px 80px rgba(0,0,0,0.35);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.35);
   object-fit: cover;
 }
 
@@ -284,8 +284,8 @@ body > .np-nav {
 
 .np-screens {
   overflow: hidden;
-  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  /* mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%); */
 }
 
 .np-screens-track {
@@ -300,8 +300,13 @@ body > .np-nav {
 }
 
 @keyframes np-ticker {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 .np-screen {
@@ -326,10 +331,8 @@ body > .np-nav {
 .np-steps {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 2px;
+  gap: 2em;
   margin-top: 8px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
   overflow: hidden;
 }
 
@@ -337,6 +340,8 @@ body > .np-nav {
   padding: clamp(28px, 4vw, 48px);
   border: 1px solid var(--border);
   transition: background 0.25s;
+  border-radius: 8px;
+
 }
 
 .np-step:hover {

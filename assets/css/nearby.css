@@ -283,21 +283,30 @@ body > .np-nav {
 }
 
 .np-screens {
-  display: flex;
-  gap: 16px;
-  padding: 0 clamp(20px, 5vw, 60px);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
 }
 
-.np-screens::-webkit-scrollbar { display: none; }
+.np-screens-track {
+  display: flex;
+  gap: 20px;
+  width: max-content;
+  animation: np-ticker 40s linear infinite;
+}
+
+.np-screens-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes np-ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
 
 .np-screen {
   flex: 0 0 auto;
-  width: clamp(200px, 24vw, 300px);
-  scroll-snap-align: start;
+  width: clamp(160px, 20vw, 260px);
 }
 
 .np-screen img {
@@ -306,6 +315,11 @@ body > .np-nav {
   object-fit: cover;
   border-radius: 20px;
   display: block;
+  transition: transform 0.4s var(--ease-expo);
+}
+
+.np-screen img:hover {
+  transform: scale(1.03);
 }
 
 /* ── Process ── */

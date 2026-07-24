@@ -376,6 +376,22 @@ body>.np-nav {
 /* ── Stack ── */
 .np-stack-section {
   background: var(--bg-2);
+  transition: background 0.5s ease;
+}
+
+/* Section background per hovered tech */
+.np-stack-section:has([data-tech="react-native"]:hover),
+.np-stack-section:has([data-tech="react"]:hover) {
+  background: rgba(97, 218, 251, 0.08);
+}
+.np-stack-section:has([data-tech="expo"]:hover) {
+  background: rgba(255, 255, 255, 0.04);
+}
+.np-stack-section:has([data-tech="laravel"]:hover) {
+  background: rgba(255, 45, 32, 0.08);
+}
+.np-stack-section:has([data-tech="postgresql"]:hover) {
+  background: rgba(51, 103, 145, 0.12);
 }
 
 .np-stack {
@@ -393,12 +409,26 @@ body>.np-nav {
   border-radius: 14px;
   border: 1px solid var(--border);
   background: var(--bg-3);
-  transition: border-color 0.2s, transform 0.2s;
+  transition: border-color 0.3s, transform 0.3s;
 }
 
 .np-tech-card:hover {
-  border-color: rgba(231, 95, 93, 0.4);
   transform: translateY(-3px);
+}
+
+/* Card border per tech */
+[data-tech="react-native"]:hover,
+[data-tech="react"]:hover {
+  border-color: rgba(97, 218, 251, 0.6);
+}
+[data-tech="expo"]:hover {
+  border-color: rgba(200, 200, 200, 0.4);
+}
+[data-tech="laravel"]:hover {
+  border-color: rgba(255, 45, 32, 0.6);
+}
+[data-tech="postgresql"]:hover {
+  border-color: rgba(51, 103, 145, 0.7);
 }
 
 .np-tech-name {

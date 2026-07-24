@@ -380,18 +380,24 @@ body>.np-nav {
 }
 
 /* Section background per hovered tech */
-.np-stack-section:has([data-tech="react-native"]:hover),
+.np-stack-section:has([data-tech="react-native"]:hover) {
+  background: #9481ff7c;
+}
+
 .np-stack-section:has([data-tech="react"]:hover) {
-  background: rgba(97, 218, 251, 0.08);
+  background: #70d6ff73;
 }
+
 .np-stack-section:has([data-tech="expo"]:hover) {
-  background: rgba(255, 255, 255, 0.04);
+  background: #ff70a779;
 }
+
 .np-stack-section:has([data-tech="laravel"]:hover) {
-  background: rgba(255, 45, 32, 0.08);
+  background: #ff967073;
 }
+
 .np-stack-section:has([data-tech="postgresql"]:hover) {
-  background: rgba(51, 103, 145, 0.12);
+  background: #ffd670;
 }
 
 .np-stack {
@@ -399,6 +405,7 @@ body>.np-nav {
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 8px;
+  justify-content: center;
 }
 
 .np-tech-card {
@@ -416,19 +423,44 @@ body>.np-nav {
   transform: translateY(-3px);
 }
 
+.np-label {
+  color: black;
+}
+
 /* Card border per tech */
 [data-tech="react-native"]:hover,
-[data-tech="react"]:hover {
-  border-color: rgba(97, 218, 251, 0.6);
+[data-tech="react-native"]:hover .np-tech-name {
+  border-color: #9481ff7c;
+  color: #3d31837c;
 }
-[data-tech="expo"]:hover {
-  border-color: rgba(200, 200, 200, 0.4);
+
+[data-tech="react"]:hover,
+[data-tech="react"]:hover .np-tech-name {
+  border-color: #70d6ff73;
+  color: #06618573;
+
 }
-[data-tech="laravel"]:hover {
-  border-color: rgba(255, 45, 32, 0.6);
+
+[data-tech="expo"]:hover,
+[data-tech="expo"]:hover .np-tech-name {
+  border-color: #ff70a779;
+  color: #7a224479;
+
 }
-[data-tech="postgresql"]:hover {
-  border-color: rgba(51, 103, 145, 0.7);
+
+[data-tech="laravel"]:hover,
+[data-tech="laravel"]:hover .np-tech-name {
+  border-color: #ff967073;
+  color: #92270073;
+
+}
+
+[data-tech="postgresql"]:hover,
+[data-tech="postgresql"]:hover .np-tech-name {
+  border-color: #ffd670;
+  color: #d49904;
+
+
 }
 
 .np-tech-name {

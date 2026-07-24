@@ -380,19 +380,11 @@ body>.np-nav {
 }
 
 /* Section background per active tech (JS-driven) */
-.np-stack-section:has([data-tech="react-native"].is-active),
-.np-stack-section:has([data-tech="react"].is-active) {
-  background: rgba(97, 218, 251, 0.08);
-}
-.np-stack-section:has([data-tech="expo"].is-active) {
-  background: rgba(255, 255, 255, 0.04);
-}
-.np-stack-section:has([data-tech="laravel"].is-active) {
-  background: rgba(255, 45, 32, 0.08);
-}
-.np-stack-section:has([data-tech="postgresql"].is-active) {
-  background: rgba(51, 103, 145, 0.12);
-}
+.np-stack-section:has([data-tech="react-native"].is-active) { background: #9481ff7c; }
+.np-stack-section:has([data-tech="react"].is-active)        { background: #70d6ff73; }
+.np-stack-section:has([data-tech="expo"].is-active)         { background: #ff70a779; }
+.np-stack-section:has([data-tech="laravel"].is-active)      { background: #ff967073; }
+.np-stack-section:has([data-tech="postgresql"].is-active)   { background: #ffd670; }
 
 .np-stack {
   display: flex;
@@ -417,12 +409,21 @@ body>.np-nav {
   transform: translateY(-3px);
 }
 
-/* Card border — active state (persistent) */
-[data-tech="react-native"].is-active,
-[data-tech="react"].is-active { border-color: rgba(97, 218, 251, 0.6); }
-[data-tech="expo"].is-active { border-color: rgba(200, 200, 200, 0.4); }
-[data-tech="laravel"].is-active { border-color: rgba(255, 45, 32, 0.6); }
-[data-tech="postgresql"].is-active { border-color: rgba(51, 103, 145, 0.7); }
+/* Card border + title color — active state (persistent) */
+[data-tech="react-native"].is-active { border-color: #9481ff7c; }
+[data-tech="react-native"].is-active .np-tech-name { color: #3d31837c; }
+
+[data-tech="react"].is-active { border-color: #70d6ff73; }
+[data-tech="react"].is-active .np-tech-name { color: #06618573; }
+
+[data-tech="expo"].is-active { border-color: #ff70a779; }
+[data-tech="expo"].is-active .np-tech-name { color: #7a224479; }
+
+[data-tech="laravel"].is-active { border-color: #ff967073; }
+[data-tech="laravel"].is-active .np-tech-name { color: #92270073; }
+
+[data-tech="postgresql"].is-active { border-color: #ffd670; }
+[data-tech="postgresql"].is-active .np-tech-name { color: #d49904; }
 
 .np-tech-name {
   font-size: 16px;

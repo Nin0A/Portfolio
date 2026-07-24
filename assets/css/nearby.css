@@ -293,6 +293,9 @@ body>.np-nav {
   gap: 20px;
   width: max-content;
   animation: np-ticker 40s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .np-screens-track:hover {
@@ -301,11 +304,11 @@ body>.np-nav {
 
 @keyframes np-ticker {
   from {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
   }
 
   to {
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
@@ -320,11 +323,10 @@ body>.np-nav {
   object-fit: cover;
   border-radius: 20px;
   display: block;
-  transition: transform 0.4s var(--ease-expo);
-}
-
-.np-screen img:hover {
-  transform: scale(1.03);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  image-rendering: -webkit-optimize-contrast;
 }
 
 /* ── Process ── */

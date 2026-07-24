@@ -1100,6 +1100,23 @@ function initAboutParallax() {
 }
 
 // ─────────────────────────────────────────────
+// Nearby tech stack — persistent active card
+// ─────────────────────────────────────────────
+function initNearbyStack() {
+  document.querySelectorAll('.np-stack-section').forEach(section => {
+    const cards = section.querySelectorAll('.np-tech-card[data-tech]');
+    if (!cards.length) return;
+    const defaultCard = section.querySelector('[data-tech="laravel"]') || cards[0];
+    defaultCard.classList.add('is-active');
+    cards.forEach(card => {
+      card.addEventListener('mouseenter', () => {
+        cards.forEach(c => c.classList.remove('is-active'));
+        card.classList.add('is-active');
+      });
+    });
+  });
+}
+
 // Nearby in-page overlay
 // ─────────────────────────────────────────────
 function initPageTransitions(lenis) {
@@ -1182,6 +1199,7 @@ async function init() {
   initProjectWebGL();
   initProjectCursor();
   initTimeline(lenis);
+  initNearbyStack();
   initPageTransitions(lenis);
   initAboutParallax();
   initPassion();

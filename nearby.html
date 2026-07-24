@@ -206,6 +206,24 @@
     </div>
   </section>
 
+  <script>
+    // Tech stack — persistent active card
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.np-stack-section').forEach(function (section) {
+        var cards = section.querySelectorAll('.np-tech-card[data-tech]');
+        if (!cards.length) return;
+        var defaultCard = section.querySelector('[data-tech="laravel"]') || cards[0];
+        defaultCard.classList.add('is-active');
+        cards.forEach(function (card) {
+          card.addEventListener('mouseenter', function () {
+            cards.forEach(function (c) { c.classList.remove('is-active'); });
+            card.classList.add('is-active');
+          });
+        });
+      });
+    });
+  </script>
+
   <script type="module">
     // Entry animation — slide in from left
     const entry = document.querySelector('.page-transition--entry');

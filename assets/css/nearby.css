@@ -379,25 +379,19 @@ body>.np-nav {
   transition: background 0.5s ease;
 }
 
-/* Section background per hovered tech */
-.np-stack-section:has([data-tech="react-native"]:hover) {
-  background: #9481ff7c;
+/* Section background per active tech (JS-driven) */
+.np-stack-section:has([data-tech="react-native"].is-active),
+.np-stack-section:has([data-tech="react"].is-active) {
+  background: rgba(97, 218, 251, 0.08);
 }
-
-.np-stack-section:has([data-tech="react"]:hover) {
-  background: #70d6ff73;
+.np-stack-section:has([data-tech="expo"].is-active) {
+  background: rgba(255, 255, 255, 0.04);
 }
-
-.np-stack-section:has([data-tech="expo"]:hover) {
-  background: #ff70a779;
+.np-stack-section:has([data-tech="laravel"].is-active) {
+  background: rgba(255, 45, 32, 0.08);
 }
-
-.np-stack-section:has([data-tech="laravel"]:hover) {
-  background: #ff967073;
-}
-
-.np-stack-section:has([data-tech="postgresql"]:hover) {
-  background: #ffd670;
+.np-stack-section:has([data-tech="postgresql"].is-active) {
+  background: rgba(51, 103, 145, 0.12);
 }
 
 .np-stack {
@@ -423,45 +417,12 @@ body>.np-nav {
   transform: translateY(-3px);
 }
 
-.np-label {
-  color: black;
-}
-
-/* Card border per tech */
-[data-tech="react-native"]:hover,
-[data-tech="react-native"]:hover .np-tech-name {
-  border-color: #9481ff7c;
-  color: #3d31837c;
-}
-
-[data-tech="react"]:hover,
-[data-tech="react"]:hover .np-tech-name {
-  border-color: #70d6ff73;
-  color: #06618573;
-
-}
-
-[data-tech="expo"]:hover,
-[data-tech="expo"]:hover .np-tech-name {
-  border-color: #ff70a779;
-  color: #7a224479;
-
-}
-
-[data-tech="laravel"]:hover,
-[data-tech="laravel"]:hover .np-tech-name {
-  border-color: #ff967073;
-  color: #92270073;
-
-}
-
-[data-tech="postgresql"]:hover,
-[data-tech="postgresql"]:hover .np-tech-name {
-  border-color: #ffd670;
-  color: #d49904;
-
-
-}
+/* Card border — active state (persistent) */
+[data-tech="react-native"].is-active,
+[data-tech="react"].is-active { border-color: rgba(97, 218, 251, 0.6); }
+[data-tech="expo"].is-active { border-color: rgba(200, 200, 200, 0.4); }
+[data-tech="laravel"].is-active { border-color: rgba(255, 45, 32, 0.6); }
+[data-tech="postgresql"].is-active { border-color: rgba(51, 103, 145, 0.7); }
 
 .np-tech-name {
   font-size: 16px;

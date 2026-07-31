@@ -333,43 +333,56 @@ body>.np-nav {
 .np-steps {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 2em;
-  margin-top: 8px;
-  overflow: hidden;
+  gap: 24px;
+  margin-top: 40px;
 }
 
 .np-step {
-  padding: clamp(28px, 4vw, 48px);
+  padding: clamp(32px, 4vw, 52px);
   border: 1px solid var(--border);
-  transition: background 0.25s;
-  border-radius: 8px;
-
+  border-radius: 20px;
+  background: var(--bg-2);
+  transition: background 0.25s, border-color 0.25s, transform 0.25s;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .np-step:hover {
-  background: var(--nearby-dim);
+  background: var(--bg-3);
+  border-color: var(--nearby);
+  transform: translateY(-3px);
 }
 
 .np-step-num {
   display: block;
-  font-size: 11px;
+  font-family: var(--font-serif);
+  font-size: clamp(40px, 5vw, 64px);
   font-weight: 700;
-  letter-spacing: 0.14em;
   color: var(--nearby);
-  margin-bottom: 16px;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 24px;
+  opacity: 0.25;
+  transition: opacity 0.25s;
+}
+
+.np-step:hover .np-step-num {
+  opacity: 1;
 }
 
 .np-step-title {
-  font-size: clamp(16px, 1.8vw, 20px);
+  font-size: clamp(17px, 1.8vw, 21px);
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  line-height: 1.2;
 }
 
 .np-step-text {
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 15px;
+  line-height: 1.75;
   color: var(--text-muted);
 }
 

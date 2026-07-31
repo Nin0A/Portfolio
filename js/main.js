@@ -1100,6 +1100,30 @@ function initAboutParallax() {
 }
 
 // ─────────────────────────────────────────────
+// Nearby gallery ticker — integer pixel positions to avoid subpixel blur
+// ─────────────────────────────────────────────
+function initNearbyTicker() {
+  document.querySelectorAll('.np-screens-track').forEach(track => {
+    let x = 0;
+    let paused = false;
+    let raf;
+
+    track.addEventListener('mouseenter', () => { paused = true; });
+    track.addEventListener('mouseleave', () => { paused = false; });
+
+    function tick() {
+      if (!paused) {
+        x -= 0.6;
+        const half = track.scrollWidth / 2;
+        if (Math.abs(x) >= half) x = 0;
+        track.style.transform = `translateX(${Math.round(x)}px)`;
+      }
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+  });
+}
+
 // Nearby tech stack — persistent active card
 // ─────────────────────────────────────────────
 function initNearbyStack() {
@@ -1199,6 +1223,7 @@ async function init() {
   initProjectWebGL();
   initProjectCursor();
   initTimeline(lenis);
+  initNearbyTicker();
   initNearbyStack();
   initPageTransitions(lenis);
   initAboutParallax();

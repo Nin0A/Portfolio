@@ -300,32 +300,13 @@ body>.np-nav {
   display: flex;
   gap: 20px;
   width: max-content;
-  animation: np-ticker 40s linear infinite;
-  will-change: transform;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-}
-
-.np-screens-track:hover {
-  animation-play-state: paused;
-}
-
-@keyframes np-ticker {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
 }
 
 .np-screen {
   flex: 0 0 auto;
   width: clamp(160px, 20vw, 260px);
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
 }
 
 .np-screen img {
@@ -334,11 +315,6 @@ body>.np-nav {
   object-fit: cover;
   border-radius: 20px;
   display: block;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  image-rendering: -webkit-optimize-contrast;
-  filter: blur(0);
 }
 
 /* ── Process ── */

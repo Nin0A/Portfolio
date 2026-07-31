@@ -215,8 +215,26 @@
   </section>
 
   <script>
-    // Tech stack — persistent active card
     document.addEventListener('DOMContentLoaded', function () {
+      // Gallery ticker — integer pixels to avoid subpixel blur
+      document.querySelectorAll('.np-screens-track').forEach(function (track) {
+        var x = 0;
+        var paused = false;
+        track.addEventListener('mouseenter', function () { paused = true; });
+        track.addEventListener('mouseleave', function () { paused = false; });
+        function tick() {
+          if (!paused) {
+            x -= 0.6;
+            var half = track.scrollWidth / 2;
+            if (Math.abs(x) >= half) x = 0;
+            track.style.transform = 'translateX(' + Math.round(x) + 'px)';
+          }
+          requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+
+      // Tech stack — persistent active card
       document.querySelectorAll('.np-stack-section').forEach(function (section) {
         var cards = section.querySelectorAll('.np-tech-card[data-tech]');
         if (!cards.length) return;

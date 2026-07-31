@@ -380,60 +380,74 @@ body>.np-nav {
 }
 
 /* Section background per active tech (JS-driven) */
-.np-stack-section:has([data-tech="react-native"].is-active) { background: #9481ff7c; }
-.np-stack-section:has([data-tech="react"].is-active)        { background: #70d6ff73; }
-.np-stack-section:has([data-tech="expo"].is-active)         { background: #ff70a779; }
-.np-stack-section:has([data-tech="laravel"].is-active)      { background: #ff967073; }
-.np-stack-section:has([data-tech="postgresql"].is-active)   { background: #ffd670; }
+.np-stack-section:has([data-tech="react-native"].is-active) { background: rgba(148, 129, 255, 0.1); }
+.np-stack-section:has([data-tech="react"].is-active)        { background: rgba(112, 214, 255, 0.1); }
+.np-stack-section:has([data-tech="expo"].is-active)         { background: rgba(255, 112, 167, 0.1); }
+.np-stack-section:has([data-tech="laravel"].is-active)      { background: rgba(255, 150, 112, 0.1); }
+.np-stack-section:has([data-tech="postgresql"].is-active)   { background: rgba(255, 214, 112, 0.1); }
 
 .np-stack {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 8px;
-  justify-content: center;
+  gap: 14px;
+  margin-top: 32px;
 }
 
 .np-tech-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 20px 28px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
+  gap: 6px;
+  padding: 28px 36px;
+  border-radius: 16px;
+  border: 1.5px solid var(--border);
   background: var(--bg-3);
-  transition: border-color 0.3s, transform 0.3s;
+  cursor: default;
+  transition: border-color 0.3s, background 0.3s, transform 0.25s;
 }
 
 .np-tech-card:hover {
   transform: translateY(-3px);
 }
 
-/* Card border + title color — active state (persistent) */
-[data-tech="react-native"].is-active { border-color: #9481ff7c; }
-[data-tech="react-native"].is-active .np-tech-name { color: #3d31837c; }
+/* Card accent — active state */
+[data-tech="react-native"].is-active {
+  border-color: #9481ff;
+  background: rgba(148, 129, 255, 0.08);
+}
+[data-tech="react"].is-active {
+  border-color: #70d6ff;
+  background: rgba(112, 214, 255, 0.08);
+}
+[data-tech="expo"].is-active {
+  border-color: #ff70a7;
+  background: rgba(255, 112, 167, 0.08);
+}
+[data-tech="laravel"].is-active {
+  border-color: #ff9670;
+  background: rgba(255, 150, 112, 0.08);
+}
+[data-tech="postgresql"].is-active {
+  border-color: #ffd670;
+  background: rgba(255, 214, 112, 0.08);
+}
 
-[data-tech="react"].is-active { border-color: #70d6ff73; }
-[data-tech="react"].is-active .np-tech-name { color: #06618573; }
-
-[data-tech="expo"].is-active { border-color: #ff70a779; }
-[data-tech="expo"].is-active .np-tech-name { color: #7a224479; }
-
-[data-tech="laravel"].is-active { border-color: #ff967073; }
-[data-tech="laravel"].is-active .np-tech-name { color: #92270073; }
-
-[data-tech="postgresql"].is-active { border-color: #ffd670; }
-[data-tech="postgresql"].is-active .np-tech-name { color: #d49904; }
+/* Active card: colored name */
+[data-tech="react-native"].is-active .np-tech-name { color: #9481ff; }
+[data-tech="react"].is-active .np-tech-name        { color: #38b6d8; }
+[data-tech="expo"].is-active .np-tech-name         { color: #e0417e; }
+[data-tech="laravel"].is-active .np-tech-name      { color: #e05c2a; }
+[data-tech="postgresql"].is-active .np-tech-name   { color: #c49a00; }
 
 .np-tech-name {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  transition: color 0.3s;
 }
 
 .np-tech-role {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
   font-weight: 500;
 }

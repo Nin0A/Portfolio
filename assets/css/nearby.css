@@ -259,7 +259,11 @@ body>.np-nav {
 
 /* ── Problem ── */
 .np-problem {
-  background: var(--bg-2);
+  background: var(--nearby);
+}
+
+.np-problem .np-label {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .np-quote {
@@ -268,10 +272,14 @@ body>.np-nav {
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
-  color: var(--text);
-  border-left: 4px solid var(--nearby);
+  color: #fff;
+  border-left: 4px solid rgba(255, 255, 255, 0.4);
   padding-left: clamp(24px, 4vw, 48px);
   margin: 0 0 32px;
+}
+
+.np-problem .np-body {
+  color: rgba(255, 255, 255, 0.75);
 }
 
 /* ── Gallery ── */
@@ -332,38 +340,40 @@ body>.np-nav {
 /* ── Process ── */
 .np-steps {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  grid-template-columns: repeat(4, 1fr);
   margin-top: 40px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
 }
 
 .np-step {
-  padding: clamp(32px, 4vw, 52px);
-  border: 1px solid var(--border);
-  border-radius: 20px;
+  padding: clamp(28px, 3vw, 44px);
+  border-right: 1px solid var(--border);
   background: var(--bg-2);
-  transition: background 0.25s, border-color 0.25s, transform 0.25s;
+  transition: background 0.25s;
   display: flex;
   flex-direction: column;
-  gap: 0;
+}
+
+.np-step:last-child {
+  border-right: none;
 }
 
 .np-step:hover {
-  background: var(--bg-3);
-  border-color: var(--nearby);
-  transform: translateY(-3px);
+  background: var(--nearby-dim);
 }
 
 .np-step-num {
   display: block;
   font-family: var(--font-serif);
-  font-size: clamp(40px, 5vw, 64px);
+  font-size: clamp(36px, 4vw, 56px);
   font-weight: 700;
   color: var(--nearby);
   letter-spacing: -0.04em;
   line-height: 1;
-  margin-bottom: 24px;
-  opacity: 0.25;
+  margin-bottom: 28px;
+  opacity: 0.2;
   transition: opacity 0.25s;
 }
 
@@ -372,18 +382,20 @@ body>.np-nav {
 }
 
 .np-step-title {
-  font-size: clamp(17px, 1.8vw, 21px);
+  font-size: clamp(14px, 1.4vw, 17px);
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text);
-  margin-bottom: 12px;
-  line-height: 1.2;
+  margin-bottom: 10px;
+  line-height: 1.25;
 }
 
 .np-step-text {
-  font-size: 15px;
+  font-size: 13px;
   line-height: 1.75;
   color: var(--text-muted);
+  margin-top: auto;
+  padding-top: 10px;
 }
 
 /* ── Stack ── */
@@ -586,6 +598,20 @@ transition: color 0.3s;
   }
 
   .np-steps {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    border-radius: 16px;
+  }
+
+  .np-step {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .np-step:nth-child(odd) {
+    border-right: 1px solid var(--border);
+  }
+
+  .np-step:nth-last-child(-n+2) {
+    border-bottom: none;
   }
 }

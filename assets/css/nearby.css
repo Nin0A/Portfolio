@@ -402,27 +402,6 @@ body>.np-nav {
   transition: background 0.5s ease;
 }
 
-/* Section background per active tech (JS-driven) */
-.np-stack-section:has([data-tech="react-native"].is-active) {
-  background: rgba(148, 129, 255, 0.1);
-}
-
-.np-stack-section:has([data-tech="react"].is-active) {
-  background: rgba(112, 214, 255, 0.1);
-}
-
-.np-stack-section:has([data-tech="expo"].is-active) {
-  background: rgba(255, 112, 167, 0.1);
-}
-
-.np-stack-section:has([data-tech="laravel"].is-active) {
-  background: rgba(255, 150, 112, 0.1);
-}
-
-.np-stack-section:has([data-tech="postgresql"].is-active) {
-  background: rgba(255, 214, 112, 0.1);
-}
-
 .np-stack {
   display: flex;
   flex-wrap: wrap;
@@ -446,59 +425,16 @@ body>.np-nav {
   transform: translateY(-3px);
 }
 
-
-/* Card accent — active state */
-[data-tech="react-native"].is-active {
-  border-color: #9481ff;
-  background: rgba(148, 129, 255, 0.08);
+.np-tech-card.is-active {
+  border-color: var(--text-muted);
+  background: var(--bg);
 }
 
-[data-tech="react"].is-active {
-  border-color: #70d6ff;
-  background: rgba(112, 214, 255, 0.08);
-}
-
-[data-tech="expo"].is-active {
-  border-color: #ff70a7;
-  background: rgba(255, 112, 167, 0.08);
-}
-
-[data-tech="laravel"].is-active {
-  border-color: #ff9670;
-  background: rgba(255, 150, 112, 0.08);
-}
-
-[data-tech="postgresql"].is-active {
-  border-color: #ffd670;
-  background: rgba(255, 214, 112, 0.08);
-}
-
-/* Active card: colored name */
-[data-tech="react-native"].is-active .np-tech-name {
-  color: #9481ff;
-}
-
-[data-tech="react"].is-active .np-tech-name {
-  color: #38b6d8;
-}
-
-[data-tech="expo"].is-active .np-tech-name {
-  color: #e0417e;
-}
-
-[data-tech="laravel"].is-active .np-tech-name {
-  color: #e05c2a;
-}
-
-[data-tech="postgresql"].is-active .np-tech-name {
-  color: #c49a00;
-}
-
-font-size: 18px;
-font-weight: 700;
-color: var(--text);
-letter-spacing: -0.02em;
-transition: color 0.3s;
+.np-tech-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
 }
 
 .np-tech-role {

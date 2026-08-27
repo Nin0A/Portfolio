@@ -45,7 +45,7 @@ body>.np-nav {
   font-weight: 600;
   color: var(--text-muted);
   text-decoration: none;
-  transition: color 0.2s, gap 0.2s;
+  transition: color 0.2s;
   background: none;
   border: none;
   padding: 0;
@@ -55,7 +55,14 @@ body>.np-nav {
 
 .np-back:hover {
   color: var(--text);
-  gap: 12px;
+}
+
+.np-back svg {
+  transition: transform 0.2s;
+}
+
+.np-back:hover svg {
+  transform: translateX(-4px);
 }
 
 .np-nav-title {
@@ -74,12 +81,19 @@ body>.np-nav {
   font-weight: 600;
   color: var(--text-muted);
   text-decoration: none;
-  transition: color 0.2s, gap 0.2s;
+  transition: color 0.2s;
 }
 
 .np-nav-link:hover {
   color: var(--nearby);
-  gap: 9px;
+}
+
+.np-nav-link svg {
+  transition: transform 0.2s;
+}
+
+.np-nav-link:hover svg {
+  transform: translate(3px, -3px);
 }
 
 /* ── Shared ── */

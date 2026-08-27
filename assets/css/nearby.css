@@ -123,7 +123,6 @@ body>.np-nav {
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: center;
-  padding-top: 64px;
   overflow: hidden;
 }
 
@@ -492,13 +491,6 @@ body>.np-nav {
 
 [data-tech="postgresql"].is-active .np-tech-name {
   color: #c49a00;
-}
-
-font-size: 18px;
-font-weight: 700;
-color: var(--text);
-letter-spacing: -0.02em;
-transition: color 0.3s;
 }
 
 .np-tech-role {

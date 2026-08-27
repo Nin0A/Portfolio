@@ -20,8 +20,7 @@
   <link rel="stylesheet" href="assets/css/nearby.css">
   <script>
     (function () {
-      const t = localStorage.getItem('portfolio-theme');
-      if (t && t !== 'dark') document.documentElement.setAttribute('data-theme', t);
+      // single light theme — nothing to restore
     })();
   </script>
 </head>
@@ -75,9 +74,6 @@
     </ul>
     <div class="nav-right">
       <div class="theme-switcher" role="group" aria-label="Changer de thème">
-        <button class="theme-dot" data-theme="dark" title="Sombre" aria-label="Thème sombre"></button>
-        <button class="theme-dot" data-theme="light" title="Clair" aria-label="Thème clair"></button>
-        <button class="theme-dot" data-theme="red" title="Rouge" aria-label="Thème rouge"></button>
       </div>
       <div class="nav-socials">
         <a href="https://github.com/Nin0A" target="_blank" rel="noopener noreferrer" class="nav-social">GH</a>

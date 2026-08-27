@@ -775,32 +775,13 @@ function initProjectWebGL() {
 // ─────────────────────────────────────────────
 let _navUpdate = null;
 
-function applyTheme(theme) {
-  const root = document.documentElement;
-  root.classList.add('theme-transitioning');
-  setTimeout(() => root.classList.remove('theme-transitioning'), 400);
-
-  theme === 'dark'
-    ? root.removeAttribute('data-theme')
-    : root.setAttribute('data-theme', theme);
-
-  localStorage.setItem('portfolio-theme', theme);
-
-  document.querySelectorAll('.theme-dot').forEach(b =>
-    b.classList.toggle('is-active', b.dataset.theme === theme)
-  );
-
-  // Update Three.js colors + nav color
+function applyTheme() {
   if (threeScene) requestAnimationFrame(threeScene.updateColors);
   if (_navUpdate) requestAnimationFrame(_navUpdate);
 }
 
 function initThemeSwitcher() {
-  const saved = localStorage.getItem('portfolio-theme') || 'dark';
-  applyTheme(saved);
-  document.querySelectorAll('.theme-dot').forEach(btn =>
-    btn.addEventListener('click', () => applyTheme(btn.dataset.theme))
-  );
+  applyTheme();
 }
 
 // ─────────────────────────────────────────────

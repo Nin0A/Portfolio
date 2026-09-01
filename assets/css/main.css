@@ -1748,10 +1748,38 @@ html.nearby-open body {
   align-items: start;
 }
 
+/* Gaming — colonnes inversées, droite plus large */
+.passion-grid--gaming {
+  grid-template-columns: 1fr 1.3fr;
+}
+
+/* Musique — 3 colonnes égales */
+.passion-grid--musique {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* Cinéma — grande image à gauche, pile à droite */
+.passion-grid--cinema {
+  grid-template-columns: 1.2fr 1fr;
+  align-items: stretch;
+}
+
 .passion-col {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* Cinéma : colonne gauche qui s'étire sur toute la hauteur */
+.passion-col--fill {
+  display: flex;
+  flex-direction: column;
+}
+
+.passion-col--fill .passion-photo {
+  flex: 1;
+  aspect-ratio: unset;
+  min-height: 300px;
 }
 
 .passion-photo {

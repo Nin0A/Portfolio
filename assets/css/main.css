@@ -1675,6 +1675,50 @@ html.nearby-open body {
   }
 }
 
+/* Tabs */
+.passion-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 48px;
+}
+
+.passion-tab {
+  padding: 9px 20px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  font-family: var(--font-sans);
+  letter-spacing: 0.01em;
+}
+
+.passion-tab:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.passion-tab.is-active {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+
+/* Panels */
+.passion-panel {
+  display: none;
+  opacity: 0;
+}
+
+.passion-panel.is-active {
+  display: block;
+  opacity: 1;
+}
+
 .passion-header {
   margin-bottom: 52px;
 }

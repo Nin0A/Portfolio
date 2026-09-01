@@ -995,27 +995,55 @@ function initTimeline(lenis) {
 // ─────────────────────────────────────────────
 function initPassion() {
   const section = document.getElementById('passion');
-  if (!section || typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+  if (!section) return;
 
-  const cols = section.querySelectorAll('.passion-col');
-  cols.forEach((col, i) => {
-    const dir = i === 1 ? 1 : -1; // middle col moves up, others down
-    gsap.fromTo(col,
-      { y: dir * 60, opacity: 0 },
-      {
-        y: 0, opacity: 1,
-        duration: 1.1,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: section,
-          start: 'top 75%',
-          toggleActions: 'play none none reverse',
-          delay: i * 0.12,
-        },
-        delay: i * 0.12,
-      }
-    );
+  const tabs = section.querySelectorAll('.passion-tab');
+  const panels = section.querySelectorAll('.passion-panel');
+
+  function switchTab(target) {
+    tabs.forEach(t => t.classList.toggle('is-active', t.dataset.tab === target));
+
+    const current = section.querySelector('.passion-panel.is-active');
+    const next = section.querySelector(`.passion-panel[data-panel="${target}"]`);
+    if (!next || current === next) return;
+
+    if (current) {
+      current.classList.remove('is-active');
+      current.style.display = 'none';
+    }
+
+    next.style.display = 'block';
+    next.style.opacity = '0';
+    next.classList.add('is-active');
+
+    if (typeof gsap !== 'undefined') {
+      gsap.fromTo(next,
+        { opacity: 0, y: 16 },
+        { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out' }
+      );
+    } else {
+      next.style.opacity = '1';
+    }
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
+
+  // Scroll entrance on initial panel
+  if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+    const cols = section.querySelectorAll('.passion-panel.is-active .passion-col');
+    cols.forEach((col, i) => {
+      gsap.fromTo(col,
+        { y: i === 1 ? 60 : -60, opacity: 0 },
+        {
+          y: 0, opacity: 1, duration: 1.1, ease: 'power3.out',
+          delay: i * 0.12,
+          scrollTrigger: { trigger: section, start: 'top 75%', toggleActions: 'play none none reverse' },
+        }
+      );
+    });
+  }
 }
 
 

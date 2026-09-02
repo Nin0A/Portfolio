@@ -1773,7 +1773,7 @@ html.nearby-open body {
 
 /* Format affiche cinéma portrait */
 .passion-photo--poster {
-  aspect-ratio: 2 / 3;
+  aspect-ratio: 9 / 16;
 }
 
 /* Colonne droite cinéma : sous-grille pour aligner avec les affiches */

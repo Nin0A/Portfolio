@@ -1150,64 +1150,33 @@ function initNearbyStack() {
   });
 }
 
-// Nearby in-page overlay
+// Nearby page transition
 // ─────────────────────────────────────────────
 function initPageTransitions(lenis) {
-  const overlay = document.getElementById('nearby-page');
   const trigger = document.getElementById('nearby-trigger');
-  const backBtn = document.getElementById('nearby-back');
-  if (!overlay || !trigger) return;
+  if (!trigger) return;
 
-  // Create sweep element
   const sweep = document.createElement('div');
   sweep.id = 'np-sweep';
   document.body.appendChild(sweep);
 
   const EASE = 'cubic-bezier(0.77, 0, 0.175, 1)';
-  const DUR = 320; // ms per half
+  const DUR = 380;
 
-  function sweepIn(cb) {
+  function navigateToNearby() {
     sweep.style.transition = 'none';
     sweep.style.transform = 'translateX(-100%)';
-    sweep.offsetHeight; // force reflow
+    sweep.offsetHeight;
     sweep.style.transition = `transform ${DUR}ms ${EASE}`;
     sweep.style.transform = 'translateX(0)';
-    sweep.addEventListener('transitionend', cb, { once: true });
+    sweep.addEventListener('transitionend', () => {
+      window.location.href = 'nearby.html';
+    }, { once: true });
   }
 
-  function sweepOut() {
-    sweep.style.transition = `transform ${DUR}ms ${EASE}`;
-    sweep.style.transform = 'translateX(100%)';
-  }
-
-  function openOverlay() {
-    sweepIn(() => {
-      overlay.classList.add('is-open');
-      overlay.setAttribute('aria-hidden', 'false');
-      overlay.querySelector('.np-scroll')?.scrollTo(0, 0);
-      document.documentElement.classList.add('nearby-open');
-      if (lenis) lenis.stop();
-      sweepOut();
-    });
-  }
-
-  function closeOverlay() {
-    sweepIn(() => {
-      overlay.classList.remove('is-open');
-      overlay.setAttribute('aria-hidden', 'true');
-      document.documentElement.classList.remove('nearby-open');
-      if (lenis) lenis.start();
-      sweepOut();
-    });
-  }
-
-  trigger.addEventListener('click', openOverlay);
+  trigger.addEventListener('click', navigateToNearby);
   trigger.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openOverlay(); }
-  });
-  backBtn?.addEventListener('click', closeOverlay);
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && overlay.classList.contains('is-open')) closeOverlay();
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateToNearby(); }
   });
 }
 

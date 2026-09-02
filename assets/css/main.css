@@ -1583,36 +1583,6 @@ button {
   background: rgba(231, 95, 93, 0.25);
 }
 
-/* ── Nearby in-page overlay ── */
-.np-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 8000;
-  background: var(--bg);
-  transform: translate3d(100%, 0, 0);
-  will-change: transform;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  /* no transition — driven by JS for two-phase sweep */
-  transition: none;
-}
-
-.np-overlay.is-open {
-  transform: translate3d(0, 0, 0);
-}
-
-.np-scroll {
-  flex: 1;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-/* Hide main page scrollbar when nearby overlay is open */
-html.nearby-open,
-html.nearby-open body {
-  overflow: hidden;
-}
 
 /* ── Nearby transition sweep ── */
 #np-sweep {

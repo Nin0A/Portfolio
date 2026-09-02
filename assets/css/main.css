@@ -436,7 +436,7 @@ button {
 .status-dot {
   width: 7px;
   height: 7px;
-  background: var(--accent);
+  background: green;
   border-radius: 50%;
   animation: pulse 2.4s ease-in-out infinite;
 }

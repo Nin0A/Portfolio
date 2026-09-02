@@ -494,6 +494,11 @@ function initPreloader() {
     if (sessionStorage.getItem('preloader-done')) {
       el.style.display = 'none';
       document.body.classList.remove('is-loading');
+      const savedScroll = sessionStorage.getItem('return-scroll');
+      if (savedScroll) {
+        sessionStorage.removeItem('return-scroll');
+        window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' });
+      }
       resolve();
       return;
     }
@@ -1173,6 +1178,7 @@ function initPageTransitions(lenis) {
   const DUR = 380;
 
   function navigateToNearby() {
+    sessionStorage.setItem('return-scroll', String(Math.round(window.scrollY)));
     sweep.style.transition = 'none';
     sweep.style.transform = 'translateX(-100%)';
     sweep.offsetHeight;

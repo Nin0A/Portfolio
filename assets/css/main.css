@@ -1783,9 +1783,9 @@ html.nearby-open body {
   gap: 16px;
 }
 
-/* Grande image droite — hauteur = affiche 1 */
+/* Grande image droite — portrait pour équilibrer les affiches gauche */
 .passion-photo--cinema-main {
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 4 / 5;
 }
 
 /* Cinéma : colonne gauche qui s'étire sur toute la hauteur (layout précédent, gardé) */

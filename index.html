@@ -19,9 +19,9 @@
   <link rel="stylesheet" href="assets/css/main.css">
   <link rel="stylesheet" href="assets/css/nearby.css">
   <script>
-    (function () {
-      // single light theme — nothing to restore
-    })();
+    if (sessionStorage.getItem('preloader-done')) {
+      document.documentElement.classList.add('no-preloader');
+    }
   </script>
 </head>
 

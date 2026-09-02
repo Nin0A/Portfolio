@@ -68,6 +68,9 @@ body.is-loading {
   overflow: hidden;
 }
 
+html.no-preloader #preloader { display: none !important; }
+html.no-preloader body.is-loading { overflow: visible !important; }
+
 a {
   color: inherit;
   text-decoration: none;

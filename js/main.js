@@ -489,6 +489,15 @@ function initLenis() {
 function initPreloader() {
   return new Promise(resolve => {
     const el = document.getElementById('preloader');
+
+    // Skip preloader on return navigation (already seen this session)
+    if (sessionStorage.getItem('preloader-done')) {
+      el.style.display = 'none';
+      document.body.classList.remove('is-loading');
+      resolve();
+      return;
+    }
+    sessionStorage.setItem('preloader-done', '1');
     const bar = document.querySelector('.preloader-bar');
     const num = document.getElementById('preloader-num');
     const chars = el.querySelectorAll('.pl-char');

@@ -1760,7 +1760,7 @@ html.nearby-open body {
 
 /* Cinéma — 2 affiches à gauche, grande image + pile à droite */
 .passion-grid--cinema {
-  grid-template-columns: 1fr 1.6fr;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
   align-items: start;
 }

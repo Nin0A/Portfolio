@@ -1758,10 +1758,11 @@ html.nearby-open body {
   grid-template-columns: 1fr 1fr 1fr;
 }
 
-/* Cinéma — grande image à gauche, pile à droite */
+/* Cinéma — 2 affiches à gauche, grande image + pile à droite */
 .passion-grid--cinema {
-  grid-template-columns: 1.2fr 1fr;
-  align-items: stretch;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 16px;
+  align-items: start;
 }
 
 .passion-col {
@@ -1770,7 +1771,24 @@ html.nearby-open body {
   gap: 16px;
 }
 
-/* Cinéma : colonne gauche qui s'étire sur toute la hauteur */
+/* Format affiche cinéma portrait */
+.passion-photo--poster {
+  aspect-ratio: 2 / 3;
+}
+
+/* Colonne droite cinéma : sous-grille pour aligner avec les affiches */
+.passion-col--cinema-right {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 16px;
+}
+
+/* Grande image droite — hauteur = affiche 1 */
+.passion-photo--cinema-main {
+  aspect-ratio: 3 / 2;
+}
+
+/* Cinéma : colonne gauche qui s'étire sur toute la hauteur (layout précédent, gardé) */
 .passion-col--fill {
   display: flex;
   flex-direction: column;

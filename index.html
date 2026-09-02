@@ -646,39 +646,41 @@
       </div>
     </div>
 
-    <!-- Cinéma — grande image qui s'étire à gauche, pile compacte à droite -->
+    <!-- Cinéma — 2 affiches portrait à gauche, grande image + image en dessous à droite -->
     <div class="passion-panel" data-panel="cinema">
       <div class="passion-header">
         <h2 class="passion-heading">Cinéma</h2>
         <p class="passion-sub">L'image comme langage — narration visuelle et mise en scène.</p>
       </div>
       <div class="passion-grid passion-grid--cinema">
-        <div class="passion-col passion-col--fill">
-          <div class="passion-photo">
+        <!-- Gauche : 2 affiches portrait -->
+        <div class="passion-col">
+          <div class="passion-photo passion-photo--poster">
             <img src="assets/img/cinema/c1.jpg" alt="Cinéma" loading="lazy"
               onerror="this.parentElement.classList.add('passion-photo--placeholder')">
-            <div class="passion-overlay"><span>Sci-Fi</span></div>
+            <div class="passion-overlay"><span>Affiche 1</span></div>
           </div>
-        </div>
-        <div class="passion-col">
-          <div class="passion-photo passion-photo--sm">
+          <div class="passion-photo passion-photo--poster">
             <img src="assets/img/cinema/c2.jpg" alt="Cinéma" loading="lazy"
               onerror="this.parentElement.classList.add('passion-photo--placeholder')">
-            <div class="passion-overlay"><span>Drama</span></div>
+            <div class="passion-overlay"><span>Affiche 2</span></div>
           </div>
-          <div class="passion-photo passion-photo--sm">
+        </div>
+        <!-- Droite : grande image en haut, image en dessous alignée sur affiche 2, puis texte -->
+        <div class="passion-col passion-col--right">
+          <div class="passion-photo passion-photo--cinema-main">
             <img src="assets/img/cinema/c3.jpg" alt="Cinéma" loading="lazy"
               onerror="this.parentElement.classList.add('passion-photo--placeholder')">
-            <div class="passion-overlay"><span>Thriller</span></div>
+            <div class="passion-overlay"><span>Scène</span></div>
+          </div>
+          <div class="passion-photo passion-photo--sm">
+            <img src="assets/img/cinema/c4.jpg" alt="Cinéma" loading="lazy"
+              onerror="this.parentElement.classList.add('passion-photo--placeholder')">
+            <div class="passion-overlay"><span>Plan</span></div>
           </div>
           <div class="passion-text">
             <span class="passion-text-label">Note</span>
             <p>Le cinéma m'obsède pour les mêmes raisons que le dev&nbsp;: tout est intention. Un cadrage, une couleur, un silence — rien n'est là par hasard. Cette économie de moyens au service d'un effet maximum, <em>c'est exactement ce que j'essaie d'atteindre avec le code.</em></p>
-          </div>
-          <div class="passion-photo passion-photo--md">
-            <img src="assets/img/cinema/c4.jpg" alt="Cinéma" loading="lazy"
-              onerror="this.parentElement.classList.add('passion-photo--placeholder')">
-            <div class="passion-overlay"><span>Classiques</span></div>
           </div>
         </div>
       </div>

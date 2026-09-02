@@ -1,5 +1,5 @@
 /* ============================================================
-   PORTFOLIO — main.js
+   PORTFOLIO - main.js
    Stack: Three.js · GSAP ScrollTrigger · Lenis  (bundled via Vite)
    ============================================================ */
 import gsap from 'gsap'
@@ -30,11 +30,11 @@ function initGrain() {
 // Custom cursor + trail
 // ─────────────────────────────────────────────
 function initCursor() {
-  // Custom cursor removed — using native browser cursor
+  // Custom cursor removed - using native browser cursor
 }
 
 // ─────────────────────────────────────────────
-// Three.js Hero — wireframe icosahedra + 2 500 shader particles
+// Three.js Hero - wireframe icosahedra + 2 500 shader particles
 // ─────────────────────────────────────────────
 let threeScene = null;
 
@@ -229,7 +229,7 @@ function initThreeHero() {
 }
 
 // ─────────────────────────────────────────────
-// Parallax — hero layers at different depths
+// Parallax - hero layers at different depths
 // ─────────────────────────────────────────────
 function initParallax() {
   // Title block moves up faster than page (depth illusion)
@@ -273,7 +273,7 @@ function initParallax() {
 }
 
 // ─────────────────────────────────────────────
-// Text scramble — characters cycle through glyphs before resolving
+// Text scramble - characters cycle through glyphs before resolving
 // ─────────────────────────────────────────────
 const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$!?';
 
@@ -300,7 +300,7 @@ function scramble(el, duration = 460) {
 }
 
 // ─────────────────────────────────────────────
-// Project interactions — scramble + cursor bubble + spotlight
+// Project interactions - scramble + cursor bubble + spotlight
 // ─────────────────────────────────────────────
 function initProjectInteractions() {
   const label = document.getElementById('cursor-label');
@@ -330,7 +330,7 @@ function initProjectInteractions() {
 }
 
 // ─────────────────────────────────────────────
-// Ticker — pure CSS animation, pause on hover
+// Ticker - pure CSS animation, pause on hover
 // ─────────────────────────────────────────────
 function initTicker() {
   const wrap = document.querySelector('.hero-ticker');
@@ -342,7 +342,7 @@ function initTicker() {
 }
 
 // ─────────────────────────────────────────────
-// Hero char split — wraps each character in a span for stagger animation
+// Hero char split - wraps each character in a span for stagger animation
 // ─────────────────────────────────────────────
 function splitHeroChars() {
   document.querySelectorAll('.hero-line').forEach(line => {
@@ -374,7 +374,7 @@ function splitHeroChars() {
 }
 
 // ─────────────────────────────────────────────
-// Nav split text — dual-layer SVG clipPath technique
+// Nav split text - dual-layer SVG clipPath technique
 // Primary nav: dark text (#111111) for light backgrounds
 // Clone nav:   light text (#f0ece4) clipped to dark-bg regions
 // Produces per-pixel, per-character color splitting at section boundaries
@@ -415,7 +415,7 @@ function initNavSplitText() {
   ].join(';');
   nav.insertAdjacentElement('afterend', clone);
 
-  // ── Luminance — walks up DOM to find first opaque background ─
+  // ── Luminance - walks up DOM to find first opaque background ─
   function sectionLuminance(el) {
     let node = el;
     while (node && node !== document.documentElement) {
@@ -444,7 +444,7 @@ function initNavSplitText() {
     let darkY0 = Infinity, darkY1 = -Infinity;
 
     for (const sec of sections) {
-      if (sectionLuminance(sec) > 0.55) continue; // light section — skip
+      if (sectionLuminance(sec) > 0.55) continue; // light section - skip
       const r = sec.getBoundingClientRect();
       const top = Math.max(0, r.top);
       const bot = Math.min(h, r.bottom);
@@ -633,7 +633,7 @@ function initScrollAnimations() {
     });
   });
 
-  // Project items — alternate slide from left/right
+  // Project items - alternate slide from left/right
   gsap.utils.toArray('.project-item').forEach((item, i) => {
     const dir = i % 2 === 0 ? -80 : 80;
     gsap.fromTo(item,
@@ -647,7 +647,7 @@ function initScrollAnimations() {
 }
 
 // ─────────────────────────────────────────────
-// Project hover preview — WebGL shader distortion
+// Project hover preview - WebGL shader distortion
 // Plane in orthographic scene, simplex noise UV displacement:
 // enter → distortion 1→0 (image materialises), leave → 0→1 + alpha fade
 // ─────────────────────────────────────────────
@@ -655,7 +655,7 @@ function initProjectWebGL() {
   const items = [...document.querySelectorAll('.project-item[data-preview]')];
   if (!items.length || window.innerWidth <= 768) return;
 
-  // Single renderer shared across all items — avoids N WebGL contexts
+  // Single renderer shared across all items - avoids N WebGL contexts
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
   canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;display:block';
@@ -663,7 +663,7 @@ function initProjectWebGL() {
 
   let W = window.innerWidth, H = window.innerHeight;
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
-  renderer.setPixelRatio(1); // DPR 1 for perf — project bg doesn't need retina
+  renderer.setPixelRatio(1); // DPR 1 for perf - project bg doesn't need retina
   renderer.setSize(W, H);
 
   const scene = new THREE.Scene();
@@ -828,7 +828,7 @@ function initAnchorScroll(lenis) {
 
 
 // ─────────────────────────────────────────────
-// Parcours — horizontal pinned timeline
+// Parcours - horizontal pinned timeline
 // ─────────────────────────────────────────────
 function initTimeline(lenis) {
   const section = document.getElementById('parcours');
@@ -886,7 +886,7 @@ function initTimeline(lenis) {
     // Year counter
     if (yearNum) yearNum.textContent = Math.round(DISP_MIN + p * DISP_RANGE);
 
-    // Determine which card is "current" (last revealed) — needed for rail fill
+    // Determine which card is "current" (last revealed) - needed for rail fill
     let lastShown = -1;
     items.forEach((_, i) => { if (p >= thresholds[i]) lastShown = i; });
 
@@ -905,7 +905,7 @@ function initTimeline(lenis) {
       const shouldShow = p >= thresholds[i];
       const isCurrent = i === lastShown;
 
-      // Dynamic "current event" styling — follows the last revealed card
+      // Dynamic "current event" styling - follows the last revealed card
       if (cards[i]) cards[i].classList.toggle('tl-card--current', isCurrent);
       if (tags[i]) tags[i].classList.toggle('tl-tag--active', isCurrent);
       if (dots[i]) dots[i].classList.toggle('tl-dot--active', isCurrent);
@@ -925,12 +925,12 @@ function initTimeline(lenis) {
   }
 
   // ── Wheel handler (capture phase, before Lenis) ───────
-  // We compare window.scrollY to section.offsetTop — much more reliable than
+  // We compare window.scrollY to section.offsetTop - much more reliable than
   // getBoundingClientRect during a Lenis animation (which is mid-lerp and off).
   let blocked = false;
   let blockDir = 0;
   let scrollingToSection = false;
-  const SNAP_TOLERANCE = 150; // px — how close scrollY must be to section top
+  const SNAP_TOLERANCE = 150; // px - how close scrollY must be to section top
 
   function isCovering() {
     const scrollY = window.scrollY;
@@ -961,7 +961,7 @@ function initTimeline(lenis) {
     }
 
     if (!active) {
-      // Smooth scroll to section top, then lock — no abrupt snap
+      // Smooth scroll to section top, then lock - no abrupt snap
       scrollingToSection = true;
       if (lenis) {
         lenis.scrollTo(section.offsetTop, {
@@ -1005,7 +1005,7 @@ function initTimeline(lenis) {
 }
 
 // ─────────────────────────────────────────────
-// Passion — reveal photo columns on scroll
+// Passion - reveal photo columns on scroll
 // ─────────────────────────────────────────────
 function initPassion() {
   const section = document.getElementById('passion');
@@ -1063,7 +1063,7 @@ function initPassion() {
 
 
 // ─────────────────────────────────────────────
-// Project custom cursor — mix-blend-mode: difference
+// Project custom cursor - mix-blend-mode: difference
 // ─────────────────────────────────────────────
 function initProjectCursor() {
   const cursor = document.getElementById('project-cursor');
@@ -1100,7 +1100,7 @@ function initProjectCursor() {
 }
 
 // ─────────────────────────────────────────────
-// About — photo parallax
+// About - photo parallax
 // ─────────────────────────────────────────────
 function initAboutParallax() {
   const frame = document.querySelector('.about-photo-frame');
@@ -1123,7 +1123,7 @@ function initAboutParallax() {
 }
 
 // ─────────────────────────────────────────────
-// Nearby gallery ticker — integer pixel positions to avoid subpixel blur
+// Nearby gallery ticker - integer pixel positions to avoid subpixel blur
 // ─────────────────────────────────────────────
 function initNearbyTicker() {
   document.querySelectorAll('.np-screens-track').forEach(track => {
@@ -1147,7 +1147,7 @@ function initNearbyTicker() {
   });
 }
 
-// Nearby tech stack — persistent active card
+// Nearby tech stack - persistent active card
 // ─────────────────────────────────────────────
 function initNearbyStack() {
   document.querySelectorAll('.np-stack-section').forEach(section => {

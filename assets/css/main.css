@@ -1,5 +1,5 @@
 /* ============================================================
-   CUSTOM PROPERTIES — THEMES
+   CUSTOM PROPERTIES - THEMES
    ============================================================ */
 
 /* ── Light (default) ── */
@@ -68,8 +68,13 @@ body.is-loading {
   overflow: hidden;
 }
 
-html.no-preloader #preloader { display: none !important; }
-html.no-preloader body.is-loading { overflow: visible !important; }
+html.no-preloader #preloader {
+  display: none !important;
+}
+
+html.no-preloader body.is-loading {
+  overflow: visible !important;
+}
 
 a {
   color: inherit;
@@ -295,7 +300,7 @@ button {
   justify-content: space-between;
   padding: 0 var(--pad-x);
   z-index: 900;
-  /* Always transparent — color set dynamically by JS luminance detection */
+  /* Always transparent - color set dynamically by JS luminance detection */
 }
 
 /* Primary nav: dark text (readable on light backgrounds).
@@ -308,7 +313,7 @@ button {
   transition: opacity 0.2s;
 }
 
-/* Clone nav — injected by JS, pixel-perfect overlay */
+/* Clone nav - injected by JS, pixel-perfect overlay */
 #nav-clone {
   pointer-events: none;
   clip-path: url(#nav-dark-clip);
@@ -760,7 +765,7 @@ button {
    SKILLS
    ============================================================ */
 
-/* Accent background on skills — creates the contrast that makes the
+/* Accent background on skills - creates the contrast that makes the
    dual-layer nav split visible: nav chars show two colors at section edges */
 #skills {
   background: var(--accent);
@@ -1349,7 +1354,7 @@ button {
 
 
 /* ============================================================
-   PARCOURS — horizontal scroll timeline + year counter
+   PARCOURS - horizontal scroll timeline + year counter
    ============================================================ */
 .section--parcours {
   position: relative;
@@ -1449,7 +1454,7 @@ button {
   gap: 18px;
   padding-right: 80px;
   position: relative;
-  /* hidden until scroll triggers — GSAP also sets this inline */
+  /* hidden until scroll triggers - GSAP also sets this inline */
   opacity: 0;
   transform: translateY(32px);
 }
@@ -1462,7 +1467,7 @@ button {
   color: var(--accent);
 }
 
-/* ── Dot — sits on the rail (absolutely positioned within .tl-item) ── */
+/* ── Dot - sits on the rail (absolutely positioned within .tl-item) ── */
 .tl-dot {
   position: absolute;
   /* item bottom = 80px above track outer bottom; rail at 44px → dot bottom at 37px
@@ -1537,7 +1542,7 @@ button {
   color: var(--text);
 }
 
-/* ── Nearby project item — red accent, red fill on hover ── */
+/* ── Nearby project item - red accent, red fill on hover ── */
 .project-item--nearby {
   --nearby-color: #E75F5D;
 }
@@ -1721,17 +1726,17 @@ button {
   align-items: start;
 }
 
-/* Gaming — colonnes inversées, droite plus large */
+/* Gaming - colonnes inversées, droite plus large */
 .passion-grid--gaming {
   grid-template-columns: 1fr 1.3fr;
 }
 
-/* Musique — 3 colonnes égales */
+/* Musique - 3 colonnes égales */
 .passion-grid--musique {
   grid-template-columns: 1fr 1fr 1fr;
 }
 
-/* Cinéma — 2 affiches à gauche, grande image + pile à droite */
+/* Cinéma - 2 affiches à gauche, grande image + pile à droite */
 .passion-grid--cinema {
   grid-template-columns: 1fr 1fr;
   gap: 16px;
@@ -1756,7 +1761,7 @@ button {
   gap: 16px;
 }
 
-/* Grande image droite — hauteur = affiche 1 */
+/* Grande image droite - hauteur = affiche 1 */
 .passion-photo--cinema-main {
   aspect-ratio: 3 / 2;
 }

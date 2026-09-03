@@ -917,7 +917,9 @@ function initTimeline(lenis) {
   }
 
   const maxX = track.scrollWidth - window.innerWidth;
-  wrapper.style.height = `calc(100vh + ${maxX}px)`;
+  // Multiply scroll distance so timeline feels gradual (not rushed)
+  const scrollDist = Math.max(maxX, window.innerWidth) * 2.5;
+  wrapper.style.height = `calc(100vh + ${scrollDist}px)`;
 
   gsap.to(track, {
     x: -maxX,

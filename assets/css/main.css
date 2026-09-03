@@ -1419,10 +1419,9 @@ button {
   z-index: 1;
   display: flex;
   align-items: flex-end;
-  gap: 25vw;
   padding-bottom: 80px;
-  padding-left: 8vw;
-  padding-right: 40vw;
+  padding-right: 30vw;
+  margin-left: calc(-1 * var(--pad-x));
   will-change: transform;
 }
 

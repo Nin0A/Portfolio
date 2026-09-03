@@ -1420,8 +1420,9 @@ button {
   display: flex;
   align-items: flex-end;
   padding-bottom: 80px;
-  padding-left: calc(2 * var(--pad-x));
+  padding-left: var(--pad-x);
   padding-right: 30vw;
+  margin-left: calc(-1 * var(--pad-x));
   will-change: transform;
 }
 

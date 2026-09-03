@@ -857,7 +857,8 @@ function initTimeline(lenis) {
   const DISP_MAX = Math.max(...yearStarts) + 1; // 2026
   const DISP_RANGE = DISP_MAX - DISP_MIN;         // 8
 
-  const thresholds = yearStarts.map(y => (y - DISP_MIN) / DISP_RANGE);
+  // First item threshold = 0 so it's always visible on entry
+  const thresholds = yearStarts.map((y, i) => i === 0 ? 0 : (y - DISP_MIN) / DISP_RANGE);
 
   gsap.set(items, { opacity: 0, y: 32 });
   gsap.set(dots, { scale: 0 });

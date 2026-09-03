@@ -1430,7 +1430,7 @@ button {
   position: absolute;
   bottom: 44px;
   left: 0;
-  width: 100%;
+  width: max(100%, 300vw);
   height: 1px;
   background: var(--border);
   pointer-events: none;

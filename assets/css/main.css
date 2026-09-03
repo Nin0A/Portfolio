@@ -1420,9 +1420,8 @@ button {
   display: flex;
   align-items: flex-end;
   padding-bottom: 80px;
-  padding-left: var(--pad-x);
+  padding-left: calc(2 * var(--pad-x));
   padding-right: 30vw;
-  margin-left: calc(-1 * var(--pad-x));
   will-change: transform;
 }
 
@@ -1454,11 +1453,11 @@ button {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding-right: 80px;
   position: relative;
   /* hidden until scroll triggers - GSAP also sets this inline */
   opacity: 0;
   transform: translateY(32px);
+
 }
 
 .tl-item-period {
@@ -1500,6 +1499,7 @@ button {
   padding: 28px;
   flex: 1;
   transition: border-color 0.3s, box-shadow 0.3s;
+  width: 75%;
 }
 
 .header-card {

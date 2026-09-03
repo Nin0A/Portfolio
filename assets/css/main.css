@@ -1420,9 +1420,8 @@ button {
   display: flex;
   align-items: flex-end;
   padding-bottom: 80px;
-  padding-left: var(--pad-x);
+  padding-left: calc(2 * var(--pad-x));
   padding-right: 30vw;
-  margin-left: calc(-1 * var(--pad-x));
   will-change: transform;
 }
 
@@ -1431,7 +1430,7 @@ button {
   position: absolute;
   bottom: 44px;
   left: 0;
-  width: max(100%, 300vw);
+  width: 100%;
   height: 1px;
   background: var(--border);
   pointer-events: none;

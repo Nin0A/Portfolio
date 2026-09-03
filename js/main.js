@@ -857,9 +857,15 @@ function initTimeline(lenis) {
   const DISP_MAX = Math.max(...yearStarts) + 1; // 2026
   const DISP_RANGE = DISP_MAX - DISP_MIN;         // 8
 
+  const thresholds = yearStarts.map(y => (y - DISP_MIN) / DISP_RANGE);
+
+  gsap.set(items, { opacity: 0, y: 32 });
+  gsap.set(dots, { scale: 0 });
+
   // Mobile: simple vertical stagger
   if (window.innerWidth <= 768) {
-    gsap.set(dots, { scale: 1 });
+    gsap.set(items, { clearProps: 'all' });
+    gsap.set(dots, { clearProps: 'all' });
     items.forEach((item, i) => {
       gsap.fromTo(item,
         { opacity: 0, y: 30 },
@@ -873,44 +879,40 @@ function initTimeline(lenis) {
     return;
   }
 
-  const maxX = Math.max(track.scrollWidth - window.innerWidth, 0);
-  if (maxX === 0) return;
-
-  // All cards visible from the start — thresholds only determine which is "current"
-  // (card becomes current when its center crosses the viewport center while scrolling)
-  gsap.set(dots, { scale: 0 });
-  const dotShown = items.map(() => false);
-
-  const thresholds = items.map((item, i) => {
-    if (i === 0) return 0;
-    const center = item.offsetLeft + item.offsetWidth / 2;
-    const t = (center - window.innerWidth / 2) / maxX;
-    return Math.max(0, Math.min(1, t));
-  });
+  const shown = items.map(() => false);
 
   function updateUI(p) {
     if (yearNum) yearNum.textContent = Math.round(DISP_MIN + p * DISP_RANGE);
 
-    let current = 0;
-    items.forEach((_, i) => { if (p >= thresholds[i]) current = i; });
+    let lastShown = -1;
+    items.forEach((_, i) => { if (p >= thresholds[i]) lastShown = i; });
 
     if (railFill) {
-      gsap.set(railFill, { width: items[current].offsetLeft + 7 });
+      const fillPx = lastShown >= 0 ? items[lastShown].offsetLeft + 7 : 0;
+      gsap.set(railFill, { width: fillPx });
     }
 
     items.forEach((item, i) => {
-      const isCurrent = i === current;
+      const shouldShow = p >= thresholds[i];
+      const isCurrent = i === lastShown;
       if (cards[i]) cards[i].classList.toggle('tl-card--current', isCurrent);
       if (tags[i]) tags[i].classList.toggle('tl-tag--active', isCurrent);
       if (dots[i]) dots[i].classList.toggle('tl-dot--active', isCurrent);
 
-      // Dot pops in the first time the card becomes reachable
-      if (p >= thresholds[i] && !dotShown[i]) {
-        dotShown[i] = true;
+      if (shouldShow && !shown[i]) {
+        shown[i] = true;
         gsap.to(dots[i], { scale: 1, duration: 0.35, ease: 'back.out(2.8)' });
+        gsap.to(item, { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', delay: 0.06 });
+      } else if (!shouldShow && shown[i]) {
+        shown[i] = false;
+        gsap.to(dots[i], { scale: 0, duration: 0.25, ease: 'power2.in' });
+        gsap.to(item, { opacity: 0, y: 32, duration: 0.35, ease: 'power2.in' });
       }
     });
   }
+
+  const maxX = Math.max(track.scrollWidth - window.innerWidth, 0);
+  if (maxX === 0) return;
   const tlAnim = gsap.timeline();
   tlAnim.to(track, { x: -maxX, ease: 'none' });
 

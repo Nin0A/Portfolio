@@ -489,6 +489,15 @@ function initLenis() {
 function initPreloader() {
   return new Promise(resolve => {
     const el = document.getElementById('preloader');
+    if (!el) { resolve(); return; }
+
+    // Safety net: force-resolve after 8s if animation hangs
+    const fallback = setTimeout(() => {
+      el.style.display = 'none';
+      document.body.classList.remove('is-loading');
+      resolve();
+    }, 8000);
+    const done = () => { clearTimeout(fallback); resolve(); };
 
     // Skip preloader on return navigation (already seen this session)
     if (sessionStorage.getItem('preloader-done')) {
@@ -499,7 +508,7 @@ function initPreloader() {
         sessionStorage.removeItem('return-scroll');
         window.scrollTo({ top: parseInt(savedScroll, 10), behavior: 'instant' });
       }
-      resolve();
+      done();
       return;
     }
     sessionStorage.setItem('preloader-done', '1');
@@ -519,7 +528,7 @@ function initPreloader() {
           onComplete() {
             el.style.display = 'none';
             document.body.classList.remove('is-loading');
-            resolve();
+            done();
           }
         });
       }
@@ -1198,14 +1207,14 @@ function initPageTransitions(lenis) {
 // Bootstrap
 // ─────────────────────────────────────────────
 async function init() {
+  await initPreloader();
+
   initGrain();
   initCursor();
   splitHeroChars();
   initThemeSwitcher();
   _navUpdate = initNavSplitText();
   threeScene = initThreeHero();
-
-  await initPreloader();
 
   const lenis = initLenis();
   animateHero();

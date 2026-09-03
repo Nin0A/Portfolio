@@ -1357,8 +1357,9 @@ button {
    PARCOURS - horizontal scroll timeline + year counter
    ============================================================ */
 .section--parcours {
-  position: relative;
-  min-height: 90vh;
+  position: sticky;
+  top: 0;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -1612,6 +1613,8 @@ button {
 /* ── Mobile: vertical fallback ── */
 @media (max-width: 768px) {
   .section--parcours {
+    position: relative;
+    height: auto;
     min-height: unset;
     overflow: visible;
     padding-bottom: var(--section-gap);

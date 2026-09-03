@@ -857,14 +857,12 @@ function initTimeline(lenis) {
   const DISP_MAX = Math.max(...yearStarts) + 1; // 2026
   const DISP_RANGE = DISP_MAX - DISP_MIN;         // 8
 
-  // thresholds: card i appears when step === its year index
   const thresholds = yearStarts.map(y => (y - DISP_MIN) / DISP_RANGE);
 
-  // Force hidden
   gsap.set(items, { opacity: 0, y: 32 });
   gsap.set(dots, { scale: 0 });
 
-  // Mobile: simple stagger, no wheel capture
+  // Mobile: simple vertical stagger
   if (window.innerWidth <= 768) {
     gsap.set(items, { clearProps: 'all' });
     gsap.set(dots, { clearProps: 'all' });
@@ -880,6 +878,11 @@ function initTimeline(lenis) {
     });
     return;
   }
+
+  // Wrap section in a tall div so CSS sticky has scroll room
+  const wrapper = document.createElement('div');
+  section.parentNode.insertBefore(wrapper, section);
+  wrapper.appendChild(section);
 
   const shown = items.map(() => false);
 
@@ -913,19 +916,20 @@ function initTimeline(lenis) {
     });
   }
 
-  const tlAnim = gsap.timeline();
-  tlAnim.to(track, { x: () => -(track.scrollWidth - window.innerWidth), ease: 'none' });
+  const maxX = track.scrollWidth - window.innerWidth;
+  wrapper.style.height = `calc(100vh + ${maxX}px)`;
 
-  ScrollTrigger.create({
-    animation: tlAnim,
-    trigger: section,
-    start: 'top top',
-    end: () => `+=${track.scrollWidth - window.innerWidth}`,
-    pin: true,
-    anticipatePin: 1,
-    scrub: 1.5,
-    invalidateOnRefresh: true,
-    onUpdate: (self) => updateUI(self.progress),
+  gsap.to(track, {
+    x: -maxX,
+    ease: 'none',
+    scrollTrigger: {
+      trigger: wrapper,
+      start: 'top top',
+      end: 'bottom bottom',
+      scrub: 0.6,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => updateUI(self.progress),
+    },
   });
 
   updateUI(0);

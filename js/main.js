@@ -881,136 +881,54 @@ function initTimeline(lenis) {
     return;
   }
 
-  // ── State ────────────────────────────────────────────
-  const STEPS = DISP_RANGE;          // 8 steps (one per year)
-  let step = 0;
-  let active = false;               // true = section has focus, wheel captured
   const shown = items.map(() => false);
 
-  // ── Apply a step (0…STEPS) ────────────────────────────
-  function applyStep(s, instant) {
-    const p = s / STEPS;
-    const dur = instant ? 0 : 0.45;
-
-    // Year counter
+  function updateUI(p) {
     if (yearNum) yearNum.textContent = Math.round(DISP_MIN + p * DISP_RANGE);
 
-    // Determine which card is "current" (last revealed) - needed for rail fill
     let lastShown = -1;
     items.forEach((_, i) => { if (p >= thresholds[i]) lastShown = i; });
 
-    // Rail fill: animate width to the center-x of the last revealed dot so
-    // the blue bar stops exactly on the dot, never past it.
     if (railFill) {
       const fillPx = lastShown >= 0 ? items[lastShown].offsetLeft + 7 : 0;
-      gsap.to(railFill, { width: fillPx, duration: dur, ease: 'power2.out' });
+      gsap.set(railFill, { width: fillPx });
     }
-
-    // Track translate
-    const maxX = Math.max(1, track.scrollWidth - window.innerWidth);
-    gsap.to(track, { x: -p * maxX, duration: dur, ease: 'power2.out' });
 
     items.forEach((item, i) => {
       const shouldShow = p >= thresholds[i];
       const isCurrent = i === lastShown;
-
-      // Dynamic "current event" styling - follows the last revealed card
       if (cards[i]) cards[i].classList.toggle('tl-card--current', isCurrent);
       if (tags[i]) tags[i].classList.toggle('tl-tag--active', isCurrent);
       if (dots[i]) dots[i].classList.toggle('tl-dot--active', isCurrent);
 
       if (shouldShow && !shown[i]) {
         shown[i] = true;
-        gsap.killTweensOf([item, dots[i]]);
         gsap.to(dots[i], { scale: 1, duration: 0.35, ease: 'back.out(2.8)' });
         gsap.to(item, { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', delay: 0.06 });
       } else if (!shouldShow && shown[i]) {
         shown[i] = false;
-        gsap.killTweensOf([item, dots[i]]);
         gsap.to(dots[i], { scale: 0, duration: 0.25, ease: 'power2.in' });
         gsap.to(item, { opacity: 0, y: 32, duration: 0.35, ease: 'power2.in' });
       }
     });
   }
 
-  // ── Wheel handler (capture phase, before Lenis) ───────
-  // We compare window.scrollY to section.offsetTop - much more reliable than
-  // getBoundingClientRect during a Lenis animation (which is mid-lerp and off).
-  let blocked = false;
-  let blockDir = 0;
-  let scrollingToSection = false;
-  const SNAP_TOLERANCE = 150; // px - how close scrollY must be to section top
+  const tlAnim = gsap.timeline();
+  tlAnim.to(track, { x: () => -(track.scrollWidth - window.innerWidth), ease: 'none' });
 
-  function isCovering() {
-    const scrollY = window.scrollY;
-    const st = section.offsetTop;
-    return scrollY >= st - SNAP_TOLERANCE && scrollY <= st + SNAP_TOLERANCE;
-  }
+  ScrollTrigger.create({
+    animation: tlAnim,
+    trigger: section,
+    start: 'top top',
+    end: () => `+=${track.scrollWidth - window.innerWidth}`,
+    pin: true,
+    anticipatePin: 1,
+    scrub: 1.5,
+    invalidateOnRefresh: true,
+    onUpdate: (self) => updateUI(self.progress),
+  });
 
-  function onWheel(e) {
-    const covering = isCovering();
-    const dir = e.deltaY > 0 ? 1 : -1;
-
-    if (blocked) {
-      if (dir !== blockDir || !covering) blocked = false;
-      if (blocked) return;
-    }
-
-    // Block wheel during the smooth approach scroll
-    if (scrollingToSection) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      return;
-    }
-
-    if (!covering) {
-      if (active) { active = false; if (lenis) lenis.start(); }
-      return;
-    }
-
-    if (!active) {
-      // Smooth scroll to section top, then lock - no abrupt snap
-      scrollingToSection = true;
-      if (lenis) {
-        lenis.scrollTo(section.offsetTop, {
-          duration: 0.75,
-          easing: t => 1 - Math.pow(1 - t, 3),
-          onComplete: () => {
-            scrollingToSection = false;
-            lenis.stop();
-            window.scrollTo(0, section.offsetTop);
-            active = true;
-          }
-        });
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
-      return;
-    }
-
-    const next = step + dir;
-
-    if (next < 0 || next > STEPS) {
-      active = false;
-      blocked = true;
-      blockDir = dir;
-      if (lenis) lenis.start();
-      return;
-    }
-
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
-
-    step = next;
-    applyStep(step);
-  }
-  window.addEventListener('wheel', onWheel, { passive: false, capture: true });
-
-  // Init at step 0
-  applyStep(0, true);
+  updateUI(0);
 }
 
 // ─────────────────────────────────────────────
@@ -1021,7 +939,18 @@ function initPassion() {
   if (!section) return;
 
   const tabs = section.querySelectorAll('.passion-tab');
-  const panels = section.querySelectorAll('.passion-panel');
+
+  function revealImgs(container) {
+    container.querySelectorAll('.passion-photo img').forEach(img => {
+      const show = () => requestAnimationFrame(() => img.classList.add('img-loaded'));
+      if (img.complete && img.naturalWidth > 0) {
+        show();
+      } else {
+        img.addEventListener('load', show, { once: true });
+        img.addEventListener('error', show, { once: true });
+      }
+    });
+  }
 
   function switchTab(target) {
     tabs.forEach(t => t.classList.toggle('is-active', t.dataset.tab === target));
@@ -1047,11 +976,17 @@ function initPassion() {
     } else {
       next.style.opacity = '1';
     }
+
+    revealImgs(next);
   }
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
+
+  // Reveal images in the initially active panel
+  const activePanel = section.querySelector('.passion-panel.is-active');
+  if (activePanel) revealImgs(activePanel);
 
   // Scroll entrance on initial panel
   if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {

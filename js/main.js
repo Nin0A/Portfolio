@@ -911,7 +911,8 @@ function initTimeline(lenis) {
     });
   }
 
-  const maxX = track.scrollWidth - window.innerWidth;
+  const maxX = Math.max(track.scrollWidth - window.innerWidth, 0);
+  if (maxX === 0) return;
   const tlAnim = gsap.timeline();
   tlAnim.to(track, { x: -maxX, ease: 'none' });
 

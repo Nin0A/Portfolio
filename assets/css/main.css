@@ -1449,7 +1449,7 @@ button {
 
 /* ── Timeline item ── */
 .tl-item {
-  flex: 0 0 480px;
+  flex: 0 0 max(480px, 38vw);
   display: flex;
   flex-direction: column;
   gap: 18px;

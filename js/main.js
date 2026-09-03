@@ -857,9 +857,6 @@ function initTimeline(lenis) {
   const DISP_MAX = Math.max(...yearStarts) + 1; // 2026
   const DISP_RANGE = DISP_MAX - DISP_MIN;         // 8
 
-  // First item threshold = 0 so it's always visible on entry
-  const thresholds = yearStarts.map((y, i) => i === 0 ? 0 : (y - DISP_MIN) / DISP_RANGE);
-
   gsap.set(items, { opacity: 0, y: 32 });
   gsap.set(dots, { scale: 0 });
 
@@ -879,6 +876,16 @@ function initTimeline(lenis) {
     });
     return;
   }
+
+  const maxX = Math.max(track.scrollWidth - window.innerWidth, 0);
+  if (maxX === 0) return;
+
+  // Reveal threshold: based on item's pixel position in the track.
+  // An item reveals when it enters the viewport from the right (or is already in viewport → 0).
+  const thresholds = items.map(item => {
+    const t = (item.offsetLeft - window.innerWidth + item.offsetWidth * 0.4) / maxX;
+    return Math.max(0, Math.min(1, t));
+  });
 
   const shown = items.map(() => false);
 
@@ -911,9 +918,6 @@ function initTimeline(lenis) {
       }
     });
   }
-
-  const maxX = Math.max(track.scrollWidth - window.innerWidth, 0);
-  if (maxX === 0) return;
   const tlAnim = gsap.timeline();
   tlAnim.to(track, { x: -maxX, ease: 'none' });
 

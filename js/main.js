@@ -879,11 +879,6 @@ function initTimeline(lenis) {
     return;
   }
 
-  // Wrap section in a tall div so CSS sticky has scroll room
-  const wrapper = document.createElement('div');
-  section.parentNode.insertBefore(wrapper, section);
-  wrapper.appendChild(section);
-
   const shown = items.map(() => false);
 
   function updateUI(p) {
@@ -917,21 +912,20 @@ function initTimeline(lenis) {
   }
 
   const maxX = track.scrollWidth - window.innerWidth;
-  // Multiply scroll distance so timeline feels gradual (not rushed)
-  const scrollDist = Math.max(maxX, window.innerWidth) * 2.5;
-  wrapper.style.height = `calc(100vh + ${scrollDist}px)`;
+  const tlAnim = gsap.timeline();
+  tlAnim.to(track, { x: -maxX, ease: 'none' });
 
-  gsap.to(track, {
-    x: -maxX,
-    ease: 'none',
-    scrollTrigger: {
-      trigger: wrapper,
-      start: 'top top',
-      end: 'bottom bottom',
-      scrub: 0.6,
-      invalidateOnRefresh: true,
-      onUpdate: (self) => updateUI(self.progress),
-    },
+  // No anticipatePin — prevents viewport snap on entry.
+  // End is 3× the horizontal distance so the timeline traverses slowly.
+  ScrollTrigger.create({
+    animation: tlAnim,
+    trigger: section,
+    start: 'top top',
+    end: () => `+=${Math.max(maxX, 600) * 3}`,
+    pin: true,
+    scrub: 1,
+    invalidateOnRefresh: true,
+    onUpdate: (self) => updateUI(self.progress),
   });
 
   updateUI(0);

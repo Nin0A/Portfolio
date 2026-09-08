@@ -1420,8 +1420,9 @@ button {
   display: flex;
   align-items: flex-end;
   padding-bottom: 80px;
-  padding-left: calc(2 * var(--pad-x));
+  padding-left: var(--pad-x);
   padding-right: 30vw;
+  margin-left: calc(-1 * var(--pad-x));
   will-change: transform;
 }
 
@@ -1432,6 +1433,7 @@ button {
   left: 0;
   width: 100%;
   height: 1px;
+  background: var(--border);
   pointer-events: none;
 }
 
@@ -1448,7 +1450,7 @@ button {
 
 /* ── Timeline item ── */
 .tl-item {
-  flex: 0 0 max(320px, 26vw);
+  flex: 0 0 max(380px, 32vw);
   display: flex;
   flex-direction: column;
   gap: 18px;

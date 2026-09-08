@@ -309,24 +309,17 @@ function initProjectInteractions() {
     const nameEl = item.querySelector('.project-name');
     let stopScramble = null;
 
-    function pumpNavUpdate() {
-      if (!_navUpdate) return;
-      const end = performance.now() + 380;
-      const tick = () => { _navUpdate(); if (performance.now() < end) requestAnimationFrame(tick); };
-      requestAnimationFrame(tick);
-    }
-
     item.addEventListener('mouseenter', () => {
       document.body.classList.add('cursor-project');
       if (label) label.textContent = 'VOIR';
       if (nameEl) stopScramble = scramble(nameEl);
-      pumpNavUpdate();
+      if (_navUpdate) _navUpdate();
     });
 
     item.addEventListener('mouseleave', () => {
       document.body.classList.remove('cursor-project');
       if (stopScramble) { stopScramble(); stopScramble = null; }
-      pumpNavUpdate();
+      if (_navUpdate) _navUpdate();
     });
 
     // Drive the radial spotlight via CSS custom properties
@@ -450,6 +443,19 @@ function initNavSplitText() {
 
   function update() {
     const h = nav.offsetHeight;
+
+    // If a project item is hovered and overlaps the nav area, force full light-text
+    const hoveredItem = document.querySelector('.project-item:hover');
+    if (hoveredItem) {
+      const r = hoveredItem.getBoundingClientRect();
+      if (r.top < h && r.bottom > 0) {
+        clipRect.setAttribute('width', String(window.innerWidth));
+        clipRect.setAttribute('y', '0');
+        clipRect.setAttribute('height', String(h));
+        return;
+      }
+    }
+
     let darkY0 = Infinity, darkY1 = -Infinity;
 
     for (const sec of sections) {
@@ -866,7 +872,7 @@ function initTimeline(lenis) {
   const DISP_MAX = Math.max(...yearStarts) + 1; // 2026
   const DISP_RANGE = DISP_MAX - DISP_MIN;         // 8
 
-  const thresholds = yearStarts.map(y => (y - DISP_MIN) / DISP_RANGE);
+  const thresholds = yearStarts.map((y, i) => i === 0 ? 0 : (y - DISP_MIN) / DISP_RANGE);
 
   gsap.set(items, { opacity: 0, y: 32 });
   gsap.set(dots, { scale: 0 });

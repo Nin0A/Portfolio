@@ -409,7 +409,7 @@ button {
   left: 0;
   height: 2px;
   width: 0%;
-  background: var(--accent);
+  background: #e75f5d;
   z-index: 901;
   transform-origin: left;
   transition: width 0.1s linear;

@@ -309,15 +309,24 @@ function initProjectInteractions() {
     const nameEl = item.querySelector('.project-name');
     let stopScramble = null;
 
+    function pumpNavUpdate() {
+      if (!_navUpdate) return;
+      const end = performance.now() + 380;
+      const tick = () => { _navUpdate(); if (performance.now() < end) requestAnimationFrame(tick); };
+      requestAnimationFrame(tick);
+    }
+
     item.addEventListener('mouseenter', () => {
       document.body.classList.add('cursor-project');
       if (label) label.textContent = 'VOIR';
       if (nameEl) stopScramble = scramble(nameEl);
+      pumpNavUpdate();
     });
 
     item.addEventListener('mouseleave', () => {
       document.body.classList.remove('cursor-project');
       if (stopScramble) { stopScramble(); stopScramble = null; }
+      pumpNavUpdate();
     });
 
     // Drive the radial spotlight via CSS custom properties

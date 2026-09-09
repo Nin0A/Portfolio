@@ -717,8 +717,7 @@ button {
 
 .about-photo-inner {
   position: absolute;
-  inset: -25% 0;
-  will-change: transform;
+  inset: 0;
 }
 
 .about-photo-img {

@@ -1610,7 +1610,7 @@ button {
 }
 
 /* ── Mobile: vertical fallback ── */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .section--parcours {
     min-height: unset;
     overflow: visible;

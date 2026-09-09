@@ -173,21 +173,23 @@ function initThreeHero() {
   });
   scene.add(new THREE.Points(pGeo, pMat));
 
-  // ── Mouse: parallax + particle repulsion ──────────────────
+  // ── Mouse: parallax + particle repulsion (desktop only) ──────────────────
   let targetMX = 0, targetMY = 0, camX = 0, camY = 0, scrollY = 0;
+  const isTouch = window.matchMedia('(pointer: coarse)').matches;
 
-  document.addEventListener('mousemove', e => {
-    const nx = e.clientX / window.innerWidth;
-    const ny = e.clientY / window.innerHeight;
-    targetMX = (nx - 0.5) * 2;
-    targetMY = (ny - 0.5) * 2;
-    // Convert to world-space for the particle repulsion uniform
-    const fovH = 2 * Math.tan(camera.fov * Math.PI / 360) * camera.position.z;
-    pMat.uniforms.uMouse.value.set(
-      (nx - 0.5) * fovH * camera.aspect,
-      -(ny - 0.5) * fovH,
-    );
-  });
+  if (!isTouch) {
+    document.addEventListener('mousemove', e => {
+      const nx = e.clientX / window.innerWidth;
+      const ny = e.clientY / window.innerHeight;
+      targetMX = (nx - 0.5) * 2;
+      targetMY = (ny - 0.5) * 2;
+      const fovH = 2 * Math.tan(camera.fov * Math.PI / 360) * camera.position.z;
+      pMat.uniforms.uMouse.value.set(
+        (nx - 0.5) * fovH * camera.aspect,
+        -(ny - 0.5) * fovH,
+      );
+    });
+  }
 
   window.addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive: true });
 
@@ -209,10 +211,12 @@ function initThreeHero() {
     icoB.rotation.x -= 0.003; icoB.rotation.y -= 0.002;
     icoC.rotation.x += 0.006; icoC.rotation.z += 0.004;
 
-    camX += (targetMX * 0.55 - camX) * 0.04;
-    camY += (targetMY * -0.35 - camY) * 0.04;
-    camera.position.x = camX;
-    camera.position.y = camY;
+    if (!isTouch) {
+      camX += (targetMX * 0.55 - camX) * 0.04;
+      camY += (targetMY * -0.35 - camY) * 0.04;
+      camera.position.x = camX;
+      camera.position.y = camY;
+    }
     camera.position.z = 7 + scrollY * 0.004;
 
     renderer.render(scene, camera);

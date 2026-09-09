@@ -878,7 +878,8 @@ function initTimeline(lenis) {
   gsap.set(dots, { scale: 0 });
 
   // Mobile: simple vertical stagger
-  if (window.matchMedia('(max-width: 1023px)').matches) {
+  const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+  if (isTouchDevice || window.innerWidth < 768) {
     gsap.set(items, { clearProps: 'all' });
     gsap.set(dots, { clearProps: 'all' });
     items.forEach((item, i) => {

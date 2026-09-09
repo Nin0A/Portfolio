@@ -1617,20 +1617,20 @@ button {
     padding-bottom: var(--section-gap);
   }
 
-  .tl-year-bg {
-    display: none;
-  }
-
-  .tl-hint {
+  .tl-year-bg,
+  .tl-hint,
+  .tl-rail,
+  .tl-dot {
     display: none;
   }
 
   .tl-track {
     flex-direction: column;
     align-items: stretch;
-    padding: 40px 0 0 36px;
+    padding: 32px 0 0;
+    margin-left: 0;
     transform: none !important;
-    gap: 40px;
+    gap: 0;
   }
 
   .tl-item {
@@ -1639,17 +1639,32 @@ button {
     padding-right: 0;
     opacity: 1 !important;
     transform: none !important;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+    padding-bottom: 24px;
+    gap: 12px;
   }
 
-  .tl-dot {
-    position: absolute;
-    left: -36px;
-    top: 4px;
-    transform: scale(1) !important;
+  .tl-card {
+    box-shadow: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
   }
 
-  .tl-rail {
-    display: none;
+  .tl-card:hover {
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .tl-card--current {
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .tl-item-period {
+    font-size: 10px;
   }
 }
 
